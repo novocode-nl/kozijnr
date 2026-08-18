@@ -26,6 +26,16 @@
     { "gid": "1217604953169412", "name": "Done" }
   ],
   "default_section": "Backlog",
+  "workflow": {
+    "$comment": "Sectienamen per workflow-stadium, gebruikt door de asana-create/-worker/-review/-user-review skills. Namen moeten overeenkomen met 'sections' hierboven.",
+    "backlog": "Backlog",
+    "todo": "Todo",
+    "in_progress": "In progress",
+    "ready_for_review": "Ready for review",
+    "in_review": "Review",
+    "user_review": "User review",
+    "done": "Done"
+  },
   "members": [
     { "gid": "1217443874057923", "name": "Sean Doldersum" }
   ],
