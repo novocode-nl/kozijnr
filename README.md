@@ -74,6 +74,51 @@ target's one-line `docker compose ...` invocation, see the `Makefile` itself.
     `git pull`), run `make rebuild` (or just restart the affected service) so the
     entrypoint script reinstalls dependencies.
 
+## Per-worktree test environments
+
+Each git worktree (typically one per KOZ ticket) can run its own isolated
+copy of the stack — different container names, different volumes, different
+ports — so multiple tickets can be developed and tested locally at the same
+time without conflicts.
+
+The convention is based on the KOZ issue number `<n>`:
+
+| Service | Port formula | Example for KOZ-12 |
+| --- | --- | --- |
+| Frontend | `3000 + <n>` | `http://localhost:3012` |
+| Backend | `8000 + <n>` | `http://localhost:8012` |
+| Database | `5432 + <n>` | `localhost:5444` |
+
+Container and volume names are namespaced by setting `COMPOSE_PROJECT_NAME=koz-<n>`
+(instead of the default `kozijnr`), so e.g. KOZ-12's backend container becomes
+`koz-12-backend-1` and its database volume `koz-12_database_data` — distinct
+from any other worktree's containers/volumes running at the same time.
+
+To set this up in a worktree, generate its `.env` from the issue number:
+
+```bash
+make worktree-env n=12   # for KOZ-12
+```
+
+or directly:
+
+```bash
+scripts/setup-worktree-env.sh 12
+```
+
+This writes a `.env` file (gitignored, one per worktree — see `.env.example`
+for the shape) with `COMPOSE_PROJECT_NAME`, `FRONTEND_PORT`, `BACKEND_PORT`,
+`DATABASE_PORT` and `NEXT_PUBLIC_API_URL` set for that issue number. Run it
+once per worktree (right after creating the worktree, before `make up`).
+`docker-compose.yml` reads these variables with the plain defaults
+(3000/8000/5432, project name `kozijnr`) as fallback, so the regular
+non-worktree workflow described above is unaffected if you never run this
+script.
+
+Because `NEXT_PUBLIC_API_URL` is derived from the same `.env`, the frontend
+in each worktree automatically talks to its own worktree's backend port —
+no manual wiring needed.
+
 ## Versions
 
 - PHP: **8.5** (pinned in `docker/backend/Dockerfile`, image `php:8.5-cli-alpine`)
