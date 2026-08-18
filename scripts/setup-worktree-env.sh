@@ -28,8 +28,14 @@ fi
 
 N="$1"
 
-if ! [[ "$N" =~ ^[0-9]+$ ]]; then
-  echo "Error: issue number must be a positive integer, got '$N'" >&2
+# Reject leading zeros (e.g. "08", "012") outright rather than silently
+# reinterpreting them: bash treats a leading-zero literal as octal in
+# arithmetic contexts ($((...))), which would either misparse the number
+# (e.g. "012" -> decimal 10, a silent port collision) or crash under
+# set -e for invalid octal digits (e.g. "008"). Requiring a "clean" decimal
+# integer here keeps the arithmetic below unambiguous.
+if ! [[ "$N" =~ ^[1-9][0-9]*$ ]]; then
+  echo "Error: issue number must be a positive integer without leading zeros, got '$N'" >&2
   exit 1
 fi
 
