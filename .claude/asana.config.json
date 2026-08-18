@@ -1,0 +1,33 @@
+{
+  "$comment": "Config voor het aanmaken van Asana tickets met volgnummers (KOZ-1, KOZ-2, ...) via de Asana MCP. Het volgnummer wordt bij het aanmaken vooraan de taaknaam gezet, bv. 'KOZ-1: Titel', omdat Asana zelf geen native sequentiele ticket-IDs heeft.",
+  "workspace": {
+    "gid": "1217443874057935",
+    "name": "Mijn werkruimte"
+  },
+  "team": {
+    "gid": "1217443874057937",
+    "name": "Mijn werkruimte"
+  },
+  "project": {
+    "gid": "1217604953169403",
+    "name": "Kozijnr",
+    "url": "https://app.asana.com/1/1217443874057935/project/1217604953169403/board/1217604949141256",
+    "default_view": "board"
+  },
+  "ticket_prefix": "KOZ",
+  "next_number": 1,
+  "sections": [
+    { "gid": "1217604953169406", "name": "Backlog" },
+    { "gid": "1217604953169407", "name": "Todo" },
+    { "gid": "1217604953169408", "name": "In progress" },
+    { "gid": "1217604953169409", "name": "Ready for review" },
+    { "gid": "1217604953169410", "name": "Review" },
+    { "gid": "1217604953169411", "name": "User review" },
+    { "gid": "1217604953169412", "name": "Done" }
+  ],
+  "default_section": "Backlog",
+  "members": [
+    { "gid": "1217443874057923", "name": "Sean Doldersum" }
+  ],
+  "custom_fields": []
+}
