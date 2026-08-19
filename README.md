@@ -167,10 +167,53 @@ other tenants at the database level. On every request, `App\Tenancy\Infrastructu
 4. Known subdomain → `SET search_path TO "<schema_name>", public` on the connection,
    for the rest of that request.
 
-Creating tenant schemas themselves and running per-tenant migrations is out of scope
-here — see KOZ-7. This ticket only wires up the resolution + schema switch, backed by
+This ticket (KOZ-6) only wires up the resolution + schema switch, backed by
 `api/tests/Tenancy/Infrastructure/TenantResolverListenerTest.php`, which proves data
 in one tenant schema is never visible from a request to another tenant's subdomain.
+Creating tenant schemas and running per-tenant migrations is handled by
+`tenant:provision` — see "Provisioning tenants" below (KOZ-7).
+
+### Provisioning tenants
+
+Tenant schemas are never created by hand. `bin/console tenant:provision <name>`
+(`App\Tenancy\Presentation\Command\ProvisionTenantCommand`) does it in one step:
+
+1. Validates `<name>` against a strict whitelist — lowercase alphanumeric segments
+   separated by single hyphens (e.g. `acme`, `acme-bv`), max 55 characters. This is
+   the only thing standing between a free-text name and SQL-schema injection, since
+   the name ends up in raw `CREATE SCHEMA`/`SET search_path` identifiers.
+2. Derives the Postgres schema name from it (`tenant_<name>`, hyphens → underscores)
+   and fails cleanly, before creating anything, if that subdomain, that schema name,
+   or a raw Postgres schema with that name already exists.
+3. Creates the schema and runs the **tenant** migration set on it (see below).
+4. Registers the tenant (`subdomain` → `schema_name`) in the public `tenants` table.
+
+If step 3 or 4 fails after the schema was created, the schema is dropped again before
+the error propagates — a failed run never leaves a half-migrated schema behind.
+
+```bash
+make console args="tenant:provision acme-bv"
+```
+
+Migrations are split into two independent sets:
+
+- **Public migrations** (`api/migrations/`, namespace `DoctrineMigrations`) — the
+  `public` schema, e.g. the `tenants` table itself. Run the usual way:
+  `make console args="doctrine:migrations:migrate"`.
+- **Tenant migrations** (`api/migrations-tenant/`, namespace `App\Migrations\Tenant`)
+  — run once per tenant schema by `App\Tenancy\Infrastructure\TenantSchemaMigrator`,
+  never by `doctrine:migrations:migrate`. Each tenant schema tracks its own applied
+  versions in a `doctrine_migration_versions` table living inside that schema, so
+  the same tenant migration can run once per tenant independently.
+
+To roll a tenant-schema change out across every existing tenant, run:
+
+```bash
+make console args="tenant:migrate --all"
+```
+
+This migrates every tenant registered in `tenants` to the latest tenant migration
+version. One tenant failing to migrate is reported but does not stop the others.
 
 ### Testing multiple subdomains locally
 
@@ -186,14 +229,13 @@ on most systems out of the box (macOS, and most modern Linux/Windows setups) —
 to `/etc/hosts` instead.
 
 With the stack running (`make up`) and the `APP_BASE_DOMAIN` left at its default
-(`localhost`), insert a tenant row and its schema directly for a manual smoke test —
+(`localhost`), provision a tenant with `tenant:provision` for a manual smoke test —
 e.g. for KOZ-6's worktree (backend on port 8006, database on port 5438):
 
 ```bash
-make console args="dbal:run-sql \"INSERT INTO public.tenants (subdomain, schema_name) VALUES ('acme', 'acme_schema')\""
-make console args="dbal:run-sql 'CREATE SCHEMA acme_schema'"
+make console args="tenant:provision acme"
 
-curl http://acme.localhost:8006/api/health        # 200, served with search_path = acme_schema, public
+curl http://acme.localhost:8006/api/health        # 200, served with search_path = tenant_acme, public
 curl http://localhost:8006/api/health             # 200, served with search_path = public (no tenant)
 curl http://unknown-tenant.localhost:8006/api/health  # 404, no fallback to any schema
 ```

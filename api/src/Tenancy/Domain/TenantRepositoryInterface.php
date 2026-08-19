@@ -10,4 +10,23 @@ interface TenantRepositoryInterface
      * currently pointed at.
      */
     public function findBySubdomain(string $subdomain): ?Tenant;
+
+    /**
+     * Looks up a tenant by its Postgres schema name. Same public-schema
+     * guarantee as findBySubdomain().
+     */
+    public function findBySchemaName(string $schemaName): ?Tenant;
+
+    /**
+     * All registered tenants, used to migrate every tenant schema to the
+     * latest tenant migration version (see `tenant:migrate --all`).
+     *
+     * @return Tenant[]
+     */
+    public function findAll(): array;
+
+    /**
+     * Registers a newly provisioned tenant in the public `tenants` table.
+     */
+    public function add(Tenant $tenant): void;
 }
