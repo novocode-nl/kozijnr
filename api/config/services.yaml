@@ -14,6 +14,12 @@ parameters:
     # *.localhost subdomains.
     app.tenancy.base_domain: '%env(APP_BASE_DOMAIN)%'
 
+    # Tenant migrations (per tenant-schema) live in a directory separate from
+    # the public migrations under /migrations (config/packages/doctrine_migrations.yaml),
+    # so the two sets never run against each other. See
+    # App\Tenancy\Infrastructure\TenantSchemaMigrator and the KOZ-7 ticket.
+    app.tenancy.migrations_path: '%kernel.project_dir%/migrations-tenant'
+
 services:
     # default configuration for services in *this* file
     _defaults:
@@ -33,3 +39,7 @@ services:
     App\Tenancy\Infrastructure\TenantResolverListener:
         arguments:
             $baseDomain: '%app.tenancy.base_domain%'
+
+    App\Tenancy\Infrastructure\TenantSchemaMigrator:
+        arguments:
+            $migrationsPath: '%app.tenancy.migrations_path%'
