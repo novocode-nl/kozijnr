@@ -38,6 +38,8 @@ services:
 
     App\User\Domain\UserRepositoryInterface: '@App\User\Infrastructure\DoctrineUserRepository'
 
+    App\User\Domain\RoleRepositoryInterface: '@App\User\Infrastructure\DoctrineRoleRepository'
+
     App\User\Domain\PasswordHasherInterface: '@App\User\Infrastructure\Security\SymfonyPasswordHasher'
 
     App\Tenancy\Infrastructure\TenantResolverListener:

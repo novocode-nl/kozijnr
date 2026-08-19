@@ -20,17 +20,28 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * "SuperAdmin" context — listing/creating tenants is Tenancy business, not
  * a domain concept of its own; only who is *allowed* to call it is an
  * authorization concern, handled below via #[IsGranted] plus the
- * `super_admin` firewall's ROLE_SUPER_ADMIN access control (see
- * config/packages/security.yaml) as defense in depth, not via a dedicated
- * bounded context. Both routes sit under /api/admin, guarded by
- * AdminRouteGuardListener (unreachable from a tenant subdomain).
+ * `super_admin` firewall (see config/packages/security.yaml) as defense in
+ * depth, not via a dedicated bounded context. Both routes sit under
+ * /api/admin, guarded by AdminRouteGuardListener (unreachable from a
+ * tenant subdomain).
+ *
+ * Authorization here is permission-based, not role-name-based (KOZ-9):
+ * each action requires its own fine-grained permission (`tenant:list`,
+ * `tenant:create`), checked via App\User\Infrastructure\Security\PermissionVoter
+ * against the authenticated User's assigned roles/permissions, rather than
+ * a blanket #[IsGranted('ROLE_SUPER_ADMIN')] on the whole controller.
+ * security.yaml's access_control still requires the request to be
+ * authenticated at all (IS_AUTHENTICATED_FULLY) before reaching here — the
+ * ROLE_SUPER_ADMIN role itself is still what login/logout gate on the
+ * firewall, since authentication (who can log in at all) stays role-based
+ * by design; only what an authenticated admin may then *do* is
+ * permission-based.
  *
  * Creation calls this context's own ProvisionTenant (KOZ-7) directly.
  *
  * Create + list only, deliberately — schema deletion/archiving, billing,
  * and tenant-specific settings are out of scope for this ticket.
  */
-#[IsGranted('ROLE_SUPER_ADMIN')]
 final class TenantAdminController
 {
     public function __construct(
@@ -41,6 +52,7 @@ final class TenantAdminController
     }
 
     #[Route('/api/admin/tenants', name: 'admin_tenants_list', methods: ['GET'])]
+    #[IsGranted('tenant:list')]
     public function list(): JsonResponse
     {
         $summaries = ($this->listTenants)();
@@ -49,6 +61,7 @@ final class TenantAdminController
     }
 
     #[Route('/api/admin/tenants', name: 'admin_tenants_create', methods: ['POST'])]
+    #[IsGranted('tenant:create')]
     public function create(Request $request): JsonResponse
     {
         $payload = json_decode($request->getContent(), true);

@@ -2,6 +2,8 @@
 
 namespace App\User\Domain;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -14,11 +16,14 @@ use Symfony\Component\Security\Core\User\UserInterface;
  * not merely access-controlled away from it.
  *
  * Deliberately generic rather than a dedicated "SuperAdmin" entity: roles
- * are stored in a `roles` column so future admin-side roles (besides
- * ROLE_SUPER_ADMIN) fit into this same table without a second entity/table.
- * Authorization against a specific role (e.g. `/api/admin/*` requiring
- * ROLE_SUPER_ADMIN) happens via Symfony's access_control against
- * getRoles(), not via a hardcoded role on this class.
+ * are a many-to-many relation to the Role entity (KOZ-9), so future
+ * admin-side roles (besides ROLE_SUPER_ADMIN) fit into this same table
+ * without a second entity/table. Coarse authorization (e.g. the firewall's
+ * access_control, or Symfony's built-in ROLE_ voter) still reads
+ * getRoles() (role *names*), but fine-grained authorization (e.g.
+ * #[IsGranted('tenant:list')]) reads hasPermission()/getPermissions(),
+ * which resolve through each assigned Role's own Permission set rather
+ * than comparing role-name strings.
  *
  * Deliberately its own Security `UserInterface` implementation, entirely
  * separate from any future tenant-user model: a super-admin session can only
@@ -41,13 +46,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string')]
     private string $password;
 
-    /** @var list<string> */
-    #[ORM\Column(type: 'json')]
-    private array $roles;
+    /** @var Collection<int, Role> */
+    #[ORM\ManyToMany(targetEntity: Role::class)]
+    #[ORM\JoinTable(name: 'user_roles')]
+    private Collection $assignedRoles;
 
     /**
-     * @param list<string> $roles Must contain at least one role, e.g.
-     *                            ['ROLE_SUPER_ADMIN'].
+     * @param list<Role> $roles Must contain at least one role, e.g.
+     *                          [$roleSuperAdmin].
      */
     public function __construct(string $email, string $hashedPassword, array $roles)
     {
@@ -67,7 +73,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         $this->email = $email;
         $this->password = $hashedPassword;
-        $this->roles = array_values(array_unique($roles));
+        $this->assignedRoles = new ArrayCollection();
+
+        foreach ($roles as $role) {
+            if (!$this->assignedRoles->contains($role)) {
+                $this->assignedRoles->add($role);
+            }
+        }
     }
 
     public function getId(): ?int
@@ -95,7 +107,45 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function getRoles(): array
     {
-        return $this->roles;
+        return array_values(array_unique(array_map(
+            static fn (Role $role): string => $role->getName(),
+            $this->assignedRoles->toArray(),
+        )));
+    }
+
+    /**
+     * True if any role assigned to this user grants the given permission.
+     */
+    public function hasPermission(string $permissionName): bool
+    {
+        foreach ($this->assignedRoles as $role) {
+            if ($role->hasPermission($permissionName)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * All permission names granted by this user's assigned roles, flattened
+     * and deduplicated across roles.
+     *
+     * @return list<string>
+     */
+    public function getPermissions(): array
+    {
+        $permissions = [];
+
+        foreach ($this->assignedRoles as $role) {
+            foreach ($role->getPermissionNames() as $permissionName) {
+                if (!in_array($permissionName, $permissions, true)) {
+                    $permissions[] = $permissionName;
+                }
+            }
+        }
+
+        return $permissions;
     }
 
     public function eraseCredentials(): void

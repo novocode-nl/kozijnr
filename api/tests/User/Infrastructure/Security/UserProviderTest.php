@@ -2,6 +2,7 @@
 
 namespace App\Tests\User\Infrastructure\Security;
 
+use App\User\Domain\Role;
 use App\User\Domain\User;
 use App\User\Domain\UserRepositoryInterface;
 use App\User\Infrastructure\Security\UserProvider;
@@ -14,7 +15,7 @@ final class UserProviderTest extends TestCase
 {
     public function testLoadsAKnownUserByEmail(): void
     {
-        $user = new User('admin@kozijnr.nl', 'hashed', ['ROLE_SUPER_ADMIN']);
+        $user = new User('admin@kozijnr.nl', 'hashed', [new Role('ROLE_SUPER_ADMIN')]);
         $repository = $this->createMock(UserRepositoryInterface::class);
         $repository->expects(self::once())->method('findByEmail')->with('admin@kozijnr.nl')->willReturn($user);
 
@@ -37,8 +38,8 @@ final class UserProviderTest extends TestCase
 
     public function testRefreshesAUserByReLoadingItFromTheRepository(): void
     {
-        $original = new User('admin@kozijnr.nl', 'hashed', ['ROLE_SUPER_ADMIN']);
-        $refreshed = new User('admin@kozijnr.nl', 'hashed', ['ROLE_SUPER_ADMIN']);
+        $original = new User('admin@kozijnr.nl', 'hashed', [new Role('ROLE_SUPER_ADMIN')]);
+        $refreshed = new User('admin@kozijnr.nl', 'hashed', [new Role('ROLE_SUPER_ADMIN')]);
         $repository = $this->createMock(UserRepositoryInterface::class);
         $repository->expects(self::once())->method('findByEmail')->with('admin@kozijnr.nl')->willReturn($refreshed);
 
