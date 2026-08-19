@@ -48,6 +48,18 @@ Plus `/api/src/Shared/` for cross-cutting bus wiring and truly shared kernel con
 - One **Query** + one **QueryHandler** per read use case. Query handlers **never** cause side effects and typically bypass the domain model for a direct read model / projection.
 - Three separate Symfony Messenger buses, each configured with its own routing in `messenger.yaml`: `command.bus`, `query.bus`, `event.bus`. Never dispatch a query on the command bus or vice versa.
 
+## Controllers: one action per class (SRP)
+
+Every controller class has exactly **one** public action and exactly **one** route. This is toetsbaar, not a style preference — check any controller against this list:
+
+- [ ] The class declares exactly one `#[Route(...)]` attribute, on a single public method named `__invoke`. Two routes (even the same path with different HTTP methods, e.g. `GET`/`POST /api/x`) means two controller classes, not two methods on one class.
+- [ ] The class name describes the one thing it does, as a verb + subject, e.g. `ListTenantsController`, `CreateTenantController` — never a resource-only name like `TenantController` or `TenantAdminController` that invites a second action to be bolted on later.
+- [ ] The method body only does HTTP translation: parse the request into primitives, call exactly one `Application/` command or query (constructor-injected), map the result or a caught domain exception to a `Response`. No branching on business rules, no loops that compute something domain-shaped, no calls into more than one Application-layer use case.
+- [ ] Authorization (`#[IsGranted(...)]`) is a class-level attribute (or applies to the single action) with the permission specific to that one action — never a shared permission check gating two different actions bolted onto the same class.
+- [ ] Response-shaping helpers (turning a DTO into an array) belong on the Application-layer DTO itself (e.g. a `toArray()` method on the read model) if more than one controller needs the same shape, not copy-pasted per controller and not reason enough to keep two actions in one class "so they can share the helper".
+
+If a change looks like it wants to add a second method to an existing controller, that is the signal to create a new controller class instead — one file, one route, one job. This applies to every context's controllers, wherever they currently live in that context's folder tree (this repo's contexts currently keep them under `Infrastructure/Controller/`, ahead of a later cleanup toward the `Presentation/` layout described above — don't block a controller split on that unrelated inconsistency).
+
 ## Domain events & Messenger
 
 - Aggregates raise domain events (plain data objects) when meaningful state changes happen; the event isn't dispatched until after the transaction that produced it commits.
@@ -69,6 +81,7 @@ Plus `/api/src/Shared/` for cross-cutting bus wiring and truly shared kernel con
 - [ ] Command handlers return void/ID only; query handlers have zero side effects.
 - [ ] Command bus, query bus, and event bus are not mixed.
 - [ ] Every new public behavior has a test that was written before the implementation (TDD, not tests-after).
+- [ ] Every controller has exactly one route/action — see "Controllers: one action per class (SRP)" above.
 - [ ] The ticket's own "Definition of Done" bullets are individually satisfied — treat them as the acceptance test, not a suggestion.
 
 ## Common Mistakes
@@ -78,3 +91,4 @@ Plus `/api/src/Shared/` for cross-cutting bus wiring and truly shared kernel con
 - **One Messenger bus for everything** — always split command/query/event buses, even for a small feature.
 - **Assuming a bounded-context name or folder** without checking whether one already exists under `/api/src` — grep first, don't guess a second context for the same concept.
 - **Dispatching a domain event before its transaction commits** — a rolled-back write must never have already fired an event.
+- **Two actions on one controller class** ("it's just list + create, they're related") — split into one controller per route, see "Controllers: one action per class (SRP)".
