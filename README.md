@@ -160,7 +160,12 @@ other tenants at the database level. On every request, `App\Tenancy\Infrastructu
    apex domain, e.g. `kozijnr.nl`, in production).
    - No subdomain, or a request to the base domain itself → stays on the `public`
      schema. No tenant lookup happens.
-   - A subdomain present → looked up in the `tenants` table (public schema, see the
+   - `admin` subdomain (e.g. `admin.localhost`, `admin.kozijnr.nl` in production) →
+     recognized as the reserved, tenant-independent super-admin domain (see "Super
+     admin" below) and stays on the `public` schema. Never looked up in `tenants`,
+     and can never itself be provisioned as a tenant name — `TenantName` rejects
+     `admin` outright.
+   - Any other subdomain → looked up in the `tenants` table (public schema, see the
      `Version20260819053803` migration) for its `subdomain` → `schema_name` mapping.
 3. Unknown subdomain → `404 Not Found`. There is no fallback to `public` or to any
    other schema for a subdomain that doesn't match a row in `tenants`.
@@ -253,20 +258,25 @@ and create tenants. Create one with:
 make console args="super-admin:create admin@kozijnr.nl"
 ```
 
-(prompts for a password if omitted from the arguments), then, on the main domain
-only — `/api/admin/*` 404s on any tenant subdomain, see
+(prompts for a password if omitted from the arguments), then, on the reserved
+`admin` subdomain (`admin.kozijnr.nl` in production, `admin.localhost` locally —
+same `*.localhost` convention as tenant subdomains, see "Testing multiple
+subdomains locally" above) — and *only* there. `/api/admin/*` 404s everywhere
+else: on any tenant subdomain, on an unrecognized subdomain, and on the bare
+main domain too, since `admin.kozijnr.nl` is the one place admin business
+happens, not a fallback available from the apex domain. See
 `App\SuperAdmin\Infrastructure\SuperAdminRouteGuardListener`:
 
 ```bash
-curl -i -c cookies.txt -X POST http://localhost:8008/api/admin/login \
+curl -i -c cookies.txt -X POST http://admin.localhost:8008/api/admin/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"admin@kozijnr.nl","password":"<password>"}'
 
-curl -b cookies.txt http://localhost:8008/api/admin/tenants                 # list: subdomain + createdAt
+curl -b cookies.txt http://admin.localhost:8008/api/admin/tenants                 # list: subdomain + createdAt
 
-curl -b cookies.txt -X POST http://localhost:8008/api/admin/tenants \
+curl -b cookies.txt -X POST http://admin.localhost:8008/api/admin/tenants \
   -H 'Content-Type: application/json' \
-  -d '{"name":"acme"}'                                                      # create, via KOZ-7's tenant:provision
+  -d '{"name":"acme"}'                                                            # create, via KOZ-7's tenant:provision
 ```
 
 Adjust the port to whichever worktree you're in.

@@ -22,9 +22,10 @@ security:
         # Tenant-independent super-admin realm (KOZ-8). Matched by path
         # only — SuperAdminRouteGuardListener (priority 90, runs before
         # this firewall at priority 8) already 404s every /api/admin/*
-        # request that KOZ-6's tenant resolution determined is on a known
-        # tenant subdomain, so by the time this firewall ever authenticates
-        # anything, the request is guaranteed to be on the main domain.
+        # request that KOZ-6's tenant resolution did not mark as being on
+        # the reserved admin subdomain (admin.kozijnr.nl / admin.localhost),
+        # so by the time this firewall ever authenticates anything, the
+        # request is guaranteed to be on the admin domain.
         #
         # Session-based (not stateless): the session this firewall
         # establishes only ever stores the super admin's own identity

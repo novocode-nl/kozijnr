@@ -36,7 +36,12 @@ final class TenantName
 
     public function __construct(string $value)
     {
-        if ($value === '' || preg_match(self::PATTERN, $value) !== 1 || mb_strlen($value) > self::MAX_LENGTH) {
+        if (
+            $value === ''
+            || preg_match(self::PATTERN, $value) !== 1
+            || mb_strlen($value) > self::MAX_LENGTH
+            || $value === Subdomain::RESERVED_ADMIN
+        ) {
             throw InvalidTenantNameException::forName($value);
         }
 

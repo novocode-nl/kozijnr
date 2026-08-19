@@ -10,17 +10,27 @@ use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
  * Keeps every `/api/admin/*` route (super-admin login + management API)
- * off tenant subdomains, building directly on KOZ-6's tenant resolution
- * rather than a separate host-regex check: if TenantResolverListener
- * resolved a tenant for this request (i.e. we are on a known tenant
- * subdomain), the super-admin API 404s exactly like any other unknown
- * route would — it does not exist there, at all, not even to reject a
- * login attempt with 401/403. That would leak the fact that the endpoint
- * exists on a tenant subdomain in the first place.
+ * exclusive to the reserved "admin" subdomain, building directly on
+ * KOZ-6's tenant resolution rather than a separate host-regex check:
+ * `/api/admin/*` is only reachable when TenantResolverListener has marked
+ * the request as being on the admin domain (ADMIN_REQUEST_ATTRIBUTE).
+ * Anywhere else — a known tenant subdomain, an unknown subdomain, or the
+ * bare main domain — it 404s exactly like any other unknown route would;
+ * it does not exist there, at all, not even to reject a login attempt
+ * with 401/403. That would leak the fact that the endpoint exists
+ * elsewhere.
  *
- * Runs after TenantResolverListener (priority 100) so `_tenant` is already
- * set, but before the security firewall (priority 8) so a tenant subdomain
- * never even reaches the super-admin authenticator.
+ * Rework (KOZ-8): originally this only required the *absence* of a
+ * resolved tenant, so `/api/admin/*` was reachable from the bare main
+ * domain. Functional review flipped this: "admin.kozijnr.nl" is THE place
+ * where super-admin business happens, mirroring how a tenant's own
+ * business lives exclusively under its own subdomain rather than also
+ * being reachable from the bare domain — so the bare main domain no
+ * longer grants admin access either, only the admin subdomain does.
+ *
+ * Runs after TenantResolverListener (priority 100) so the admin/tenant
+ * attributes are already set, but before the security firewall (priority
+ * 8) so a non-admin host never even reaches the super-admin authenticator.
  */
 final class SuperAdminRouteGuardListener implements EventSubscriberInterface
 {
@@ -45,8 +55,8 @@ final class SuperAdminRouteGuardListener implements EventSubscriberInterface
             return;
         }
 
-        if ($request->attributes->get(TenantResolverListener::REQUEST_ATTRIBUTE) !== null) {
-            throw new NotFoundHttpException('Super-admin routes are not available on a tenant subdomain.');
+        if ($request->attributes->get(TenantResolverListener::ADMIN_REQUEST_ATTRIBUTE) !== true) {
+            throw new NotFoundHttpException('Super-admin routes are only available on the admin subdomain.');
         }
     }
 }

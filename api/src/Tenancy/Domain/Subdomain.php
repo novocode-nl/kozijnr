@@ -14,6 +14,15 @@ namespace App\Tenancy\Domain;
 final class Subdomain
 {
     /**
+     * The reserved super-admin subdomain label (admin.kozijnr.nl in
+     * production, admin.localhost locally) — recognized by
+     * TenantResolverListener as the tenant-independent super-admin domain
+     * rather than an unknown tenant, and rejected by TenantName so it can
+     * never be provisioned as an actual tenant.
+     */
+    public const RESERVED_ADMIN = 'admin';
+
+    /**
      * Returns the subdomain label (e.g. "acme") for a host like
      * "acme.kozijnr.nl" given base domain "kozijnr.nl".
      *

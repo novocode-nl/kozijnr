@@ -27,6 +27,16 @@ final class TenantResolverListener implements EventSubscriberInterface
 {
     public const REQUEST_ATTRIBUTE = '_tenant';
 
+    /**
+     * Set (to `true`) on the request when the host resolved to the
+     * reserved "admin" subdomain (admin.kozijnr.nl / admin.localhost) —
+     * the tenant-independent super-admin domain. Mutually exclusive with
+     * REQUEST_ATTRIBUTE: a request either resolves to a tenant, resolves
+     * to the admin domain, or is on the bare main domain (neither
+     * attribute set).
+     */
+    public const ADMIN_REQUEST_ATTRIBUTE = '_super_admin_domain';
+
     public function __construct(
         private readonly Connection $connection,
         private readonly TenantRepositoryInterface $tenantRepository,
@@ -59,6 +69,15 @@ final class TenantResolverListener implements EventSubscriberInterface
 
         if ($subdomain === null) {
             // Main domain / no subdomain: request stays on the public schema.
+            return;
+        }
+
+        if ($subdomain === Subdomain::RESERVED_ADMIN) {
+            // Reserved super-admin domain: not a tenant, stays on the
+            // public schema, and must never fall into the "unknown
+            // tenant" 404 branch below.
+            $event->getRequest()->attributes->set(self::ADMIN_REQUEST_ATTRIBUTE, true);
+
             return;
         }
 

@@ -100,6 +100,20 @@ final class TenantResolverListenerTest extends WebTestCase
         self::assertSame('public', $currentSchema);
     }
 
+    public function testAdminSubdomainIsReservedAndStaysOnThePublicSchemaWithoutBeingTreatedAsAnUnknownTenant(): void
+    {
+        $client = $this->client;
+        $client->request('GET', '/api/health', server: ['HTTP_HOST' => 'admin.' . self::BASE_DOMAIN]);
+
+        // Not a 404: "admin" is a reserved, recognized super-admin domain,
+        // not an unknown tenant subdomain, so it must not fall into the
+        // "unknown tenant" 404 branch.
+        self::assertResponseIsSuccessful();
+
+        $currentSchema = $this->connection()->fetchOne('SELECT current_schema()');
+        self::assertSame('public', $currentSchema);
+    }
+
     public function testMultiLevelSubdomainThatIsNotAKnownTenantReturns404(): void
     {
         $client = $this->client;
