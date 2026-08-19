@@ -3,6 +3,7 @@
 namespace App\Tenancy\Presentation\Command;
 
 use App\Tenancy\Application\ProvisionTenant;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -16,8 +17,10 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 final class ProvisionTenantCommand extends Command
 {
-    public function __construct(private readonly ProvisionTenant $provisionTenant)
-    {
+    public function __construct(
+        private readonly ProvisionTenant $provisionTenant,
+        private readonly LoggerInterface $logger,
+    ) {
         parent::__construct();
     }
 
@@ -49,6 +52,16 @@ final class ProvisionTenantCommand extends Command
             // escaping as an uncaught stack trace. ProvisionTenant itself is
             // responsible for leaving no half-provisioned state behind
             // (dropping the schema again) before this catch ever runs.
+            //
+            // Log the underlying cause with its stack trace: the user-facing
+            // io->error() below is deliberately terse, so without this an
+            // unexpected failure would otherwise leave no trace to debug it.
+            $this->logger->error('tenant:provision failed for "{name}": {message}', [
+                'name' => $name,
+                'message' => $exception->getMessage(),
+                'exception' => $exception,
+            ]);
+
             $io->error($exception->getMessage());
 
             return Command::FAILURE;

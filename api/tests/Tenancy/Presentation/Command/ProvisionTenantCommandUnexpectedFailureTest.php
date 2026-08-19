@@ -10,6 +10,7 @@ use App\Tenancy\Presentation\Command\ProvisionTenantCommand;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\DriverException;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 use Symfony\Component\Console\Tester\CommandTester;
 
 /**
@@ -48,6 +49,14 @@ final class ProvisionTenantCommandUnexpectedFailureTest extends TestCase
         $connection->method('quoteSingleIdentifier')->willReturnCallback(
             static fn (string $identifier): string => '"' . $identifier . '"',
         );
+        // TenantSchemaManager::exists() is checked before create() is ever
+        // reached; an unconfigured mock returns null from fetchOne(), and
+        // null !== false is true, which would make exists() falsely report
+        // the schema as already present and short-circuit the flow with a
+        // SchemaAlreadyExistsException before the mocked DBAL exception
+        // below is ever exercised. Mock fetchOne() to explicitly report
+        // "does not exist" so the flow actually reaches create().
+        $connection->method('fetchOne')->willReturn(false);
         $connection->method('executeStatement')->willReturnCallback(
             static function (string $sql) {
                 if (str_starts_with($sql, 'SET search_path')) {
@@ -55,7 +64,7 @@ final class ProvisionTenantCommandUnexpectedFailureTest extends TestCase
                 }
 
                 throw new DriverException(
-                    new class('schema "tenant_acme_bv" already exists', '42P06', 7) extends \Exception implements \Doctrine\DBAL\Driver\Exception {
+                    new class('schema "tenant_acme_bv" already exists', 0, null) extends \Exception implements \Doctrine\DBAL\Driver\Exception {
                         public function getSQLState(): ?string
                         {
                             return '42P06';
@@ -72,15 +81,21 @@ final class ProvisionTenantCommandUnexpectedFailureTest extends TestCase
 
         $provisionTenant = new ProvisionTenant($connection, $tenantRepository, $schemaManager, $migrator);
 
-        $command = new ProvisionTenantCommand($provisionTenant);
+        $command = new ProvisionTenantCommand($provisionTenant, new NullLogger());
         $tester = new CommandTester($command);
 
         $exitCode = $tester->execute(['name' => 'acme-bv']);
 
         self::assertSame(1, $exitCode);
+        // SymfonyStyle's error() block wraps long messages to the terminal
+        // width, so "already exists" can be split across lines with extra
+        // whitespace in between; collapse whitespace before comparing so the
+        // assertion doesn't depend on the console's wrap width.
+        $normalizedDisplay = preg_replace('/\s+/', ' ', $tester->getDisplay());
+
         self::assertStringContainsString(
             'already exists',
-            $tester->getDisplay(),
+            $normalizedDisplay,
             'The raw DBAL failure must be reported via io->error(), not left as an uncaught exception.',
         );
     }
