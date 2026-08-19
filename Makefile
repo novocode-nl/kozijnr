@@ -5,7 +5,7 @@ COMPOSE := docker compose
 SHELL := /bin/bash
 
 .PHONY: up down build rebuild restart logs ps sh-backend sh-frontend \
-        composer console npm worktree-env ensure-env
+        composer console npm test-backend worktree-env ensure-env
 
 ## Ensure a per-worktree .env exists before the stack starts. Runs
 ## automatically as a prerequisite of `up` so a single `make up` suffices in
@@ -85,6 +85,14 @@ console:
 ## Run npm inside the frontend container, e.g. `make npm args="run lint"`.
 npm:
 	$(COMPOSE) exec frontend npm $(args)
+
+## Run the backend PHPUnit suite inside the backend container, e.g.
+## `make test-backend args="tests/Tenancy"`. Forces APP_ENV=test — the
+## container's default APP_ENV=dev (set in docker-compose.yml for the `php
+## -S` dev server) otherwise wins over phpunit.dist.xml's own APP_ENV
+## override, since a real container env var takes precedence over it.
+test-backend:
+	$(COMPOSE) exec -e APP_ENV=test backend php bin/phpunit $(args)
 
 ## Generate a per-worktree .env with ports/names derived from a KOZ issue
 ## number, e.g. `make worktree-env n=12` for KOZ-12. See README.md.
