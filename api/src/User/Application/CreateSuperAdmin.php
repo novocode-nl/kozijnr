@@ -3,9 +3,9 @@
 namespace App\User\Application;
 
 use App\User\Domain\Exception\UserAlreadyExistsException;
+use App\User\Domain\PasswordHasherInterface;
 use App\User\Domain\User;
 use App\User\Domain\UserRepositoryInterface;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 /**
  * Creates a super-admin account: a plain public-schema User (this bounded
@@ -22,7 +22,7 @@ final class CreateSuperAdmin
 {
     public function __construct(
         private readonly UserRepositoryInterface $repository,
-        private readonly UserPasswordHasherInterface $passwordHasher,
+        private readonly PasswordHasherInterface $passwordHasher,
     ) {
     }
 
@@ -38,7 +38,7 @@ final class CreateSuperAdmin
         // PasswordAuthenticatedUserInterface instance to hash against, and
         // User validates its password argument is non-empty.
         $user = new User($email, 'placeholder', ['ROLE_SUPER_ADMIN']);
-        $hashedPassword = $this->passwordHasher->hashPassword($user, $plainPassword);
+        $hashedPassword = $this->passwordHasher->hash($user, $plainPassword);
         $user = new User($email, $hashedPassword, ['ROLE_SUPER_ADMIN']);
 
         $this->repository->add($user);

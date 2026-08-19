@@ -4,10 +4,10 @@ namespace App\Tests\User\Application;
 
 use App\User\Application\CreateSuperAdmin;
 use App\User\Domain\Exception\UserAlreadyExistsException;
+use App\User\Domain\PasswordHasherInterface;
 use App\User\Domain\User;
 use App\User\Domain\UserRepositoryInterface;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class CreateSuperAdminTest extends TestCase
 {
@@ -21,9 +21,9 @@ final class CreateSuperAdminTest extends TestCase
                 && $user->getRoles() === ['ROLE_SUPER_ADMIN'],
         ));
 
-        $hasher = $this->createMock(UserPasswordHasherInterface::class);
+        $hasher = $this->createMock(PasswordHasherInterface::class);
         $hasher->expects(self::once())
-            ->method('hashPassword')
+            ->method('hash')
             ->with(self::isInstanceOf(User::class), 'secret123')
             ->willReturn('hashed:secret123');
 
@@ -42,8 +42,8 @@ final class CreateSuperAdminTest extends TestCase
         $repository->expects(self::once())->method('findByEmail')->willReturn($existing);
         $repository->expects(self::never())->method('add');
 
-        $hasher = $this->createMock(UserPasswordHasherInterface::class);
-        $hasher->expects(self::never())->method('hashPassword');
+        $hasher = $this->createMock(PasswordHasherInterface::class);
+        $hasher->expects(self::never())->method('hash');
 
         $createSuperAdmin = new CreateSuperAdmin($repository, $hasher);
 
