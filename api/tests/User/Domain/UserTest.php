@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Tests\SuperAdmin\Domain;
+namespace App\Tests\User\Domain;
 
-use App\SuperAdmin\Domain\User;
+use App\User\Domain\User;
 use PHPUnit\Framework\TestCase;
 
 final class UserTest extends TestCase

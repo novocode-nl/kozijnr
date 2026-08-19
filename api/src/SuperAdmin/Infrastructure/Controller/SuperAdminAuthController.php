@@ -1,6 +1,6 @@
 <?php
 
-namespace App\SuperAdmin\Presentation\Controller;
+namespace App\SuperAdmin\Infrastructure\Controller;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;

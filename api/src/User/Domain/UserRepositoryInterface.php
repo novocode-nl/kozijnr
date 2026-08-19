@@ -1,6 +1,6 @@
 <?php
 
-namespace App\SuperAdmin\Domain;
+namespace App\User\Domain;
 
 interface UserRepositoryInterface
 {

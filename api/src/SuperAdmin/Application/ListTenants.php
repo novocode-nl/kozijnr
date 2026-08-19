@@ -2,7 +2,6 @@
 
 namespace App\SuperAdmin\Application;
 
-use App\Tenancy\Domain\Tenant;
 use App\Tenancy\Domain\TenantRepositoryInterface;
 
 /**
@@ -22,7 +21,7 @@ final class ListTenants
     public function __invoke(): array
     {
         return array_map(
-            static fn (Tenant $tenant) => new TenantSummary($tenant->getSubdomain(), $tenant->getCreatedAt()),
+            TenantSummary::fromTenant(...),
             $this->tenantRepository->findAll(),
         );
     }

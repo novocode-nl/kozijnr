@@ -3,9 +3,9 @@
 namespace App\Tests\SuperAdmin\Application;
 
 use App\SuperAdmin\Application\CreateSuperAdmin;
-use App\SuperAdmin\Domain\Exception\UserAlreadyExistsException;
-use App\SuperAdmin\Domain\User;
-use App\SuperAdmin\Domain\UserRepositoryInterface;
+use App\User\Domain\Exception\UserAlreadyExistsException;
+use App\User\Domain\User;
+use App\User\Domain\UserRepositoryInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 

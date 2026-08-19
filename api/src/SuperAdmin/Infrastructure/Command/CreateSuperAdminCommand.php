@@ -1,6 +1,6 @@
 <?php
 
-namespace App\SuperAdmin\Presentation\Command;
+namespace App\SuperAdmin\Infrastructure\Command;
 
 use App\SuperAdmin\Application\CreateSuperAdmin;
 use Symfony\Component\Console\Attribute\AsCommand;

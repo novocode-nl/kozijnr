@@ -36,7 +36,7 @@ services:
 
     App\Tenancy\Domain\TenantRepositoryInterface: '@App\Tenancy\Infrastructure\DoctrineTenantRepository'
 
-    App\SuperAdmin\Domain\UserRepositoryInterface: '@App\SuperAdmin\Infrastructure\DoctrineUserRepository'
+    App\User\Domain\UserRepositoryInterface: '@App\User\Infrastructure\DoctrineUserRepository'
 
     App\Tenancy\Infrastructure\TenantResolverListener:
         arguments:

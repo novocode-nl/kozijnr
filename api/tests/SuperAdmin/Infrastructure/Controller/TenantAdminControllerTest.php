@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Tests\SuperAdmin\Presentation\Controller;
+namespace App\Tests\SuperAdmin\Infrastructure\Controller;
 
 use App\SuperAdmin\Application\CreateSuperAdmin;
 use Doctrine\DBAL\Connection;

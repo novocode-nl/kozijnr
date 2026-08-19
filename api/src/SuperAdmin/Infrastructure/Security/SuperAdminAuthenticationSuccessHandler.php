@@ -2,7 +2,7 @@
 
 namespace App\SuperAdmin\Infrastructure\Security;
 
-use App\SuperAdmin\Domain\User;
+use App\User\Domain\User;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;

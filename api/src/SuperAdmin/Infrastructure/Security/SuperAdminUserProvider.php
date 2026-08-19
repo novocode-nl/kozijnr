@@ -2,8 +2,8 @@
 
 namespace App\SuperAdmin\Infrastructure\Security;
 
-use App\SuperAdmin\Domain\User;
-use App\SuperAdmin\Domain\UserRepositoryInterface;
+use App\User\Domain\User;
+use App\User\Domain\UserRepositoryInterface;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Core\User\UserInterface;

@@ -1,10 +1,10 @@
 <?php
 
-namespace App\SuperAdmin\Presentation\Controller;
+namespace App\SuperAdmin\Infrastructure\Controller;
 
-use App\SuperAdmin\Application\CreateTenant;
 use App\SuperAdmin\Application\ListTenants;
 use App\SuperAdmin\Application\TenantSummary;
+use App\Tenancy\Application\ProvisionTenant;
 use App\Tenancy\Domain\Exception\InvalidTenantNameException;
 use App\Tenancy\Domain\Exception\SchemaAlreadyExistsException;
 use App\Tenancy\Domain\Exception\TenantAlreadyExistsException;
@@ -22,6 +22,12 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * config/packages/security.yaml) — #[IsGranted] here is a second,
  * defense-in-depth check at the controller level.
  *
+ * Creation calls App\Tenancy\Application\ProvisionTenant (KOZ-7) directly —
+ * tenant creation is Tenancy bounded-context logic, not SuperAdmin's, so no
+ * SuperAdmin-owned wrapper use case exists for it. This controller only
+ * adapts the returned Tenant to the SuperAdmin-specific TenantSummary read
+ * model, same as ListTenants already does for the list endpoint.
+ *
  * Create + list only, deliberately — schema deletion/archiving, billing,
  * and tenant-specific settings are out of scope for this ticket.
  */
@@ -30,7 +36,7 @@ final class TenantAdminController
 {
     public function __construct(
         private readonly ListTenants $listTenants,
-        private readonly CreateTenant $createTenant,
+        private readonly ProvisionTenant $provisionTenant,
         private readonly LoggerInterface $logger,
     ) {
     }
@@ -50,7 +56,7 @@ final class TenantAdminController
         $name = is_array($payload) && isset($payload['name']) ? (string) $payload['name'] : '';
 
         try {
-            $summary = ($this->createTenant)($name);
+            $tenant = ($this->provisionTenant)($name);
         } catch (InvalidTenantNameException|TenantAlreadyExistsException|SchemaAlreadyExistsException $exception) {
             return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
         } catch (\Throwable $exception) {
@@ -65,7 +71,7 @@ final class TenantAdminController
             return new JsonResponse(['message' => 'Failed to create tenant.'], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
 
-        return new JsonResponse($this->toArray($summary), JsonResponse::HTTP_CREATED);
+        return new JsonResponse($this->toArray(TenantSummary::fromTenant($tenant)), JsonResponse::HTTP_CREATED);
     }
 
     /** @return array{subdomain: string, createdAt: string} */

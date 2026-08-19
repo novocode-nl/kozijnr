@@ -1,6 +1,6 @@
 <?php
 
-namespace App\SuperAdmin\Domain\Exception;
+namespace App\User\Domain\Exception;
 
 final class UserAlreadyExistsException extends \RuntimeException
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\SuperAdmin\Domain;
+namespace App\User\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;

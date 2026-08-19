@@ -1,9 +1,9 @@
 <?php
 
-namespace App\SuperAdmin\Infrastructure;
+namespace App\User\Infrastructure;
 
-use App\SuperAdmin\Domain\User;
-use App\SuperAdmin\Domain\UserRepositoryInterface;
+use App\User\Domain\User;
+use App\User\Domain\UserRepositoryInterface;
 use Doctrine\ORM\EntityManagerInterface;
 
 final class DoctrineUserRepository implements UserRepositoryInterface

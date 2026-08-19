@@ -2,9 +2,9 @@
 
 namespace App\Tests\SuperAdmin\Infrastructure\Security;
 
-use App\SuperAdmin\Domain\User;
-use App\SuperAdmin\Domain\UserRepositoryInterface;
 use App\SuperAdmin\Infrastructure\Security\SuperAdminUserProvider;
+use App\User\Domain\User;
+use App\User\Domain\UserRepositoryInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\Exception\UserNotFoundException;
