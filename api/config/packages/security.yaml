@@ -56,10 +56,18 @@ security:
             lazy: true
             security: false
 
-    # Note: Only the *first* matching rule is applied
+    # Note: Only the *first* matching rule is applied.
+    #
+    # Login/logout stay ROLE_SUPER_ADMIN-gated: authentication is who is
+    # even allowed onto this firewall at all, which stays role-based by
+    # design (KOZ-9). Every other /api/admin route only requires being
+    # authenticated here — the fine-grained *permission* check
+    # (tenant:list, tenant:create, ...) happens per-action via
+    # #[IsGranted] on the controller (App\User\Infrastructure\Security\PermissionVoter),
+    # not via a blanket role check at the access_control level.
     access_control:
         - { path: ^/api/admin/(login|logout)$, roles: PUBLIC_ACCESS }
-        - { path: ^/api/admin, roles: ROLE_SUPER_ADMIN }
+        - { path: ^/api/admin, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:

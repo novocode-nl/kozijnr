@@ -1,0 +1,140 @@
+<?php
+
+namespace App\Tests\Tenancy\Infrastructure\Controller;
+
+use App\User\Domain\PasswordHasherInterface;
+use App\User\Domain\Permission;
+use App\User\Domain\Role;
+use App\User\Domain\User;
+use Doctrine\DBAL\Connection;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+
+/**
+ * Proves KOZ-9's core claim end to end: authorization on the admin tenant
+ * API is decided by the authenticated user's *permissions*
+ * (tenant:list / tenant:create), not by a ROLE_SUPER_ADMIN role-name
+ * string comparison. Both users below can authenticate on the
+ * `super_admin` firewall (login stays role-based, unaffected by this
+ * ticket) but are assigned custom roles carrying only one of the two
+ * permissions each, to prove access is granted or denied per permission
+ * rather than "is this a super admin at all".
+ */
+final class TenantAdminPermissionAuthorizationTest extends WebTestCase
+{
+    private const ADMIN_HOST = 'admin.localhost';
+
+    private KernelBrowser $client;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->client = static::createClient();
+        $this->resetDatabase();
+    }
+
+    protected function tearDown(): void
+    {
+        $this->resetDatabase();
+
+        parent::tearDown();
+    }
+
+    public function testAUserWithOnlyTheListPermissionCanListButNotCreateTenants(): void
+    {
+        $this->createUserWithPermissions('list-only@kozijnr.nl', 'super-secret-123', ['tenant:list']);
+        $this->login('list-only@kozijnr.nl', 'super-secret-123');
+
+        $this->client->request('GET', '/api/admin/tenants', server: ['HTTP_HOST' => self::ADMIN_HOST]);
+        self::assertResponseIsSuccessful();
+
+        $this->client->request('POST', '/api/admin/tenants', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['name' => 'acme']));
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testAUserWithOnlyTheCreatePermissionCanCreateButNotListTenants(): void
+    {
+        $this->createUserWithPermissions('create-only@kozijnr.nl', 'super-secret-123', ['tenant:create']);
+        $this->login('create-only@kozijnr.nl', 'super-secret-123');
+
+        $this->client->request('GET', '/api/admin/tenants', server: ['HTTP_HOST' => self::ADMIN_HOST]);
+        self::assertResponseStatusCodeSame(403);
+
+        $this->client->request('POST', '/api/admin/tenants', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['name' => 'acme']));
+        self::assertResponseStatusCodeSame(201);
+    }
+
+    public function testAUserWithNeitherPermissionCanDoNeither(): void
+    {
+        $this->createUserWithPermissions('no-permissions@kozijnr.nl', 'super-secret-123', []);
+        $this->login('no-permissions@kozijnr.nl', 'super-secret-123');
+
+        $this->client->request('GET', '/api/admin/tenants', server: ['HTTP_HOST' => self::ADMIN_HOST]);
+        self::assertResponseStatusCodeSame(403);
+
+        $this->client->request('POST', '/api/admin/tenants', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['name' => 'acme']));
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    /**
+     * @param list<string> $permissionNames Must already exist (seeded by
+     *                                       migration), e.g. 'tenant:list'.
+     */
+    private function createUserWithPermissions(string $email, string $password, array $permissionNames): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+
+        $role = new Role('ROLE_TEST_' . strtoupper(bin2hex(random_bytes(4))));
+
+        foreach ($permissionNames as $permissionName) {
+            $permission = $entityManager->getRepository(Permission::class)->findOneBy(['name' => $permissionName]);
+            self::assertNotNull($permission, sprintf('Expected permission "%s" to already be seeded.', $permissionName));
+            $role->addPermission($permission);
+        }
+
+        $entityManager->persist($role);
+
+        $passwordHasher = self::getContainer()->get(PasswordHasherInterface::class);
+        $placeholder = new User($email, 'placeholder', [$role]);
+        $hashedPassword = $passwordHasher->hash($placeholder, $password);
+
+        $user = new User($email, $hashedPassword, [$role]);
+        $entityManager->persist($user);
+        $entityManager->flush();
+    }
+
+    private function login(string $email, string $password): void
+    {
+        $this->client->request('POST', '/api/admin/login', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['email' => $email, 'password' => $password]));
+    }
+
+    private function resetDatabase(): void
+    {
+        $connection = $this->connection();
+        $connection->executeStatement('SET search_path TO public');
+        $connection->executeStatement('DROP SCHEMA IF EXISTS tenant_acme CASCADE');
+        $connection->executeStatement('DELETE FROM public.tenants');
+        $connection->executeStatement('DELETE FROM public.user_roles');
+        $connection->executeStatement('DELETE FROM public.users');
+        $connection->executeStatement("DELETE FROM public.roles WHERE name LIKE 'ROLE_TEST_%'");
+    }
+
+    private function connection(): Connection
+    {
+        return static::getContainer()->get(Connection::class);
+    }
+}
