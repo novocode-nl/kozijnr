@@ -54,6 +54,7 @@ make down
 | `make composer args="require foo/bar"` | Run a composer command in the backend container |
 | `make console args="cache:clear"` | Run a `bin/console` command in the backend container |
 | `make npm args="run lint"` | Run an npm command in the frontend container |
+| `make test-backend args="tests/Tenancy"` | Run the backend PHPUnit suite (or a subset) in the backend container |
 
 These are thin wrappers around `docker compose` — nothing here does more than the
 target's one-line `docker compose ...` invocation, see the `Makefile` itself.
@@ -141,6 +142,64 @@ of `make up` directly).
 Because `NEXT_PUBLIC_API_URL` is derived from the same `.env`, the frontend
 in each worktree automatically talks to its own worktree's backend port —
 no manual wiring needed.
+
+## Multi-tenancy: subdomain → schema resolution
+
+Each tenant's data lives in its own Postgres schema, fully isolated from
+other tenants at the database level. On every request, `App\Tenancy\Infrastructure\TenantResolverListener`
+(a `kernel.request` listener, see `api/src/Tenancy/`) does the following, in order:
+
+1. Resets the Doctrine connection's `search_path` to `public` unconditionally — so a
+   request never inherits a schema left behind by a previous one (relevant if this
+   app is ever run under a persistent-worker runtime such as FrankenPHP/RoadRunner,
+   where the same PHP process/connection handles many requests; today's `php -S`
+   dev server and standard PHP-FPM already start clean per request, but the reset
+   makes that guarantee explicit rather than assumed).
+2. Extracts the subdomain from the request's `Host` header (via `App\Tenancy\Domain\Subdomain`),
+   relative to the `APP_BASE_DOMAIN` env var (default `localhost`; set to the real
+   apex domain, e.g. `kozijnr.nl`, in production).
+   - No subdomain, or a request to the base domain itself → stays on the `public`
+     schema. No tenant lookup happens.
+   - A subdomain present → looked up in the `tenants` table (public schema, see the
+     `Version20260819053803` migration) for its `subdomain` → `schema_name` mapping.
+3. Unknown subdomain → `404 Not Found`. There is no fallback to `public` or to any
+   other schema for a subdomain that doesn't match a row in `tenants`.
+4. Known subdomain → `SET search_path TO "<schema_name>", public` on the connection,
+   for the rest of that request.
+
+Creating tenant schemas themselves and running per-tenant migrations is out of scope
+here — see KOZ-7. This ticket only wires up the resolution + schema switch, backed by
+`api/tests/Tenancy/Infrastructure/TenantResolverListenerTest.php`, which proves data
+in one tenant schema is never visible from a request to another tenant's subdomain.
+
+### Testing multiple subdomains locally
+
+`*.localhost` (e.g. `tenant-a.localhost`, `tenant-b.localhost`) resolves to `127.0.0.1`
+on most systems out of the box (macOS, and most modern Linux/Windows setups) — no
+`/etc/hosts` edits needed. If that's not the case on your machine, add entries like:
+
+```
+127.0.0.1 tenant-a.localhost
+127.0.0.1 tenant-b.localhost
+```
+
+to `/etc/hosts` instead.
+
+With the stack running (`make up`) and the `APP_BASE_DOMAIN` left at its default
+(`localhost`), insert a tenant row and its schema directly for a manual smoke test —
+e.g. for KOZ-6's worktree (backend on port 8006, database on port 5438):
+
+```bash
+make console args="dbal:run-sql \"INSERT INTO public.tenants (subdomain, schema_name) VALUES ('acme', 'acme_schema')\""
+make console args="dbal:run-sql 'CREATE SCHEMA acme_schema'"
+
+curl http://acme.localhost:8006/api/health        # 200, served with search_path = acme_schema, public
+curl http://localhost:8006/api/health             # 200, served with search_path = public (no tenant)
+curl http://unknown-tenant.localhost:8006/api/health  # 404, no fallback to any schema
+```
+
+Adjust the port to whichever worktree you're in (see "Per-worktree test environments"
+above).
 
 ## Versions
 

@@ -14,11 +14,16 @@ doctrine:
             Doctrine\DBAL\Platforms\PostgreSQLPlatform: identity
         auto_mapping: true
         mappings:
+            # Entities live per bounded context (e.g. src/Tenancy/Domain),
+            # not centrally under src/Entity — see the kozijnr-backend skill
+            # for the DDD + hexagonal layout this project follows. Mapping
+            # the whole src/ tree with attribute mapping picks all of them
+            # up regardless of which context they live in.
             App:
                 type: attribute
                 is_bundle: false
-                dir: '%kernel.project_dir%/src/Entity'
-                prefix: 'App\Entity'
+                dir: '%kernel.project_dir%/src'
+                prefix: 'App'
                 alias: App
 
 when@test:
