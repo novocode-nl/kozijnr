@@ -2,7 +2,7 @@
 
 namespace App\SuperAdmin\Infrastructure\Security;
 
-use App\SuperAdmin\Domain\SuperAdmin;
+use App\SuperAdmin\Domain\User;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,7 +20,7 @@ final class SuperAdminAuthenticationSuccessHandler implements AuthenticationSucc
     public function onAuthenticationSuccess(Request $request, TokenInterface $token): Response
     {
         $user = $token->getUser();
-        $email = $user instanceof SuperAdmin ? $user->getEmail() : $user->getUserIdentifier();
+        $email = $user instanceof User ? $user->getEmail() : $user->getUserIdentifier();
 
         return new JsonResponse(['email' => $email], JsonResponse::HTTP_OK);
     }

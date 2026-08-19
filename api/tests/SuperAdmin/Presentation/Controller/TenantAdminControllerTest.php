@@ -32,7 +32,7 @@ final class TenantAdminControllerTest extends WebTestCase
         $connection->executeStatement('SET search_path TO public');
         $connection->executeStatement('DROP SCHEMA IF EXISTS tenant_acme CASCADE');
         $connection->executeStatement('DELETE FROM public.tenants');
-        $connection->executeStatement('DELETE FROM public.super_admins');
+        $connection->executeStatement('DELETE FROM public.users');
 
         self::getContainer()->get(CreateSuperAdmin::class)('admin@kozijnr.nl', 'super-secret-123');
     }
@@ -43,7 +43,7 @@ final class TenantAdminControllerTest extends WebTestCase
         $connection->executeStatement('SET search_path TO public');
         $connection->executeStatement('DROP SCHEMA IF EXISTS tenant_acme CASCADE');
         $connection->executeStatement('DELETE FROM public.tenants');
-        $connection->executeStatement('DELETE FROM public.super_admins');
+        $connection->executeStatement('DELETE FROM public.users');
 
         parent::tearDown();
     }

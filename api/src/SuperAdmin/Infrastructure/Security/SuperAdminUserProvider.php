@@ -2,8 +2,8 @@
 
 namespace App\SuperAdmin\Infrastructure\Security;
 
-use App\SuperAdmin\Domain\SuperAdmin;
-use App\SuperAdmin\Domain\SuperAdminRepositoryInterface;
+use App\SuperAdmin\Domain\User;
+use App\SuperAdmin\Domain\UserRepositoryInterface;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -11,30 +11,34 @@ use Symfony\Component\Security\Core\User\UserProviderInterface;
 
 /**
  * Security user provider for the `super_admin` firewall only. Backed by
- * SuperAdminRepositoryInterface (the public-schema-only port) rather than
+ * UserRepositoryInterface (the public-schema-only port) rather than
  * Doctrine's generic EntityUserProvider, so this stays an explicit
  * hexagonal adapter and never accidentally resolves any other user type.
+ *
+ * Loads any public-schema User by email regardless of role — the actual
+ * ROLE_SUPER_ADMIN requirement for /api/admin/* is enforced by
+ * security.yaml's access_control against getRoles(), not here.
  */
 final class SuperAdminUserProvider implements UserProviderInterface
 {
-    public function __construct(private readonly SuperAdminRepositoryInterface $repository)
+    public function __construct(private readonly UserRepositoryInterface $repository)
     {
     }
 
     public function loadUserByIdentifier(string $identifier): UserInterface
     {
-        $superAdmin = $this->repository->findByEmail($identifier);
+        $user = $this->repository->findByEmail($identifier);
 
-        if ($superAdmin === null) {
-            throw new UserNotFoundException(sprintf('No super admin found for email "%s".', $identifier));
+        if ($user === null) {
+            throw new UserNotFoundException(sprintf('No user found for email "%s".', $identifier));
         }
 
-        return $superAdmin;
+        return $user;
     }
 
     public function refreshUser(UserInterface $user): UserInterface
     {
-        if (!$user instanceof SuperAdmin) {
+        if (!$user instanceof User) {
             throw new UnsupportedUserException(sprintf('Instances of "%s" are not supported.', get_debug_type($user)));
         }
 
@@ -43,6 +47,6 @@ final class SuperAdminUserProvider implements UserProviderInterface
 
     public function supportsClass(string $class): bool
     {
-        return $class === SuperAdmin::class || is_subclass_of($class, SuperAdmin::class);
+        return $class === User::class || is_subclass_of($class, User::class);
     }
 }

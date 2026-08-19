@@ -1,14 +1,17 @@
 security:
     # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
     password_hashers:
-        App\SuperAdmin\Domain\SuperAdmin: 'auto'
+        App\SuperAdmin\Domain\User: 'auto'
 
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     #
-    # super_admins: KOZ-8's public-schema-only super-admin realm, backed by
-    # SuperAdminUserProvider (App\SuperAdmin\Domain\SuperAdminRepositoryInterface),
-    # never by tenant data. No tenant-user provider exists yet — tenant-side
-    # end-user auth is out of scope for this ticket.
+    # super_admins: KOZ-8's public-schema-only admin realm, backed by
+    # SuperAdminUserProvider (App\SuperAdmin\Domain\UserRepositoryInterface),
+    # never by tenant data. The generic `users` table (public schema) is
+    # role-based — today only ROLE_SUPER_ADMIN accounts exist in it, created
+    # via `bin/console super-admin:create` — so future admin-side roles fit
+    # into this same table/provider. No tenant-user provider exists yet —
+    # tenant-side end-user auth is out of scope for this ticket.
     providers:
         super_admins:
             id: App\SuperAdmin\Infrastructure\Security\SuperAdminUserProvider
@@ -62,7 +65,7 @@ when@test:
         password_hashers:
             # Password hashers are resource-intensive by design to ensure security.
             # In tests, it's safe to reduce their cost to improve performance.
-            App\SuperAdmin\Domain\SuperAdmin:
+            App\SuperAdmin\Domain\User:
                 algorithm: auto
                 cost: 4 # Lowest possible value for bcrypt
                 time_cost: 3 # Lowest possible value for argon

@@ -14,12 +14,12 @@ final class CreateSuperAdminCommandTest extends KernelTestCase
         parent::setUp();
 
         self::bootKernel();
-        $this->connection()->executeStatement('DELETE FROM public.super_admins');
+        $this->connection()->executeStatement('DELETE FROM public.users');
     }
 
     protected function tearDown(): void
     {
-        $this->connection()->executeStatement('DELETE FROM public.super_admins');
+        $this->connection()->executeStatement('DELETE FROM public.users');
 
         parent::tearDown();
     }
@@ -30,7 +30,7 @@ final class CreateSuperAdminCommandTest extends KernelTestCase
 
         self::assertSame(0, $exitCode);
 
-        $rows = $this->connection()->fetchAllAssociative('SELECT email, password FROM public.super_admins');
+        $rows = $this->connection()->fetchAllAssociative('SELECT email, password FROM public.users');
         self::assertCount(1, $rows);
         self::assertSame('admin@kozijnr.nl', $rows[0]['email']);
         self::assertNotSame('secret123', $rows[0]['password']);
@@ -43,7 +43,7 @@ final class CreateSuperAdminCommandTest extends KernelTestCase
         $exitCode = $this->runCreate('admin@kozijnr.nl', 'other-password');
 
         self::assertNotSame(0, $exitCode);
-        self::assertCount(1, $this->connection()->fetchAllAssociative('SELECT * FROM public.super_admins'));
+        self::assertCount(1, $this->connection()->fetchAllAssociative('SELECT * FROM public.users'));
     }
 
     private function runCreate(string $email, string $password): int
