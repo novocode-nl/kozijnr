@@ -99,6 +99,25 @@ final class TenantResolverListenerTest extends WebTestCase
         self::assertSame('public', $currentSchema);
     }
 
+    public function testMultiLevelSubdomainThatIsNotAKnownTenantReturns404(): void
+    {
+        $client = $this->client;
+        $client->request('GET', '/api/health', server: ['HTTP_HOST' => 'a.b.' . self::BASE_DOMAIN]);
+
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testKnownTenantSubdomainWithPortInHostHeaderStillResolvesTheTenant(): void
+    {
+        $client = $this->client;
+        $client->request('GET', '/api/health', server: ['HTTP_HOST' => 'tenant-a.' . self::BASE_DOMAIN . ':8000']);
+
+        self::assertResponseIsSuccessful();
+
+        $currentSchema = $this->connection()->fetchOne('SELECT current_schema()');
+        self::assertSame('tenant_a', $currentSchema);
+    }
+
     private function connection(): Connection
     {
         return static::getContainer()->get(Connection::class);

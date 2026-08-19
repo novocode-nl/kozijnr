@@ -37,7 +37,10 @@ final class TenantResolverListener implements EventSubscriberInterface
     public static function getSubscribedEvents(): array
     {
         return [
-            KernelEvents::REQUEST => 'onKernelRequest',
+            // High priority: schema switching must happen before any other
+            // kernel.request listener (e.g. controllers, security, other
+            // subscribers) touches the database, so it needs to run early.
+            KernelEvents::REQUEST => ['onKernelRequest', 100],
         ];
     }
 
