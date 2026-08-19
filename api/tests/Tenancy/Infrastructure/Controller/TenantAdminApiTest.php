@@ -14,8 +14,14 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  * tenants (which delegates to KOZ-7's real `tenant:provision` machinery),
  * and neither the API nor the session works without being authenticated as
  * a super admin first.
+ *
+ * Named for the API surface rather than a controller class (KOZ-10): list
+ * and create are served by separate controller classes
+ * (ListTenantsController / CreateTenantController), so this test — which
+ * exercises both routes together as one flow — no longer maps to a single
+ * controller class name.
  */
-final class TenantAdminControllerTest extends WebTestCase
+final class TenantAdminApiTest extends WebTestCase
 {
     private const BASE_DOMAIN = 'localhost';
     private const ADMIN_HOST = 'admin.localhost';

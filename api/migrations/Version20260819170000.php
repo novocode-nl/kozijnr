@@ -20,8 +20,10 @@ use Doctrine\Migrations\AbstractMigration;
  * Seeds exactly the permission set this ticket's DoD requires — no more,
  * no less: `tenant:list` and `tenant:create`, both granted to
  * ROLE_SUPER_ADMIN, matching what the admin tenant API actually does today
- * (App\Tenancy\Infrastructure\Controller\TenantAdminController). No
- * permissions are invented ahead of functionality that doesn't exist yet.
+ * (App\Tenancy\Infrastructure\Controller\ListTenantsController and
+ * CreateTenantController, split from a single TenantAdminController in
+ * KOZ-10). No permissions are invented ahead of functionality that doesn't
+ * exist yet.
  *
  * Since KOZ-8 has not shipped and carries no production data, this drops
  * `users.roles` outright rather than migrating existing rows — any

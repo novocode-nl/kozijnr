@@ -20,11 +20,27 @@ final class TenantSummary
     /**
      * Adapts a App\Tenancy\Domain\Tenant to this read model. Used both
      * after listing tenants (ListTenants) and after provisioning a new one
-     * (TenantAdminController, which calls this context's own
+     * (CreateTenantController, which calls this context's own
      * ProvisionTenant use case directly).
      */
     public static function fromTenant(Tenant $tenant): self
     {
         return new self($tenant->getSubdomain(), $tenant->getCreatedAt());
+    }
+
+    /**
+     * The JSON shape shared by ListTenantsController and
+     * CreateTenantController (KOZ-10): kept here, not duplicated per
+     * controller, since it's the DTO's own serialization concern rather
+     * than business logic either controller should own.
+     *
+     * @return array{subdomain: string, createdAt: string}
+     */
+    public function toArray(): array
+    {
+        return [
+            'subdomain' => $this->subdomain,
+            'createdAt' => $this->createdAt->format(\DateTimeInterface::ATOM),
+        ];
     }
 }
