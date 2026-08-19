@@ -43,7 +43,8 @@ final class TenantResolverListenerTest extends WebTestCase
 
         $connection->executeStatement('DELETE FROM public.tenants');
         $connection->executeStatement(
-            "INSERT INTO public.tenants (subdomain, schema_name) VALUES ('tenant-a', 'tenant_a'), ('tenant-b', 'tenant_b')"
+            "INSERT INTO public.tenants (subdomain, schema_name, created_at) VALUES "
+            . "('tenant-a', 'tenant_a', NOW()), ('tenant-b', 'tenant_b', NOW())"
         );
     }
 
@@ -93,6 +94,20 @@ final class TenantResolverListenerTest extends WebTestCase
         $client = $this->client;
         $client->request('GET', '/api/health', server: ['HTTP_HOST' => self::BASE_DOMAIN]);
 
+        self::assertResponseIsSuccessful();
+
+        $currentSchema = $this->connection()->fetchOne('SELECT current_schema()');
+        self::assertSame('public', $currentSchema);
+    }
+
+    public function testAdminSubdomainIsReservedAndStaysOnThePublicSchemaWithoutBeingTreatedAsAnUnknownTenant(): void
+    {
+        $client = $this->client;
+        $client->request('GET', '/api/health', server: ['HTTP_HOST' => 'admin.' . self::BASE_DOMAIN]);
+
+        // Not a 404: "admin" is a reserved, recognized super-admin domain,
+        // not an unknown tenant subdomain, so it must not fall into the
+        // "unknown tenant" 404 branch.
         self::assertResponseIsSuccessful();
 
         $currentSchema = $this->connection()->fetchOne('SELECT current_schema()');

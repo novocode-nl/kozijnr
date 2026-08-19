@@ -26,7 +26,10 @@ class Tenant
     #[ORM\Column(name: 'schema_name', type: 'string', length: 63)]
     private string $schemaName;
 
-    public function __construct(string $subdomain, string $schemaName)
+    #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
+    private \DateTimeImmutable $createdAt;
+
+    public function __construct(string $subdomain, string $schemaName, ?\DateTimeImmutable $createdAt = null)
     {
         $subdomain = trim($subdomain);
         $schemaName = trim($schemaName);
@@ -41,6 +44,7 @@ class Tenant
 
         $this->subdomain = $subdomain;
         $this->schemaName = $schemaName;
+        $this->createdAt = $createdAt ?? new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -56,5 +60,10 @@ class Tenant
     public function getSchemaName(): string
     {
         return $this->schemaName;
+    }
+
+    public function getCreatedAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
     }
 }

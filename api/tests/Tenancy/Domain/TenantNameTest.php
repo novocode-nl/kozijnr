@@ -60,6 +60,7 @@ final class TenantNameTest extends TestCase
         yield 'null byte' => ["acme\0bv"];
         yield 'slash' => ['acme/bv'];
         yield 'too long (56 chars)' => [str_repeat('a', 56)];
+        yield 'reserved "admin" subdomain' => ['admin'];
     }
 
     #[DataProvider('invalidNameProvider')]

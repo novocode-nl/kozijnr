@@ -15,6 +15,25 @@ final class TenantTest extends TestCase
         self::assertSame('tenant_acme', $tenant->getSchemaName());
     }
 
+    public function testDefaultsCreatedAtToNowWhenNotGiven(): void
+    {
+        $before = new \DateTimeImmutable();
+        $tenant = new Tenant('acme', 'tenant_acme');
+        $after = new \DateTimeImmutable();
+
+        self::assertGreaterThanOrEqual($before, $tenant->getCreatedAt());
+        self::assertLessThanOrEqual($after, $tenant->getCreatedAt());
+    }
+
+    public function testExposesAnExplicitlyGivenCreatedAt(): void
+    {
+        $createdAt = new \DateTimeImmutable('2026-01-01T00:00:00+00:00');
+
+        $tenant = new Tenant('acme', 'tenant_acme', $createdAt);
+
+        self::assertSame($createdAt, $tenant->getCreatedAt());
+    }
+
     public function testRejectsEmptySubdomain(): void
     {
         $this->expectException(\InvalidArgumentException::class);

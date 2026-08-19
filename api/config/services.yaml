@@ -36,6 +36,10 @@ services:
 
     App\Tenancy\Domain\TenantRepositoryInterface: '@App\Tenancy\Infrastructure\DoctrineTenantRepository'
 
+    App\User\Domain\UserRepositoryInterface: '@App\User\Infrastructure\DoctrineUserRepository'
+
+    App\User\Domain\PasswordHasherInterface: '@App\User\Infrastructure\Security\SymfonyPasswordHasher'
+
     App\Tenancy\Infrastructure\TenantResolverListener:
         arguments:
             $baseDomain: '%app.tenancy.base_domain%'
