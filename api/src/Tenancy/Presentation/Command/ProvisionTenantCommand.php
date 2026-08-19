@@ -3,9 +3,6 @@
 namespace App\Tenancy\Presentation\Command;
 
 use App\Tenancy\Application\ProvisionTenant;
-use App\Tenancy\Domain\Exception\InvalidTenantNameException;
-use App\Tenancy\Domain\Exception\SchemaAlreadyExistsException;
-use App\Tenancy\Domain\Exception\TenantAlreadyExistsException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -42,7 +39,16 @@ final class ProvisionTenantCommand extends Command
 
         try {
             $tenant = ($this->provisionTenant)($name);
-        } catch (InvalidTenantNameException|TenantAlreadyExistsException|SchemaAlreadyExistsException $exception) {
+        } catch (\Throwable $exception) {
+            // Deliberately broad: ProvisionTenant is expected to raise its
+            // own domain exceptions (invalid name, duplicate
+            // subdomain/schema, pre-existing raw schema), but every failure
+            // route — including a raw Doctrine\DBAL exception from e.g. a
+            // race between two concurrent `tenant:provision` runs for the
+            // same name — must be reported cleanly here rather than
+            // escaping as an uncaught stack trace. ProvisionTenant itself is
+            // responsible for leaving no half-provisioned state behind
+            // (dropping the schema again) before this catch ever runs.
             $io->error($exception->getMessage());
 
             return Command::FAILURE;
