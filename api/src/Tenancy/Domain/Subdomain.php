@@ -23,6 +23,20 @@ final class Subdomain
     public const RESERVED_ADMIN = 'admin';
 
     /**
+     * The reserved "api" subdomain label (api.kozijnr.nl in production,
+     * api.kozijnr.test locally under Valet — see KOZ-12) — functionally the
+     * replacement for what used to be "no subdomain" / a bare
+     * localhost:<port> request: no tenant context, no admin context, stays
+     * on the public schema. Needed because Valet's proxy layer (unlike a
+     * bare `docker compose` port mapping) always requires *some* host, so
+     * there is no more "no subdomain at all" request to fall back to.
+     * Recognized by TenantResolverListener exactly like RESERVED_ADMIN, and
+     * rejected by TenantName so it can never be provisioned as an actual
+     * tenant either.
+     */
+    public const RESERVED_API = 'api';
+
+    /**
      * Returns the subdomain label (e.g. "acme") for a host like
      * "acme.kozijnr.nl" given base domain "kozijnr.nl".
      *

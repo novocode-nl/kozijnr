@@ -114,6 +114,20 @@ final class TenantResolverListenerTest extends WebTestCase
         self::assertSame('public', $currentSchema);
     }
 
+    public function testApiSubdomainIsReservedAndStaysOnThePublicSchemaWithoutBeingTreatedAsAnUnknownTenant(): void
+    {
+        $client = $this->client;
+        $client->request('GET', '/api/health', server: ['HTTP_HOST' => 'api.' . self::BASE_DOMAIN]);
+
+        // Not a 404: "api" is a reserved domain (KOZ-12), the stand-in for
+        // what used to be a bare no-subdomain request, not an unknown
+        // tenant subdomain.
+        self::assertResponseIsSuccessful();
+
+        $currentSchema = $this->connection()->fetchOne('SELECT current_schema()');
+        self::assertSame('public', $currentSchema);
+    }
+
     public function testMultiLevelSubdomainThatIsNotAKnownTenantReturns404(): void
     {
         $client = $this->client;

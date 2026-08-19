@@ -10,8 +10,16 @@ parameters:
     # Domain requests are matched against to detect a tenant subdomain, e.g.
     # a request to "acme.<base>" resolves tenant "acme"; a request to
     # "<base>" itself (or any host not ending in ".<base>") stays on the
-    # public schema. See README.md for how to test this locally with
-    # *.localhost subdomains.
+    # public schema. See README.md for how to test this locally via Laravel
+    # Valet (KOZ-12, e.g. "kozijnr.test" for the main checkout,
+    # "kozijnr-koz-<n>.test" per worktree).
+    #
+    # Also reused as-is (KOZ-12) by the dev-only Valet auto-proxy listener
+    # (App\Tenancy\Infrastructure\Valet\TenantValetProxyListener) to build
+    # the full "<tenant>.<app.tenancy.base_domain>" domain it registers a
+    # Valet proxy for — deliberately the same parameter rather than a
+    # second one, since it must always match what TenantResolverListener
+    # itself resolves subdomains against.
     app.tenancy.base_domain: '%env(APP_BASE_DOMAIN)%'
 
     # Tenant migrations (per tenant-schema) live in a directory separate from
@@ -19,6 +27,17 @@ parameters:
     # so the two sets never run against each other. See
     # App\Tenancy\Infrastructure\TenantSchemaMigrator and the KOZ-7 ticket.
     app.tenancy.migrations_path: '%kernel.project_dir%/migrations-tenant'
+
+    # Host-side port the backend container is published on (BACKEND_PORT in
+    # the repo-root .env / docker-compose.yml — see scripts/setup-worktree-env.sh
+    # and README.md "Per-worktree test environments"), passed through by
+    # docker-compose as a real container env var. Only consumed by the
+    # KOZ-12 dev-only Valet auto-proxy listener
+    # (App\Tenancy\Infrastructure\Valet\TenantValetProxyListener, wired in
+    # config/services_dev.yaml) to know which port a freshly created
+    # tenant's `valet proxy <tenant>.<app.tenancy.base_domain> http://127.0.0.1:<port>`
+    # should target.
+    app.tenancy.valet_backend_port: '%env(int:BACKEND_PORT)%'
 
 services:
     # default configuration for services in *this* file

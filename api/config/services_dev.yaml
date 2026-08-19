@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
+#
+# Loaded only in the dev environment (Symfony's MicroKernelTrait loads
+# config/services_$env.yaml automatically after config/services.yaml, when
+# it exists — see src/Kernel.php). This is the *only* place the KOZ-12
+# tenant-auto-proxy listener is wired into the Doctrine postPersist event:
+# nothing here is loaded in test/prod/staging, so the `valet` CLI is never
+# invoked outside a developer's own machine running `make up` locally.
+#
+# App\Tenancy\Infrastructure\Valet\TenantValetProxyListener itself also
+# double-checks %kernel.environment% === 'dev' before ever calling the
+# proxy runner, as defense in depth (see its own docblock) — but this file
+# not being loaded elsewhere is the primary guarantee.
+services:
+    # Redeclared here (services.yaml's own _defaults doesn't apply to this
+    # file): needed so the $proxyRunner argument below is autowired to the
+    # interface binding right underneath it.
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\Tenancy\Infrastructure\Valet\ValetProxyRunnerInterface: '@App\Tenancy\Infrastructure\Valet\SymfonyProcessValetProxyRunner'
+
+    App\Tenancy\Infrastructure\Valet\TenantValetProxyListener:
+        arguments:
+            $environment: '%kernel.environment%'
+            $baseDomain: '%app.tenancy.base_domain%'
+            $backendPort: '%app.tenancy.valet_backend_port%'
+        tags:
+            - { name: 'doctrine.event_listener', event: 'postPersist' }

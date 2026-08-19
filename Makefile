@@ -5,7 +5,7 @@ COMPOSE := docker compose
 SHELL := /bin/bash
 
 .PHONY: up down build rebuild restart logs ps sh-backend sh-frontend \
-        composer console npm test-backend worktree-env ensure-env
+        composer console npm test-backend worktree-env worktree-valet-teardown ensure-env
 
 ## Ensure a per-worktree .env exists before the stack starts. Runs
 ## automatically as a prerequisite of `up` so a single `make up` suffices in
@@ -98,3 +98,10 @@ test-backend:
 ## number, e.g. `make worktree-env n=12` for KOZ-12. See README.md.
 worktree-env:
 	./scripts/setup-worktree-env.sh $(n)
+
+## Remove a worktree's Laravel Valet proxies (KOZ-12), e.g.
+## `make worktree-valet-teardown n=12` for KOZ-12. See README.md and
+## scripts/teardown-worktree-valet.sh. Used by the asana-user-review skill's
+## worktree-cleanup step; safe to run manually too.
+worktree-valet-teardown:
+	./scripts/teardown-worktree-valet.sh $(n)

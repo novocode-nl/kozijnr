@@ -41,6 +41,7 @@ final class TenantName
             || preg_match(self::PATTERN, $value) !== 1
             || mb_strlen($value) > self::MAX_LENGTH
             || $value === Subdomain::RESERVED_ADMIN
+            || $value === Subdomain::RESERVED_API
         ) {
             throw InvalidTenantNameException::forName($value);
         }
