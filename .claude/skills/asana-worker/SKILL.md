@@ -15,7 +15,9 @@ Takes every named (or all "Todo") KOZ ticket through implementation to "Ready fo
 
 **Handoff naar `asana-review`:** de laatste comment die deze skill per ticket plaatst is het overdrachtssignaal. `asana-review` leest de comment-trail (`get_task_stories`) en verwacht die comment om te weten wat er gebouwd is — zie stap 5/6.
 
-**Git worktree + branch per ticket, altijd — geen uitzondering.** Elke subagent werkt in zijn eigen git worktree op een eigen branch (zie stap 4), ook voor meta-werk aan skill-/configbestanden onder `.claude/`. Er is geen uitzondering meer die direct op `main` mag committen: alles gaat via een branch, en die wordt pas gemergd nadat de gebruiker het ticket in `asana-user-review` heeft goedgekeurd. Die worktree/branch blijft bestaan tot en met de Done-afhandeling — opruimen gebeurt pas ná het mergen naar `main`, uitsluitend door `asana-user-review` na akkoord van de gebruiker. Zie `asana-user-review` voor die opruimstap.
+**Git worktree + branch per ticket, altijd — geen uitzondering.** Elke subagent werkt in zijn eigen git worktree op een eigen branch (zie stap 4), ook voor meta-werk aan skill-/configbestanden onder `.claude/`. Er is geen uitzondering meer die direct op `main` mag committen: alles gaat via een branch en een GitHub PR, en die wordt pas gemergd nadat de gebruiker het ticket in `asana-user-review` heeft goedgekeurd. Die worktree/branch/PR blijft bestaan tot en met de Done-afhandeling — opruimen gebeurt pas ná het mergen, uitsluitend door `asana-user-review` na akkoord van de gebruiker. Zie `asana-user-review` voor die opruimstap.
+
+**Elk ticket krijgt een PR.** Na de commit pusht elke subagent zijn branch en maakt een GitHub PR aan (`gh pr create`, zie stap 4) — dat is waar `asana-user-review` straks tegen mergt. `gh` moet geauthenticeerd zijn; als `gh` niet beschikbaar/geauthenticeerd is, stop en meld dat aan de gebruiker in plaats van zonder PR verder te gaan.
 
 ## When to Use
 
@@ -37,9 +39,10 @@ Takes every named (or all "Todo") KOZ ticket through implementation to "Ready fo
    - Read the ticket's "Verwacht eindproduct" and "Kernpunten" to judge scope: backend, frontend, or both.
    - Load `kozijnr-backend` and/or `kozijnr-frontend` accordingly (both, if the ticket spans the stack), plus whatever further skills/subagents those pull in (TDD, systematic-debugging, `shadcn`, etc.).
    - Treat the ticket's "Definition of Done" as the acceptance test for its own work, not a suggestion.
-   - **Commit the work before handing off.** Once implementation is complete, commit it on the ticket's own branch with a clear, descriptive commit message referencing the ticket (e.g. `KOZ-<n>: <short summary>`). Do this *before* posting the progress/handoff comment in step 5: `asana-user-review`'s approval step assumes there is committed work on the branch to merge — an uncommitted working tree breaks that.
-   - **Leave the worktree and branch in place when done** — do not remove them after implementation. They stay alive through `asana-review` and `asana-user-review`; cleanup only happens once the ticket reaches Done (see `asana-user-review`).
-   - Report back: what was built, which files/branch/worktree path/commit, and concrete steps to verify it.
+   - **Commit the work before handing off.** Once implementation is complete, commit it on the ticket's own branch with a clear, descriptive commit message referencing the ticket (e.g. `KOZ-<n>: <short summary>`). Do this *before* pushing/opening the PR: an uncommitted working tree has nothing to push.
+   - **Push the branch and open a PR.** `git push -u origin koz-<n>`, then `gh pr create --base main --head koz-<n> --title "KOZ-<n>: <ticket title>" --body "<Wat is gebouwd + Hoe te verifiëren, same content as the Asana handoff comment below>"`. This is the PR `asana-user-review` will later merge — do this *before* posting the progress/handoff comment in step 5, since that comment includes the PR URL.
+   - **Leave the worktree, branch, and PR in place when done** — do not remove or close them after implementation. They stay alive through `asana-review` and `asana-user-review`; cleanup only happens once the ticket reaches Done (see `asana-user-review`).
+   - Report back: what was built, which files/branch/worktree path/commit/PR URL, and concrete steps to verify it.
 5. **Per ticket, as its subagent finishes: log progress + handoff.** Call `mcp__asana__add_comment` on that specific ticket in het Nederlands, met dit vaste format zodat `asana-review` het als overdracht herkent:
 
    ```
@@ -47,6 +50,7 @@ Takes every named (or all "Todo") KOZ ticket through implementation to "Ready fo
 
    Wat is gebouwd: <korte samenvatting>
    Bestanden/branch: <worktree-pad + branchnaam (bv. koz-7) + commit-hash>
+   PR: <GitHub PR-URL>
    Hoe te verifiëren: <korte teststappen>
    ```
 6. **Move that ticket to Ready for review.** Call `mcp__asana__update_tasks` with `add_projects: [{project_id: config.project.gid, section_id: <GID of workflow.ready_for_review>}]`. Do this per ticket as soon as its subagent and comment are done — don't wait for the slowest ticket in the batch to move the fast ones.
@@ -71,6 +75,7 @@ One `Agent` call per ticket, all dispatched together — never combine tickets i
 - **Waiting for all tickets before moving any to Ready for review** — route each ticket the moment its own subagent and handoff comment are done.
 - **Skipping the progress comment** — `asana-review` and the human need to know what changed and why without re-reading the whole diff from scratch.
 - **Implementing directly on `main` / the current working tree** instead of a dedicated worktree+branch — breaks the per-ticket isolation and risks one ticket's half-finished work bleeding into another's.
-- **Removing the worktree/branch right after implementation** — it must survive `asana-review` and `asana-user-review`; only the Done step in `asana-user-review` cleans it up, and only after merging to `main`.
-- **Posting the handoff comment before committing** — `asana-user-review`'s merge step assumes committed work exists on the branch; always commit the implementation first, then post the handoff comment.
-- **Skipping the worktree for `.claude/`-only or "meta" tickets** — there is no such exception anymore; every ticket, including skill/config/doc-only work, gets its own worktree/branch and only reaches `main` through `asana-user-review`'s post-approval merge.
+- **Removing the worktree/branch/PR right after implementation** — they must survive `asana-review` and `asana-user-review`; only the Done step in `asana-user-review` cleans them up, and only after merging.
+- **Posting the handoff comment before committing and opening the PR** — `asana-user-review`'s merge step assumes a PR exists with the committed work; always commit, push, and `gh pr create` first, then post the handoff comment with the PR URL.
+- **Skipping the worktree for `.claude/`-only or "meta" tickets** — there is no such exception anymore; every ticket, including skill/config/doc-only work, gets its own worktree/branch/PR and only reaches `main` through `asana-user-review`'s post-approval merge.
+- **Skipping the PR because `gh` isn't set up** — don't silently fall back to "no PR, just a branch"; stop and tell the user `gh` needs to be installed/authenticated.

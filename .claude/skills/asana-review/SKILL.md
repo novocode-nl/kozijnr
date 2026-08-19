@@ -15,7 +15,9 @@ Runs a ticket in "Ready for review" through code review, quality, and security c
 
 **Taal:** alle output naar de gebruiker en alle Asana-comments zijn in het Nederlands.
 
-**Handoff van `asana-worker`:** verwacht een comment die begint met "▶ Overgedragen aan review" (zie stap 3), inclusief het worktree-pad/de branchnaam van het ticket. **Handoff naar `asana-user-review`:** bij een geslaagde review plaats je zelf een comment met een vast herkenbaar format (zie stap 5) zodat `asana-user-review` weet wat te testen.
+**Handoff van `asana-worker`:** verwacht een comment die begint met "▶ Overgedragen aan review" (zie stap 3), inclusief het worktree-pad/de branchnaam en de GitHub PR-URL van het ticket. **Handoff naar `asana-user-review`:** bij een geslaagde review plaats je zelf een comment met een vast herkenbaar format (zie stap 5) zodat `asana-user-review` weet wat te testen.
+
+**Deze skill raakt de PR nooit aan** — niet mergen, niet sluiten, geen PR-comments plaatsen. De PR (aangemaakt door `asana-worker`) is er puur voor de diff-view en om later gemerged te worden door `asana-user-review`; het volledige review-audit-trail blijft in Asana, de enige bron van waarheid.
 
 **Worktree/branch blijven bestaan:** de git worktree en branch die `asana-worker` voor dit ticket heeft opgezet, blijven staan — deze skill ruimt ze nooit op en mergt ze nooit. Dat gebeurt uitsluitend in `asana-user-review`, na akkoord van de gebruiker.
 
