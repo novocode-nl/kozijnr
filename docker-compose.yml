@@ -1,3 +1,12 @@
+# Ports (FRONTEND_PORT/BACKEND_PORT/DATABASE_PORT), NEXT_PUBLIC_API_URL and
+# COMPOSE_PROJECT_NAME (which namespaces container/volume names) are read from
+# the .env file in this directory, with the defaults below matching the
+# non-worktree workflow (3000/8000/5432, project name "kozijnr").
+#
+# For an isolated per-worktree environment (see KOZ-5), generate a .env with:
+#   scripts/setup-worktree-env.sh <issue-number>
+# e.g. `scripts/setup-worktree-env.sh 12` for KOZ-12 sets
+# COMPOSE_PROJECT_NAME=koz-12, frontend on 3012, backend on 8012, database on 5444.
 services:
   database:
     image: postgres:16-alpine
@@ -6,7 +15,7 @@ services:
       POSTGRES_USER: app
       POSTGRES_PASSWORD: app
     ports:
-      - "5432:5432"
+      - "${DATABASE_PORT:-5432}:5432"
     volumes:
       - database_data:/var/lib/postgresql/data
     healthcheck:
@@ -22,7 +31,7 @@ services:
       - ./api:/app
       - backend_vendor:/app/vendor
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     environment:
       APP_ENV: dev
       DATABASE_URL: "postgresql://app:app@database:5432/app?serverVersion=16&charset=utf8"
@@ -37,9 +46,9 @@ services:
       - ./web:/app
       - frontend_node_modules:/app/node_modules
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     environment:
-      NEXT_PUBLIC_API_URL: "http://localhost:8000"
+      NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-http://localhost:8000}"
       WATCHPACK_POLLING: "true"
     depends_on:
       - backend
