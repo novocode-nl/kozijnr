@@ -42,6 +42,12 @@ services:
 
     App\User\Domain\PasswordHasherInterface: '@App\User\Infrastructure\Security\SymfonyPasswordHasher'
 
+    App\TenantUser\Domain\TenantUserRepositoryInterface: '@App\TenantUser\Infrastructure\DoctrineTenantUserRepository'
+
+    App\TenantUser\Domain\TenantApiTokenRepositoryInterface: '@App\TenantUser\Infrastructure\DoctrineTenantApiTokenRepository'
+
+    App\TenantUser\Domain\PasswordHasherInterface: '@App\TenantUser\Infrastructure\Security\SymfonyPasswordHasher'
+
     App\Tenancy\Infrastructure\TenantResolverListener:
         arguments:
             $baseDomain: '%app.tenancy.base_domain%'

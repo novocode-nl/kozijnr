@@ -2,6 +2,7 @@ security:
     # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
     password_hashers:
         App\User\Domain\User: 'auto'
+        App\TenantUser\Domain\TenantUser: 'auto'
 
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     #
@@ -11,8 +12,14 @@ security:
     # `users` table (public schema) is role-based — today only
     # ROLE_SUPER_ADMIN accounts exist in it, created
     # via `bin/console super-admin:create` — so future admin-side roles fit
-    # into this same table/provider. No tenant-user provider exists yet —
-    # tenant-side end-user auth is out of scope for this ticket.
+    # into this same table/provider.
+    #
+    # No separate `tenant_users` provider is declared here: the
+    # `tenant_users` firewall's access_token authenticator resolves a
+    # TenantUser directly via its token handler
+    # (App\TenantUser\Infrastructure\Security\TenantApiTokenHandler), whose
+    # UserBadge already carries a loader closure — Symfony never needs a
+    # provider to refresh it against for a stateless firewall.
     providers:
         super_admins:
             id: App\User\Infrastructure\Security\UserProvider
@@ -49,9 +56,28 @@ security:
             logout:
                 path: admin_logout
 
-        # Everything else (tenant requests, /api/health, ...) stays
-        # unauthenticated at the Symfony Security layer for now — no
-        # tenant-user auth exists yet (out of scope for KOZ-8).
+        # Tenant-user realm (KOZ-11): stateless bearer-token auth for
+        # requests resolved to a real tenant subdomain
+        # (App\Tenancy\Infrastructure\TenantResolverListener +
+        # App\TenantUser\Infrastructure\TenantRouteGuardListener, which
+        # 404s /api/login and /api/me everywhere else). /api/login itself
+        # issues the token (App\TenantUser\Infrastructure\Controller\LoginController)
+        # rather than being authenticated by this firewall — see
+        # access_control below, which leaves it at PUBLIC_ACCESS.
+        #
+        # stateless: true — no session/cookie is ever established here, on
+        # purpose: a bearer token is looked up fresh on every request via
+        # TenantApiTokenHandler, scoped to the current tenant schema by
+        # search_path alone, so there is nothing session-based that could
+        # ever be replayed across tenant subdomains (KOZ-11 DoD).
+        tenant_users:
+            pattern: ^/api
+            stateless: true
+            access_token:
+                token_handler: App\TenantUser\Infrastructure\Security\TenantApiTokenHandler
+
+        # Everything else (the bare main domain, /api/health, ...) stays
+        # unauthenticated at the Symfony Security layer.
         main:
             lazy: true
             security: false
@@ -68,6 +94,8 @@ security:
     access_control:
         - { path: ^/api/admin/(login|logout)$, roles: PUBLIC_ACCESS }
         - { path: ^/api/admin, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/login$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/me$, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:
@@ -75,6 +103,11 @@ when@test:
             # Password hashers are resource-intensive by design to ensure security.
             # In tests, it's safe to reduce their cost to improve performance.
             App\User\Domain\User:
+                algorithm: auto
+                cost: 4 # Lowest possible value for bcrypt
+                time_cost: 3 # Lowest possible value for argon
+                memory_cost: 10 # Lowest possible value for argon
+            App\TenantUser\Domain\TenantUser:
                 algorithm: auto
                 cost: 4 # Lowest possible value for bcrypt
                 time_cost: 3 # Lowest possible value for argon
