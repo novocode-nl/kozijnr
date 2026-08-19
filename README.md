@@ -94,10 +94,29 @@ Container and volume names are namespaced by setting `COMPOSE_PROJECT_NAME=koz-<
 `koz-12-backend-1` and its database volume `koz-12_database_data` — distinct
 from any other worktree's containers/volumes running at the same time.
 
-To set this up in a worktree, generate its `.env` from the issue number:
+This is set up automatically: `make up` derives the issue number `<n>` from
+the current branch name (expected to follow the `koz-<n>` convention, e.g.
+branch `koz-12`) and generates the worktree's `.env` on the fly if one
+doesn't exist yet — via `scripts/setup-worktree-env.sh <n>` — before starting
+the stack. So in a fresh `koz-<n>` worktree, a single
 
 ```bash
-make worktree-env n=12   # for KOZ-12
+make up
+```
+
+is enough; there's no separate setup step to remember. If `.env` already
+exists (e.g. from a previous run, or a manually created one), it is left
+untouched — `make up` never overwrites it.
+
+If the current branch doesn't follow the `koz-<n>` convention (e.g. `main`,
+or a differently named branch) and no `.env` exists yet, `make up` fails
+with an explanatory error instead of silently falling back to the default
+ports — that fallback would be confusing to debug when several worktrees
+are meant to run side by side. In that case, either checkout a `koz-<n>`
+branch, or generate/override `.env` explicitly:
+
+```bash
+make worktree-env n=12   # for KOZ-12 — (re)generates .env regardless of branch name
 ```
 
 or directly:
@@ -108,12 +127,16 @@ scripts/setup-worktree-env.sh 12
 
 This writes a `.env` file (gitignored, one per worktree — see `.env.example`
 for the shape) with `COMPOSE_PROJECT_NAME`, `FRONTEND_PORT`, `BACKEND_PORT`,
-`DATABASE_PORT` and `NEXT_PUBLIC_API_URL` set for that issue number. Run it
-once per worktree (right after creating the worktree, before `make up`).
+`DATABASE_PORT` and `NEXT_PUBLIC_API_URL` set for that issue number. Use it
+whenever you need to (re)generate `.env` with a specific issue number,
+regardless of what the current branch is named — e.g. to override the
+number `make up` would have derived automatically, or to regenerate after
+manually editing `.env`.
 `docker-compose.yml` reads these variables with the plain defaults
 (3000/8000/5432, project name `kozijnr`) as fallback, so the regular
-non-worktree workflow described above is unaffected if you never run this
-script.
+non-worktree workflow described above is unaffected if `.env` is absent and
+you're not on a `koz-<n>` branch (e.g. when running `docker compose` outside
+of `make up` directly).
 
 Because `NEXT_PUBLIC_API_URL` is derived from the same `.env`, the frontend
 in each worktree automatically talks to its own worktree's backend port —
