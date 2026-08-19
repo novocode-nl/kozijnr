@@ -43,7 +43,8 @@ final class TenantResolverListenerTest extends WebTestCase
 
         $connection->executeStatement('DELETE FROM public.tenants');
         $connection->executeStatement(
-            "INSERT INTO public.tenants (subdomain, schema_name) VALUES ('tenant-a', 'tenant_a'), ('tenant-b', 'tenant_b')"
+            "INSERT INTO public.tenants (subdomain, schema_name, created_at) VALUES "
+            . "('tenant-a', 'tenant_a', NOW()), ('tenant-b', 'tenant_b', NOW())"
         );
     }
 

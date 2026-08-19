@@ -243,6 +243,34 @@ curl http://unknown-tenant.localhost:8006/api/health  # 404, no fallback to any 
 Adjust the port to whichever worktree you're in (see "Per-worktree test environments"
 above).
 
+### Super admin (KOZ-8)
+
+A super admin is a tenant-independent account, stored only in the public schema
+(`super_admins` table — a tenant schema never has this table at all), that can list
+and create tenants. Create one with:
+
+```bash
+make console args="super-admin:create admin@kozijnr.nl"
+```
+
+(prompts for a password if omitted from the arguments), then, on the main domain
+only — `/api/admin/*` 404s on any tenant subdomain, see
+`App\SuperAdmin\Infrastructure\SuperAdminRouteGuardListener`:
+
+```bash
+curl -i -c cookies.txt -X POST http://localhost:8008/api/admin/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@kozijnr.nl","password":"<password>"}'
+
+curl -b cookies.txt http://localhost:8008/api/admin/tenants                 # list: subdomain + createdAt
+
+curl -b cookies.txt -X POST http://localhost:8008/api/admin/tenants \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"acme"}'                                                      # create, via KOZ-7's tenant:provision
+```
+
+Adjust the port to whichever worktree you're in.
+
 ## Versions
 
 - PHP: **8.5** (pinned in `docker/backend/Dockerfile`, image `php:8.5-cli-alpine`)

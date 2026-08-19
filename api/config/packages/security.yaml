@@ -1,0 +1,68 @@
+security:
+    # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
+    password_hashers:
+        App\SuperAdmin\Domain\SuperAdmin: 'auto'
+
+    # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
+    #
+    # super_admins: KOZ-8's public-schema-only super-admin realm, backed by
+    # SuperAdminUserProvider (App\SuperAdmin\Domain\SuperAdminRepositoryInterface),
+    # never by tenant data. No tenant-user provider exists yet — tenant-side
+    # end-user auth is out of scope for this ticket.
+    providers:
+        super_admins:
+            id: App\SuperAdmin\Infrastructure\Security\SuperAdminUserProvider
+
+    firewalls:
+        dev:
+            # Ensure dev tools and static assets are always allowed
+            pattern: ^/(_profiler|_wdt|assets|build)/
+            security: false
+
+        # Tenant-independent super-admin realm (KOZ-8). Matched by path
+        # only — SuperAdminRouteGuardListener (priority 90, runs before
+        # this firewall at priority 8) already 404s every /api/admin/*
+        # request that KOZ-6's tenant resolution determined is on a known
+        # tenant subdomain, so by the time this firewall ever authenticates
+        # anything, the request is guaranteed to be on the main domain.
+        #
+        # Session-based (not stateless): the session this firewall
+        # establishes only ever stores the super admin's own identity
+        # (email via SuperAdminUserProvider) — no tenant/schema data is
+        # ever put into it, so there is nothing in it that could carry
+        # tenant context across to a tenant request even if the cookie
+        # were replayed there.
+        super_admin:
+            pattern: ^/api/admin
+            provider: super_admins
+            json_login:
+                check_path: super_admin_login
+                username_path: email
+                password_path: password
+                success_handler: App\SuperAdmin\Infrastructure\Security\SuperAdminAuthenticationSuccessHandler
+                failure_handler: App\SuperAdmin\Infrastructure\Security\SuperAdminAuthenticationFailureHandler
+            logout:
+                path: super_admin_logout
+
+        # Everything else (tenant requests, /api/health, ...) stays
+        # unauthenticated at the Symfony Security layer for now — no
+        # tenant-user auth exists yet (out of scope for KOZ-8).
+        main:
+            lazy: true
+            security: false
+
+    # Note: Only the *first* matching rule is applied
+    access_control:
+        - { path: ^/api/admin/(login|logout)$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/admin, roles: ROLE_SUPER_ADMIN }
+
+when@test:
+    security:
+        password_hashers:
+            # Password hashers are resource-intensive by design to ensure security.
+            # In tests, it's safe to reduce their cost to improve performance.
+            App\SuperAdmin\Domain\SuperAdmin:
+                algorithm: auto
+                cost: 4 # Lowest possible value for bcrypt
+                time_cost: 3 # Lowest possible value for argon
+                memory_cost: 10 # Lowest possible value for argon

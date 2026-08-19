@@ -36,6 +36,8 @@ services:
 
     App\Tenancy\Domain\TenantRepositoryInterface: '@App\Tenancy\Infrastructure\DoctrineTenantRepository'
 
+    App\SuperAdmin\Domain\SuperAdminRepositoryInterface: '@App\SuperAdmin\Infrastructure\DoctrineSuperAdminRepository'
+
     App\Tenancy\Infrastructure\TenantResolverListener:
         arguments:
             $baseDomain: '%app.tenancy.base_domain%'
