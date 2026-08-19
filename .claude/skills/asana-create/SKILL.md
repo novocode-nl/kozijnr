@@ -29,8 +29,8 @@ Not for moving or updating existing tickets — see `asana-worker`, `asana-revie
    - **`config.next_number` is hoger dan verwacht:** dat is geen probleem (nummers kunnen gaps hebben door mislukte creates) — ga gewoon door met `config.next_number`.
 3. **Decide one ticket or several.** Judge from the request: a single coherent piece of work is one ticket; a list of distinct bugs/features/tasks is bulk. When in doubt, propose the split to the user in one sentence before creating anything — don't silently guess on ambiguous scope.
 3b. **Check for blockers/dependencies.** Before writing the notes, judge whether the new ticket's work realistically depends on other work that doesn't exist yet or isn't done yet — e.g. KOZ-2 "Docker-opzet" depending on KOZ-3 "Symfony installeren" and KOZ-4 "NextJS installeren" still being in Backlog is the concrete precedent for this check. Look at the existing tickets fetched in step 2 (name + section) for anything the new ticket clearly builds on top of (same feature area, an explicit "na X" in the request, infra/setup the new work assumes exists).
-   - **Found a likely blocker that's not yet Done:** don't silently proceed. Either (a) ask the user in one sentence how to handle it (e.g. "KOZ-N lijkt afhankelijk van KOZ-M dat nog in Backlog staat — wil je dat ik dit toch aanmaak met KOZ-M als blocker vermeld, of eerst KOZ-M laten oppakken?"), or, when the dependency is clear-cut and the user's request doesn't need a pause, (b) proceed but record it — add a "Blokkers" section to the notes (see step 6) listing the blocking ticket(s) by `KOZ-N: title`, and mention it in the report-back (step 9).
-   - **No plausible blocker found:** proceed as normal; omit the "Blokkers" section from the notes (see step 6).
+   - **Found a likely blocker that's not yet Done:** don't silently proceed. Either (a) ask the user in one sentence how to handle it (e.g. "KOZ-N lijkt afhankelijk van KOZ-M dat nog in Backlog staat — wil je dat ik dit toch aanmaak met KOZ-M als blocker vermeld, of eerst KOZ-M laten oppakken?"), or, when the dependency is clear-cut and the user's request doesn't need a pause, (b) proceed but record it — as an Asana-native dependency (step 7b) plus a one-line mention in the notes (see step 6), and mention it in the report-back (step 9).
+   - **No plausible blocker found:** proceed as normal; skip step 7b and omit the blocker line from the notes (see step 6).
    - This is a judgment call, not exhaustive dependency analysis — don't fetch the full notes of every existing ticket; a quick scan of names/sections from step 2 is enough. When genuinely unsure, ask rather than guess.
 4. **Assign numbers.** Starting at the number confirmed in step 2, assign one integer per ticket, incrementing. Name each task `"<ticket_prefix>-<n>: <short title>"` (e.g. `KOZ-4: Login formulier valideert e-mail niet`).
 5. **Pick the section.** Use the GID for `default_section` unless the user names a different stage (e.g. "zet 'm meteen in Todo").
@@ -54,14 +54,15 @@ Not for moving or updating existing tickets — see `asana-worker`, `asana-revie
    - <belangrijk aandachtspunt of constraint>
    ```
 
-   **Blokkers (optioneel, alleen als stap 3b een afhankelijkheid vond):** voeg een extra sectie toe ná "Kernpunten":
+   **Blokkers (optioneel, alleen als stap 3b een afhankelijkheid vond):** de afhankelijkheid zelf wordt vastgelegd als een echte Asana-dependency (stap 7b), niet als tekstsectie. Voeg voor leesbaarheid alleen een korte regel toe onderaan "Kernpunten", geen apart kopje:
 
    ```
-   Blokkers
-   - <KOZ-N: titel> — <in 1 zin waarom dit ticket daarop wacht>
+   Kernpunten
+   - <belangrijk aandachtspunt of constraint>
+   - Blokker: <KOZ-N: titel> — <in 1 zin waarom dit ticket daarop wacht>
    ```
 
-   Laat deze sectie volledig weg (niet als leeg kopje) wanneer stap 3b geen blocker vond — een leeg "Blokkers"-kopje suggereert ten onrechte dat er expliciet is gecontroleerd en niets is gevonden versus het onderwerp simpelweg niet relevant is.
+   Laat deze regel volledig weg wanneer stap 3b geen blocker vond.
 
    Vul een onderdeel nooit met vage taal ("moet goed werken") — elk punt moet objectief te checken zijn, want `asana-review` en `asana-user-review` toetsen hier later tegen.
 7. **Create.** Call `mcp__asana__create_tasks` with one entry per ticket:
@@ -70,8 +71,9 @@ Not for moving or updating existing tickets — see `asana-worker`, `asana-revie
    - `name`: the numbered title from step 4, in het Nederlands
    - `notes`: het ingevulde sjabloon uit stap 6
    - Batch all tickets from one request into a single `create_tasks` call (it accepts 1-50 tasks).
+7b. **Leg blockers vast als native Asana-dependency (alleen als stap 3b er een vond).** `create_tasks` ondersteunt geen dependencies bij het aanmaken zelf, dus dit is een aparte call ná stap 7: `mcp__asana__update_tasks` met `task: <gid van het nieuwe ticket, uit de create-response>` en `add_dependencies: [<gid van het blokkerende ticket>]`. Dit maakt het nieuwe ticket in Asana's UI zichtbaar afhankelijk van het blokkerende ticket (niet slechts genoemd in tekst).
 8. **Persist the counter.** Edit `.claude/asana.config.json` and set `next_number` to `<startnummer uit stap 2/4> + <count created>`. Do this even if some tasks in the batch failed — only count `succeeded` tasks from the tool response.
-9. **Rapporteer terug.** Noem elk aangemaakt ticket als `KOZ-N: Titel` met de Asana-task-URL (`https://app.asana.com/1/<workspace.gid>/project/<project.gid>/task/<task_gid>`), in het Nederlands. Als stap 3b een blocker vond en die in de notes is opgenomen (of aan de gebruiker is voorgelegd), noem dat kort erbij.
+9. **Rapporteer terug.** Noem elk aangemaakt ticket als `KOZ-N: Titel` met de Asana-task-URL (`https://app.asana.com/1/<workspace.gid>/project/<project.gid>/task/<task_gid>`), in het Nederlands. Als stap 3b/7b een blocker vond en vastgelegd is, noem dat kort erbij.
 
 ## Quick Reference
 
@@ -81,8 +83,9 @@ Not for moving or updating existing tickets — see `asana-worker`, `asana-revie
 | Section GID | `config.sections[].gid` matched by name |
 | Next number | `config.next_number`, geverifieerd tegen bestaande `<prefix>-N` tasknamen (stap 2), increment after creation |
 | Task name format | `"<ticket_prefix>-<n>: <title>"`, titel in het Nederlands |
-| Notes format | Doel / Verwacht eindproduct / Out of scope / Definition of Done / Kernpunten (+ optioneel Blokkers) |
+| Notes format | Doel / Verwacht eindproduct / Out of scope / Definition of Done / Kernpunten (+ optioneel 1 regel "Blokker: ..." in Kernpunten) |
 | Blocker check | Stap 3b — scan bestaande tickets (naam + sectie) op afhankelijkheden die nog niet Done zijn |
+| Blocker vastleggen | Stap 7b — `update_tasks` met `add_dependencies: [<blokkerende gid>]`, native Asana-dependency, niet alleen tekst |
 
 ## Common Mistakes
 
@@ -92,4 +95,5 @@ Not for moving or updating existing tickets — see `asana-worker`, `asana-revie
 - **Numbering skipped tickets** — if a task in the batch fails (see `failed` in the tool response), don't burn a number on it; only increment by how many actually `succeeded`.
 - **Een sjabloon-onderdeel overslaan of vaag invullen** — een half ingevuld ticket geeft `asana-worker` te weinig om op te bouwen en `asana-review`/`asana-user-review` niets om tegen te toetsen.
 - **Een duidelijke blocker negeren** — bv. een ticket voor "Docker-opzet" aanmaken terwijl de onderliggende "Symfony installeren"/"NextJS installeren"-tickets nog in Backlog staan, zonder dat te vermelden of de gebruiker te waarschuwen (zie stap 3b).
-- **Een leeg "Blokkers"-kopje toevoegen als er geen blocker is** — laat de sectie volledig weg in plaats van een leeg kopje te posten.
+- **Een blocker alleen in de notes zetten en stap 7b overslaan** — de tekstregel in "Kernpunten" is puur leesbaarheid; de daadwerkelijke afhankelijkheid moet als native Asana-dependency vastliggen, anders ziet `asana-review`/`asana-user-review` 'm niet in Asana's eigen dependency-UI en telt hij niet mee bij Asana's eigen blokkade-indicatie.
+- **Een "Blokker: ..."-regel toevoegen als er geen blocker is** — laat de regel volledig weg in plaats van 'm leeg of met "geen" te vullen.
