@@ -1,16 +1,16 @@
 <?php
 
-namespace App\Tests\SuperAdmin\Infrastructure\Security;
+namespace App\Tests\User\Infrastructure\Security;
 
-use App\SuperAdmin\Infrastructure\Security\SuperAdminUserProvider;
 use App\User\Domain\User;
 use App\User\Domain\UserRepositoryInterface;
+use App\User\Infrastructure\Security\UserProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Core\User\InMemoryUser;
 
-final class SuperAdminUserProviderTest extends TestCase
+final class UserProviderTest extends TestCase
 {
     public function testLoadsAKnownUserByEmail(): void
     {
@@ -18,7 +18,7 @@ final class SuperAdminUserProviderTest extends TestCase
         $repository = $this->createMock(UserRepositoryInterface::class);
         $repository->expects(self::once())->method('findByEmail')->with('admin@kozijnr.nl')->willReturn($user);
 
-        $provider = new SuperAdminUserProvider($repository);
+        $provider = new UserProvider($repository);
 
         self::assertSame($user, $provider->loadUserByIdentifier('admin@kozijnr.nl'));
     }
@@ -28,7 +28,7 @@ final class SuperAdminUserProviderTest extends TestCase
         $repository = $this->createMock(UserRepositoryInterface::class);
         $repository->expects(self::once())->method('findByEmail')->willReturn(null);
 
-        $provider = new SuperAdminUserProvider($repository);
+        $provider = new UserProvider($repository);
 
         $this->expectException(UserNotFoundException::class);
 
@@ -42,7 +42,7 @@ final class SuperAdminUserProviderTest extends TestCase
         $repository = $this->createMock(UserRepositoryInterface::class);
         $repository->expects(self::once())->method('findByEmail')->with('admin@kozijnr.nl')->willReturn($refreshed);
 
-        $provider = new SuperAdminUserProvider($repository);
+        $provider = new UserProvider($repository);
 
         self::assertSame($refreshed, $provider->refreshUser($original));
     }
@@ -50,7 +50,7 @@ final class SuperAdminUserProviderTest extends TestCase
     public function testRejectsRefreshingAUserOfAnUnsupportedClass(): void
     {
         $repository = $this->createStub(UserRepositoryInterface::class);
-        $provider = new SuperAdminUserProvider($repository);
+        $provider = new UserProvider($repository);
 
         $this->expectException(UnsupportedUserException::class);
 
@@ -60,7 +60,7 @@ final class SuperAdminUserProviderTest extends TestCase
     public function testSupportsOnlyTheUserClass(): void
     {
         $repository = $this->createStub(UserRepositoryInterface::class);
-        $provider = new SuperAdminUserProvider($repository);
+        $provider = new UserProvider($repository);
 
         self::assertTrue($provider->supportsClass(User::class));
         self::assertFalse($provider->supportsClass(InMemoryUser::class));

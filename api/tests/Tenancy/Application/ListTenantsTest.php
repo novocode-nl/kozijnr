@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Tests\SuperAdmin\Application;
+namespace App\Tests\Tenancy\Application;
 
-use App\SuperAdmin\Application\ListTenants;
+use App\Tenancy\Application\ListTenants;
 use App\Tenancy\Domain\Tenant;
 use App\Tenancy\Domain\TenantRepositoryInterface;
 use PHPUnit\Framework\TestCase;

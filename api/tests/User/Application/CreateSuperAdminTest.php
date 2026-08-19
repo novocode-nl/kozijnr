@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Tests\SuperAdmin\Application;
+namespace App\Tests\User\Application;
 
-use App\SuperAdmin\Application\CreateSuperAdmin;
+use App\User\Application\CreateSuperAdmin;
 use App\User\Domain\Exception\UserAlreadyExistsException;
 use App\User\Domain\User;
 use App\User\Domain\UserRepositoryInterface;

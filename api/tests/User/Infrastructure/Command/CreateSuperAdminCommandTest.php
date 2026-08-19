@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Tests\SuperAdmin\Infrastructure\Command;
+namespace App\Tests\User\Infrastructure\Command;
 
 use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\Console\Application;

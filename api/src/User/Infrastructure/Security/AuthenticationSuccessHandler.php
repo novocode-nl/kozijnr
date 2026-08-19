@@ -1,6 +1,6 @@
 <?php
 
-namespace App\SuperAdmin\Infrastructure\Security;
+namespace App\User\Infrastructure\Security;
 
 use App\User\Domain\User;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -11,11 +11,11 @@ use Symfony\Component\Security\Http\Authentication\AuthenticationSuccessHandlerI
 
 /**
  * JSON response for a successful POST /api/admin/login. Deliberately
- * returns only the super admin's own identity (email) — never any tenant
- * data — so the session this establishes cannot be mistaken for carrying
- * tenant context.
+ * returns only the logged-in User's own identity (email) — never any
+ * tenant data — so the session this establishes cannot be mistaken for
+ * carrying tenant context.
  */
-final class SuperAdminAuthenticationSuccessHandler implements AuthenticationSuccessHandlerInterface
+final class AuthenticationSuccessHandler implements AuthenticationSuccessHandlerInterface
 {
     public function onAuthenticationSuccess(Request $request, TokenInterface $token): Response
     {

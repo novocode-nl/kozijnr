@@ -1,6 +1,6 @@
 <?php
 
-namespace App\SuperAdmin\Infrastructure\Security;
+namespace App\User\Infrastructure\Security;
 
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -15,7 +15,7 @@ use Symfony\Component\Security\Http\Event\LogoutEvent;
  * tree.
  */
 #[AsEventListener]
-final class SuperAdminLogoutSuccessHandler
+final class LogoutSuccessHandler
 {
     public function __invoke(LogoutEvent $event): void
     {

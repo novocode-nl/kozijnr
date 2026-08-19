@@ -1,6 +1,6 @@
 <?php
 
-namespace App\SuperAdmin\Application;
+namespace App\User\Application;
 
 use App\User\Domain\Exception\UserAlreadyExistsException;
 use App\User\Domain\User;
@@ -8,12 +8,12 @@ use App\User\Domain\UserRepositoryInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 /**
- * Creates a super-admin account: a public-schema User row (App\User's
- * bounded-context model) with the ROLE_SUPER_ADMIN role. Deliberately thin,
- * same shape as CreateTenant delegating to App\Tenancy\Application\
- * ProvisionTenant: all the actual user-creation/persistence logic belongs
- * to the User bounded context, this only adds the SuperAdmin-specific
- * ROLE_SUPER_ADMIN role assignment on top of it. Used by
+ * Creates a super-admin account: a plain public-schema User (this bounded
+ * context's own model) with the ROLE_SUPER_ADMIN role. This use case lives
+ * in App\User, not in a separate "SuperAdmin" context (rework, KOZ-8):
+ * "super admin" is an authorization concern (a role on a User), not a
+ * domain concept of its own — creating an admin account is User-context
+ * business, same as any other User creation would be. Used by
  * `bin/console super-admin:create` — there is no self-service signup route,
  * on purpose: only an operator with console access can create the first (or
  * any further) super admin.

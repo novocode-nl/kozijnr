@@ -6,8 +6,8 @@ security:
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     #
     # super_admins: KOZ-8's public-schema-only admin realm, backed by
-    # SuperAdminUserProvider (App\User\Domain\UserRepositoryInterface, the
-    # User bounded context's own port), never by tenant data. The generic
+    # App\User\Infrastructure\Security\UserProvider (this bounded context's
+    # own UserRepositoryInterface port), never by tenant data. The generic
     # `users` table (public schema) is role-based — today only
     # ROLE_SUPER_ADMIN accounts exist in it, created
     # via `bin/console super-admin:create` — so future admin-side roles fit
@@ -15,7 +15,7 @@ security:
     # tenant-side end-user auth is out of scope for this ticket.
     providers:
         super_admins:
-            id: App\SuperAdmin\Infrastructure\Security\SuperAdminUserProvider
+            id: App\User\Infrastructure\Security\UserProvider
 
     firewalls:
         dev:
@@ -24,30 +24,30 @@ security:
             security: false
 
         # Tenant-independent super-admin realm (KOZ-8). Matched by path
-        # only — SuperAdminRouteGuardListener (priority 90, runs before
-        # this firewall at priority 8) already 404s every /api/admin/*
-        # request that KOZ-6's tenant resolution did not mark as being on
-        # the reserved admin subdomain (admin.kozijnr.nl / admin.localhost),
-        # so by the time this firewall ever authenticates anything, the
-        # request is guaranteed to be on the admin domain.
+        # only — App\Tenancy\Infrastructure\AdminRouteGuardListener
+        # (priority 90, runs before this firewall at priority 8) already
+        # 404s every /api/admin/* request that tenant resolution did not
+        # mark as being on the reserved admin subdomain (admin.kozijnr.nl /
+        # admin.localhost), so by the time this firewall ever authenticates
+        # anything, the request is guaranteed to be on the admin domain.
         #
         # Session-based (not stateless): the session this firewall
-        # establishes only ever stores the super admin's own identity
-        # (email via SuperAdminUserProvider) — no tenant/schema data is
-        # ever put into it, so there is nothing in it that could carry
-        # tenant context across to a tenant request even if the cookie
-        # were replayed there.
+        # establishes only ever stores the logged-in User's own identity
+        # (email via App\User\Infrastructure\Security\UserProvider) — no
+        # tenant/schema data is ever put into it, so there is nothing in it
+        # that could carry tenant context across to a tenant request even
+        # if the cookie were replayed there.
         super_admin:
             pattern: ^/api/admin
             provider: super_admins
             json_login:
-                check_path: super_admin_login
+                check_path: admin_login
                 username_path: email
                 password_path: password
-                success_handler: App\SuperAdmin\Infrastructure\Security\SuperAdminAuthenticationSuccessHandler
-                failure_handler: App\SuperAdmin\Infrastructure\Security\SuperAdminAuthenticationFailureHandler
+                success_handler: App\User\Infrastructure\Security\AuthenticationSuccessHandler
+                failure_handler: App\User\Infrastructure\Security\AuthenticationFailureHandler
             logout:
-                path: super_admin_logout
+                path: admin_logout
 
         # Everything else (tenant requests, /api/health, ...) stays
         # unauthenticated at the Symfony Security layer for now — no

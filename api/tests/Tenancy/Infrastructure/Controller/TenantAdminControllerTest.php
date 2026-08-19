@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Tests\SuperAdmin\Infrastructure\Controller;
+namespace App\Tests\Tenancy\Infrastructure\Controller;
 
-use App\SuperAdmin\Application\CreateSuperAdmin;
+use App\User\Application\CreateSuperAdmin;
 use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;

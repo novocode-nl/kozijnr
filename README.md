@@ -251,7 +251,7 @@ above).
 ### Super admin (KOZ-8)
 
 A super admin is a tenant-independent account, stored only in the public schema
-(`super_admins` table — a tenant schema never has this table at all), that can list
+(`users` table — a tenant schema never has this table at all), that can list
 and create tenants. Create one with:
 
 ```bash
@@ -265,7 +265,7 @@ subdomains locally" above) — and *only* there. `/api/admin/*` 404s everywhere
 else: on any tenant subdomain, on an unrecognized subdomain, and on the bare
 main domain too, since `admin.kozijnr.nl` is the one place admin business
 happens, not a fallback available from the apex domain. See
-`App\SuperAdmin\Infrastructure\SuperAdminRouteGuardListener`:
+`App\Tenancy\Infrastructure\AdminRouteGuardListener`:
 
 ```bash
 curl -i -c cookies.txt -X POST http://admin.localhost:8008/api/admin/login \

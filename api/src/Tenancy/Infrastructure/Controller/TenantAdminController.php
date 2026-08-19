@@ -1,10 +1,10 @@
 <?php
 
-namespace App\SuperAdmin\Infrastructure\Controller;
+namespace App\Tenancy\Infrastructure\Controller;
 
-use App\SuperAdmin\Application\ListTenants;
-use App\SuperAdmin\Application\TenantSummary;
+use App\Tenancy\Application\ListTenants;
 use App\Tenancy\Application\ProvisionTenant;
+use App\Tenancy\Application\TenantSummary;
 use App\Tenancy\Domain\Exception\InvalidTenantNameException;
 use App\Tenancy\Domain\Exception\SchemaAlreadyExistsException;
 use App\Tenancy\Domain\Exception\TenantAlreadyExistsException;
@@ -15,18 +15,17 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Super-admin tenant management API (KOZ-8): list existing tenants and
- * create new ones. Both routes sit under /api/admin, guarded by
- * SuperAdminRouteGuardListener (unreachable from a tenant subdomain) and
- * the `super_admin` firewall's ROLE_SUPER_ADMIN access control (see
- * config/packages/security.yaml) — #[IsGranted] here is a second,
- * defense-in-depth check at the controller level.
+ * Admin tenant management API (KOZ-8): list existing tenants and create
+ * new ones. Lives in App\Tenancy (rework, KOZ-8) rather than a separate
+ * "SuperAdmin" context — listing/creating tenants is Tenancy business, not
+ * a domain concept of its own; only who is *allowed* to call it is an
+ * authorization concern, handled below via #[IsGranted] plus the
+ * `super_admin` firewall's ROLE_SUPER_ADMIN access control (see
+ * config/packages/security.yaml) as defense in depth, not via a dedicated
+ * bounded context. Both routes sit under /api/admin, guarded by
+ * AdminRouteGuardListener (unreachable from a tenant subdomain).
  *
- * Creation calls App\Tenancy\Application\ProvisionTenant (KOZ-7) directly —
- * tenant creation is Tenancy bounded-context logic, not SuperAdmin's, so no
- * SuperAdmin-owned wrapper use case exists for it. This controller only
- * adapts the returned Tenant to the SuperAdmin-specific TenantSummary read
- * model, same as ListTenants already does for the list endpoint.
+ * Creation calls this context's own ProvisionTenant (KOZ-7) directly.
  *
  * Create + list only, deliberately — schema deletion/archiving, billing,
  * and tenant-specific settings are out of scope for this ticket.
@@ -41,7 +40,7 @@ final class TenantAdminController
     ) {
     }
 
-    #[Route('/api/admin/tenants', name: 'super_admin_tenants_list', methods: ['GET'])]
+    #[Route('/api/admin/tenants', name: 'admin_tenants_list', methods: ['GET'])]
     public function list(): JsonResponse
     {
         $summaries = ($this->listTenants)();
@@ -49,7 +48,7 @@ final class TenantAdminController
         return new JsonResponse(array_map($this->toArray(...), $summaries));
     }
 
-    #[Route('/api/admin/tenants', name: 'super_admin_tenants_create', methods: ['POST'])]
+    #[Route('/api/admin/tenants', name: 'admin_tenants_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         $payload = json_decode($request->getContent(), true);
@@ -62,7 +61,7 @@ final class TenantAdminController
         } catch (\Throwable $exception) {
             // Same reasoning as ProvisionTenantCommand: report cleanly
             // rather than leaking a stack trace, but log the real cause.
-            $this->logger->error('Super-admin tenant creation failed for "{name}": {message}', [
+            $this->logger->error('Admin tenant creation failed for "{name}": {message}', [
                 'name' => $name,
                 'message' => $exception->getMessage(),
                 'exception' => $exception,

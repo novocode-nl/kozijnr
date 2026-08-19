@@ -1,8 +1,8 @@
 <?php
 
-namespace App\SuperAdmin\Infrastructure\Command;
+namespace App\User\Infrastructure\Command;
 
-use App\SuperAdmin\Application\CreateSuperAdmin;
+use App\User\Application\CreateSuperAdmin;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\SuperAdmin\Infrastructure\Security;
+namespace App\User\Infrastructure\Security;
 
 use App\User\Domain\User;
 use App\User\Domain\UserRepositoryInterface;
@@ -10,8 +10,8 @@ use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
 
 /**
- * Security user provider for the `super_admin` firewall only. Backed by
- * UserRepositoryInterface (the public-schema-only port) rather than
+ * Security user provider for the `super_admin` firewall. Backed directly
+ * by UserRepositoryInterface (this bounded context's own port) rather than
  * Doctrine's generic EntityUserProvider, so this stays an explicit
  * hexagonal adapter and never accidentally resolves any other user type.
  *
@@ -19,7 +19,7 @@ use Symfony\Component\Security\Core\User\UserProviderInterface;
  * ROLE_SUPER_ADMIN requirement for /api/admin/* is enforced by
  * security.yaml's access_control against getRoles(), not here.
  */
-final class SuperAdminUserProvider implements UserProviderInterface
+final class UserProvider implements UserProviderInterface
 {
     public function __construct(private readonly UserRepositoryInterface $repository)
     {
