@@ -41,11 +41,15 @@ const tenantNavMain: NavMainItem[] = [
  * lib/context/app-context.ts. Placeholder targets ("#") for items whose
  * real pages don't exist yet — this ticket only ships the shell/menu
  * structure, not page content (KOZ-14 out of scope).
+ *
+ * KOZ-14 rework: the admin dashboard now lives at the same `/dashboard`
+ * path as the tenant dashboard — there is no separate `/admin` route
+ * anymore, the Host subdomain alone decides which menu/content renders.
  */
 const adminNavMain: NavMainItem[] = [
   {
     title: "Admin dashboard",
-    url: "/admin",
+    url: "/dashboard",
     icon: LayoutDashboard,
   },
   {

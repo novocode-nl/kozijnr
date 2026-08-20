@@ -41,8 +41,13 @@ const ADMIN_SUBDOMAIN_LABEL = "admin"
  * resolution here, only a binary admin/tenant split for which menu to
  * show. Anything that isn't recognized as the admin subdomain (a real
  * tenant subdomain, bare `localhost`, an unknown host, ...) defaults to
- * "tenant", matching this app's current scope: every shipped page so far
- * (`/dashboard`) is tenant-only.
+ * "tenant".
+ *
+ * KOZ-14 rework: `/dashboard` is now the single path for both contexts
+ * (admin.<domein>/dashboard and <tenant>.<domein>/dashboard) — there is no
+ * separate `/admin` route anymore, this function is what the shared
+ * `/dashboard` page and its layout (app/(app)/layout.tsx) call to pick
+ * which menu/content to render.
  */
 export function resolveAppContext(host: string | null | undefined): AppContext {
   if (!host) {
