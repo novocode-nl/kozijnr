@@ -4,20 +4,37 @@ namespace App\Tests\TenantUser\Infrastructure\Controller;
 
 use App\Tenancy\Application\ProvisionTenant;
 use App\TenantUser\Application\CreateTenantUser;
+use App\TenantUser\Infrastructure\Security\TenantApiTokenCookie;
 use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpFoundation\Cookie;
 
 /**
  * End-to-end coverage of the KOZ-11 tenant-user login flow: a tenant user
  * can log in with email+password on their own tenant subdomain and get a
- * bearer token back, invalid combinations are rejected with one generic
- * message, and — the DoD's central claim — a token issued on tenant A's
- * subdomain grants no access at all via tenant B's subdomain.
+ * bearer token back (as an HttpOnly cookie — KOZ-13 rework), invalid
+ * combinations are rejected with one generic message, and — the DoD's
+ * central claim — a token issued on tenant A's subdomain grants no access
+ * at all via tenant B's subdomain.
  *
  * Uses the real tenant provisioning machinery (ProvisionTenant, KOZ-7) to
  * create real tenant schemas, exactly like TenantAdminApiTest does for the
  * super-admin flow.
+ *
+ * The test client's own cookie jar (Symfony\Component\BrowserKit) already
+ * mirrors real browser behaviour here: a cookie set without an explicit
+ * Domain is host-only, so it is only replayed automatically on later
+ * requests to the *same* host the client used when it was issued —
+ * exactly the tenant-subdomain scoping this suite relies on. Most tests
+ * below therefore don't need to touch the cookie at all; the client sends
+ * it automatically. The one test proving tenant isolation
+ * (testATokenIssuedOnOneTenantSubdomainGrantsNoAccessOnAnotherTenantSubdomain)
+ * deliberately bypasses that browser-side convenience and attaches the
+ * cookie value by hand to a request against the *other* subdomain, because
+ * the guarantee under test is a server-side one (search_path-scoped token
+ * lookup) — the client's own same-host cookie scoping must not be the only
+ * thing standing between tenants.
  */
 final class TenantLoginApiTest extends WebTestCase
 {
@@ -40,7 +57,7 @@ final class TenantLoginApiTest extends WebTestCase
         parent::tearDown();
     }
 
-    public function testLoggingInWithValidCredentialsReturnsAToken(): void
+    public function testLoggingInWithValidCredentialsSetsAnHttpOnlyTokenCookie(): void
     {
         $this->provisionTenant('acme');
         $this->createTenantUser('acme', 'user@acme.test', 'correct-password');
@@ -48,10 +65,19 @@ final class TenantLoginApiTest extends WebTestCase
         $this->login('acme', 'user@acme.test', 'correct-password');
 
         self::assertResponseIsSuccessful();
+
+        // KOZ-13 rework: the token is no longer in the JSON body at all —
+        // only ever handed over as an HttpOnly Set-Cookie, so client-side
+        // JS has no way to read it.
         $payload = json_decode((string) $this->client->getResponse()->getContent(), true);
-        self::assertArrayHasKey('token', $payload);
-        self::assertIsString($payload['token']);
-        self::assertNotSame('', $payload['token']);
+        self::assertArrayNotHasKey('token', $payload);
+
+        $cookie = $this->responseCookie();
+        self::assertNotNull($cookie);
+        self::assertNotSame('', $cookie->getValue());
+        self::assertTrue($cookie->isHttpOnly());
+        self::assertSame(Cookie::SAMESITE_LAX, $cookie->getSameSite());
+        self::assertNull($cookie->getDomain());
     }
 
     public function testLoggingInWithAnUnknownEmailFailsWithAGenericMessage(): void
@@ -112,12 +138,11 @@ final class TenantLoginApiTest extends WebTestCase
         $this->provisionTenant('acme');
         $this->createTenantUser('acme', 'user@acme.test', 'correct-password');
         $this->login('acme', 'user@acme.test', 'correct-password');
-        $token = json_decode((string) $this->client->getResponse()->getContent(), true)['token'];
 
-        $this->client->request('GET', '/api/me', server: [
-            'HTTP_HOST' => 'acme.' . self::BASE_DOMAIN,
-            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
-        ]);
+        // No Authorization header at all — the client's cookie jar already
+        // carries the HttpOnly cookie the login response set, exactly like
+        // a real browser would.
+        $this->client->request('GET', '/api/me', server: ['HTTP_HOST' => 'acme.' . self::BASE_DOMAIN]);
 
         self::assertResponseIsSuccessful();
         $payload = json_decode((string) $this->client->getResponse()->getContent(), true);
@@ -140,7 +165,7 @@ final class TenantLoginApiTest extends WebTestCase
 
         $this->client->request('GET', '/api/me', server: [
             'HTTP_HOST' => 'acme.' . self::BASE_DOMAIN,
-            'HTTP_AUTHORIZATION' => 'Bearer this-token-does-not-exist',
+            'HTTP_COOKIE' => TenantApiTokenCookie::NAME . '=this-token-does-not-exist',
         ]);
 
         self::assertResponseStatusCodeSame(401);
@@ -166,12 +191,17 @@ final class TenantLoginApiTest extends WebTestCase
 
         $this->login('acme', 'user@acme.test', 'correct-password');
         self::assertResponseIsSuccessful();
-        $token = json_decode((string) $this->client->getResponse()->getContent(), true)['token'];
+        $token = $this->responseCookie()?->getValue();
+        self::assertNotNull($token);
 
-        // Same client/token, replayed against tenant beta's subdomain.
+        // Same client, cookie value manually copied over and replayed
+        // against tenant beta's subdomain — a real browser's cookie jar
+        // would never do this on its own (the cookie is host-only), but an
+        // attacker manually replaying a stolen value could, so the server
+        // itself must still reject it.
         $this->client->request('GET', '/api/me', server: [
             'HTTP_HOST' => 'beta.' . self::BASE_DOMAIN,
-            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
+            'HTTP_COOKIE' => TenantApiTokenCookie::NAME . '=' . $token,
         ]);
 
         self::assertResponseStatusCodeSame(401);
@@ -181,7 +211,7 @@ final class TenantLoginApiTest extends WebTestCase
         // token having been invalidated as a side effect of the request.
         $this->client->request('GET', '/api/me', server: [
             'HTTP_HOST' => 'acme.' . self::BASE_DOMAIN,
-            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
+            'HTTP_COOKIE' => TenantApiTokenCookie::NAME . '=' . $token,
         ]);
 
         self::assertResponseIsSuccessful();
@@ -201,19 +231,20 @@ final class TenantLoginApiTest extends WebTestCase
         $this->provisionTenant('acme');
         $this->createTenantUser('acme', 'user@acme.test', 'correct-password');
         $this->login('acme', 'user@acme.test', 'correct-password');
-        $token = json_decode((string) $this->client->getResponse()->getContent(), true)['token'];
 
-        $this->client->request('POST', '/api/logout', server: [
-            'HTTP_HOST' => 'acme.' . self::BASE_DOMAIN,
-            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
-        ]);
+        // The client's cookie jar carries the token automatically, exactly
+        // like a real browser.
+        $this->client->request('POST', '/api/logout', server: ['HTTP_HOST' => 'acme.' . self::BASE_DOMAIN]);
 
         self::assertResponseStatusCodeSame(204);
 
-        $this->client->request('GET', '/api/me', server: [
-            'HTTP_HOST' => 'acme.' . self::BASE_DOMAIN,
-            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
-        ]);
+        // KOZ-13 rework: logout must also clear the cookie itself, not just
+        // revoke the token server-side.
+        $clearedCookie = $this->responseCookie();
+        self::assertNotNull($clearedCookie);
+        self::assertLessThan(time(), $clearedCookie->getExpiresTime());
+
+        $this->client->request('GET', '/api/me', server: ['HTTP_HOST' => 'acme.' . self::BASE_DOMAIN]);
 
         self::assertResponseStatusCodeSame(401);
     }
@@ -223,11 +254,11 @@ final class TenantLoginApiTest extends WebTestCase
         $this->provisionTenant('acme');
         $this->createTenantUser('acme', 'user@acme.test', 'correct-password');
         $this->login('acme', 'user@acme.test', 'correct-password');
-        $token = json_decode((string) $this->client->getResponse()->getContent(), true)['token'];
+        $token = $this->responseCookie()?->getValue();
 
         $this->client->request('POST', '/api/logout', server: [
             'HTTP_HOST' => self::BASE_DOMAIN,
-            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
+            'HTTP_COOKIE' => TenantApiTokenCookie::NAME . '=' . $token,
         ]);
 
         self::assertResponseStatusCodeSame(404);
@@ -285,5 +316,16 @@ final class TenantLoginApiTest extends WebTestCase
     private function connection(): Connection
     {
         return static::getContainer()->get(Connection::class);
+    }
+
+    private function responseCookie(): ?Cookie
+    {
+        foreach ($this->client->getResponse()->headers->getCookies() as $cookie) {
+            if ($cookie->getName() === TenantApiTokenCookie::NAME) {
+                return $cookie;
+            }
+        }
+
+        return null;
     }
 }

@@ -7,7 +7,6 @@ import { useForm } from "react-hook-form"
 
 import { cn } from "@/lib/utils"
 import { login } from "@/lib/api"
-import { storeToken } from "@/lib/auth/token"
 import { loginSchema, type LoginFormValues } from "@/lib/schemas/login"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -49,7 +48,10 @@ export function LoginForm({
       return
     }
 
-    storeToken(result.data.token)
+    // KOZ-13 rework: no token to store — the backend already set it as an
+    // HttpOnly cookie (forwarded by app/api/login/route.ts), so there is
+    // nothing left for client-side JS to do with it.
+    //
     // KOZ-14 hasn't shipped the real tenant dashboard yet — this ticket's
     // DoD only requires redirecting to "the right follow-up screen" after
     // a successful login, so /dashboard is a deliberate placeholder until

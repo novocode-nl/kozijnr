@@ -38,6 +38,14 @@ const GENERIC_ERROR = { message: "Invalid credentials." } as const
  * "forbidden request-header"), silently dropping it — which is exactly
  * the header this proxy needs to control. `http.request` has no such
  * restriction.
+ *
+ * KOZ-13 rework — HttpOnly cookie instead of localStorage: the backend now
+ * hands the token back as a `Set-Cookie` header
+ * (App\TenantUser\Infrastructure\Security\TenantApiTokenCookie), not in
+ * the JSON body — this route forwards that header verbatim onto the
+ * response it sends the browser, so the browser (not this server, and
+ * definitely not client-side JS) is the one that ends up holding the
+ * cookie. Nothing here ever reads or stores the token value itself.
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const incomingHost = request.headers.get("host") ?? "localhost"
@@ -54,18 +62,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const { status, json } = await proxyToBackend({
+    const { status, setCookieHeaders } = await proxyToBackend({
       host: backendInternalHost,
       port: backendInternalPort,
       tenantHost: hostname,
       bodyText,
     })
 
-    if (status !== 200 || !json?.token) {
+    if (status !== 200) {
       return NextResponse.json(GENERIC_ERROR, { status: 401 })
     }
 
-    return NextResponse.json(json, { status: 200 })
+    const response = NextResponse.json({ success: true }, { status: 200 })
+    for (const cookie of setCookieHeaders) {
+      response.headers.append("set-cookie", cookie)
+    }
+    return response
   } catch {
     return NextResponse.json(GENERIC_ERROR, { status: 401 })
   }
@@ -76,7 +88,7 @@ function proxyToBackend(options: {
   port: number
   tenantHost: string
   bodyText: string
-}): Promise<{ status: number; json: { token?: string; message?: string } | null }> {
+}): Promise<{ status: number; setCookieHeaders: string[] }> {
   const { host, port, tenantHost, bodyText } = options
 
   return new Promise((resolve, reject) => {
@@ -93,15 +105,12 @@ function proxyToBackend(options: {
         },
       },
       (res) => {
-        const chunks: Buffer[] = []
-        res.on("data", (chunk) => chunks.push(chunk))
+        res.resume()
         res.on("end", () => {
-          try {
-            const json = JSON.parse(Buffer.concat(chunks).toString("utf-8"))
-            resolve({ status: res.statusCode ?? 500, json })
-          } catch {
-            resolve({ status: res.statusCode ?? 500, json: null })
-          }
+          resolve({
+            status: res.statusCode ?? 500,
+            setCookieHeaders: res.headers["set-cookie"] ?? [],
+          })
         })
       }
     )
