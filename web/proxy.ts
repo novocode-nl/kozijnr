@@ -92,13 +92,29 @@ import { resolveAppContext } from "@/lib/context/app-context"
  *    straight to `/dashboard` instead of being shown the form again — the
  *    session validity this guard already computes for every other route
  *    is reused for `/login` itself rather than treating it as an
- *    unconditionally public path. Only the two backend-proxying API
- *    routes stay unconditionally public: a session-less visitor must
- *    still be able to reach them to log in in the first place (carving
- *    `/login` out entirely, as before, would otherwise make the redirect
- *    loop back on itself once `/login` also checks the session).
+ *    unconditionally public path. Only the backend-proxying API routes in
+ *    PUBLIC_API_PATHS stay unconditionally public: a session-less visitor
+ *    must still be able to reach them to log in in the first place
+ *    (carving `/login` out entirely, as before, would otherwise make the
+ *    redirect loop back on itself once `/login` also checks the session).
+ *
+ * KOZ-14 (round 6, this rework) — code review flagged that
+ * nav-user.tsx's handleLogout never called a backend logout endpoint for
+ * the admin context (it only did for tenant), so an admin's PHPSESSID
+ * session stayed valid after clicking "Uitloggen" — combined with round
+ * 5's "already-valid-session -> /dashboard" redirect above, that made the
+ * logout button visibly do nothing for admins. Fixed on the caller side
+ * (nav-user.tsx now calls the new app/api/admin/logout/route.ts for the
+ * admin context too) plus here: `/api/admin/logout` added to
+ * PUBLIC_API_PATHS so that proxy call itself isn't blocked by this same
+ * guard.
  */
-const PUBLIC_API_PATHS = new Set(["/api/login", "/api/logout", "/api/admin/login"])
+const PUBLIC_API_PATHS = new Set([
+  "/api/login",
+  "/api/logout",
+  "/api/admin/login",
+  "/api/admin/logout",
+])
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl

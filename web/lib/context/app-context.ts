@@ -24,16 +24,18 @@ const ADMIN_SUBDOMAIN_LABEL = "admin"
  * the backend's Subdomain::extractFrom.
  *
  * *** Deliberately provisional (KOZ-14) ***
- * KOZ-13/KOZ-8 shipped a tenant-user login (HttpOnly cookie) but there is
- * still no admin-facing frontend login/session at all — the super-admin
- * login from KOZ-8 is backend-only, session-based, on the `admin`
- * subdomain, with no UI in this app yet. Until that exists, there is no
- * real "logged-in context" for the frontend to inspect for the admin case,
- * so this falls back to the same signal the backend already uses to keep
- * the admin area separate: the subdomain. This function is intentionally
- * the *only* place that decision is made — swap its implementation (e.g.
- * to inspect an admin session cookie once one exists) and every caller
- * (the shared layout, `getAppContext` below) keeps working unchanged.
+ * This still resolves the context purely from the Host header, not from
+ * an actual session — even though, as of KOZ-14 round 5, both contexts
+ * now have a real frontend login/session (tenant: HttpOnly bearer-token
+ * cookie from KOZ-13; admin: PHPSESSID session from the KOZ-8-backed
+ * admin login form). The Host-based split is kept anyway: it's what
+ * decides *which login form/menu to render before* a session exists in
+ * the first place (see app/login/page.tsx), and proxy.ts's guard already
+ * checks actual session validity separately for anything that needs real
+ * authorization. This function is intentionally the *only* place the
+ * context itself is decided — swap its implementation later if that ever
+ * needs to change, and every caller (the shared layout, `getAppContext`
+ * below) keeps working unchanged.
  *
  * Only the first host label is checked against the reserved "admin"
  * name (not a full base-domain match, unlike the backend's
