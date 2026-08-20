@@ -21,6 +21,15 @@ use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
  * finds nothing — not "finds it but rejects it for the wrong tenant". This
  * is what makes the token tenant-bound (KOZ-11 DoD), the same structural
  * approach KOZ-6/7 use for tenant data isolation in general.
+ *
+ * KOZ-15: an unknown token, an expired token, and a revoked token (which is
+ * simply a row that no longer exists — see App\TenantUser\Application\LogoutTenantUser)
+ * all raise the exact same BadCredentialsException with the exact same
+ * message here, on purpose — a caller must never be able to distinguish
+ * "never existed" from "expired" from "revoked" (KOZ-15 DoD, the same
+ * generic-error principle KOZ-11 applies to login). On every successful
+ * validation the token's expiry is renewed (sliding expiry, KOZ-15) so an
+ * actively used token effectively never expires.
  */
 final class TenantApiTokenHandler implements AccessTokenHandlerInterface
 {
@@ -32,9 +41,13 @@ final class TenantApiTokenHandler implements AccessTokenHandlerInterface
     {
         $token = $this->tokenRepository->findByTokenHash(TenantApiToken::hashFor($accessToken));
 
-        if ($token === null) {
+        $now = new \DateTimeImmutable();
+        if ($token === null || $token->isExpired($now)) {
             throw new BadCredentialsException('Invalid or expired token.');
         }
+
+        $token->renewExpiry($now);
+        $this->tokenRepository->save($token);
 
         $tenantUser = $token->getTenantUser();
 

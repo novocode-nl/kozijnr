@@ -96,6 +96,7 @@ security:
         - { path: ^/api/admin, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api/login$, roles: PUBLIC_ACCESS }
         - { path: ^/api/me$, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/logout$, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:

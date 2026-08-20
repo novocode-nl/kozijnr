@@ -26,7 +26,7 @@ use Symfony\Component\HttpKernel\KernelEvents;
  */
 final class TenantRouteGuardListener implements EventSubscriberInterface
 {
-    private const GUARDED_PATH_PREFIXES = ['/api/login', '/api/me'];
+    private const GUARDED_PATH_PREFIXES = ['/api/login', '/api/me', '/api/logout'];
 
     public static function getSubscribedEvents(): array
     {

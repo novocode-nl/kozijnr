@@ -187,6 +187,61 @@ final class TenantLoginApiTest extends WebTestCase
         self::assertResponseIsSuccessful();
     }
 
+    /**
+     * KOZ-15: logging out revokes the current bearer token end to end, via
+     * the real /api/logout route + firewall + repository. Sliding expiry
+     * and the generic expired/revoked-vs-unknown error handling are
+     * exercised at the unit level (TenantApiTokenTest,
+     * TenantApiTokenHandlerTest) instead — an end-to-end test would need to
+     * fast-forward real time, which those lower-level tests already cover
+     * without that complexity.
+     */
+    public function testALogoutRevokesTheCurrentTokenSoItNoLongerWorks(): void
+    {
+        $this->provisionTenant('acme');
+        $this->createTenantUser('acme', 'user@acme.test', 'correct-password');
+        $this->login('acme', 'user@acme.test', 'correct-password');
+        $token = json_decode((string) $this->client->getResponse()->getContent(), true)['token'];
+
+        $this->client->request('POST', '/api/logout', server: [
+            'HTTP_HOST' => 'acme.' . self::BASE_DOMAIN,
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
+        ]);
+
+        self::assertResponseStatusCodeSame(204);
+
+        $this->client->request('GET', '/api/me', server: [
+            'HTTP_HOST' => 'acme.' . self::BASE_DOMAIN,
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
+        ]);
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testLogoutIsNotReachableOnTheBareMainDomain(): void
+    {
+        $this->provisionTenant('acme');
+        $this->createTenantUser('acme', 'user@acme.test', 'correct-password');
+        $this->login('acme', 'user@acme.test', 'correct-password');
+        $token = json_decode((string) $this->client->getResponse()->getContent(), true)['token'];
+
+        $this->client->request('POST', '/api/logout', server: [
+            'HTTP_HOST' => self::BASE_DOMAIN,
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
+        ]);
+
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testLogoutWithoutATokenIsRejected(): void
+    {
+        $this->provisionTenant('acme');
+
+        $this->client->request('POST', '/api/logout', server: ['HTTP_HOST' => 'acme.' . self::BASE_DOMAIN]);
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
     private function login(string $subdomain, string $email, string $password): void
     {
         $this->client->request('POST', '/api/login', server: [
