@@ -60,53 +60,66 @@ import { resolveAppContext } from "@/lib/context/app-context"
  *    and unlike the tenant cookie there was no existing, already-reviewed
  *    "presence is enough" behaviour to preserve here.
  *
- *    Redirect target for a missing/invalid admin session: `/admin/login`.
- *    There is still no real super-admin login *form* in this frontend —
- *    building one is explicitly out of this ticket's scope (KOZ-8's login
- *    is backend-only today, see app/admin/login/page.tsx's own docstring
- *    for the reasoning) — so this is a deliberate, documented placeholder
- *    redirect target, not the finished login screen. What matters for
- *    this ticket's DoD is that the *guard* is complete and unconditional:
- *    every admin route redirects somewhere when there's no valid session,
- *    and that somewhere renders instead of 404ing.
+ *    Redirect target for a missing/invalid admin session was `/admin/login`
+ *    at the time — a deliberate placeholder page, since there was no real
+ *    super-admin login *form* in this frontend yet. See round 5 below:
+ *    that placeholder and its separate path are gone, superseded by the
+ *    unified `/login`.
  *
- * KOZ-14 (round 4, this rework) — automated code review flagged that the
- * round-3 GET /api/admin/me round-trip had no timeout: if the backend
- * accepted the connection but never responded (hang, deadlock, a slow
- * query), `hasValidAdminSession` would await forever, blocking *every*
- * admin route — not just a login attempt, but also already-logged-in
- * admins — for as long as the backend stayed unresponsive. Fixed by
- * routing the request through the new shared `sendBackendRequest` helper
+ * KOZ-14 (round 4) — automated code review flagged that the round-3
+ * GET /api/admin/me round-trip had no timeout: if the backend accepted the
+ * connection but never responded (hang, deadlock, a slow query),
+ * `hasValidAdminSession` would await forever, blocking *every* admin
+ * route — not just a login attempt, but also already-logged-in admins —
+ * for as long as the backend stayed unresponsive. Fixed by routing the
+ * request through the new shared `sendBackendRequest` helper
  * (`lib/backend-request.ts`, also now used by app/api/login/route.ts),
  * which applies a bounded timeout via `req.setTimeout` and rejects instead
  * of hanging. A rejection here (timeout or any other network failure) is
  * treated the same as "no valid session" — fail closed, but within a
  * short, predictable time instead of indefinitely.
+ *
+ * KOZ-14 (round 5, this rework) — functional review's two remaining
+ * points:
+ *
+ * 1. `/login` is now a *single, unified* path for both contexts (see
+ *    app/login/page.tsx, which picks the tenant or admin form based on
+ *    the same Host-derived context this guard uses). The separate
+ *    `/admin/login` placeholder page is gone, so both branches below now
+ *    redirect an unauthenticated request to the same `/login` — there is
+ *    no more context-specific redirect target to keep in sync.
+ * 2. An already-authenticated visitor who navigates to `/login` is sent
+ *    straight to `/dashboard` instead of being shown the form again — the
+ *    session validity this guard already computes for every other route
+ *    is reused for `/login` itself rather than treating it as an
+ *    unconditionally public path. Only the two backend-proxying API
+ *    routes stay unconditionally public: a session-less visitor must
+ *    still be able to reach them to log in in the first place (carving
+ *    `/login` out entirely, as before, would otherwise make the redirect
+ *    loop back on itself once `/login` also checks the session).
  */
-const PUBLIC_PATHS = new Set(["/login", "/admin/login", "/api/login", "/api/logout"])
+const PUBLIC_API_PATHS = new Set(["/api/login", "/api/logout", "/api/admin/login"])
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  if (PUBLIC_PATHS.has(pathname)) {
+  if (PUBLIC_API_PATHS.has(pathname)) {
     return NextResponse.next()
   }
 
   const context = resolveAppContext(request.headers.get("host"))
+  const hasValidSession =
+    context === "admin"
+      ? await hasValidAdminSession(request)
+      : request.cookies.has(TENANT_TOKEN_COOKIE_NAME)
 
-  if (context === "admin") {
-    const hasValidSession = await hasValidAdminSession(request)
-
-    if (!hasValidSession) {
-      return NextResponse.redirect(new URL("/admin/login", request.url))
-    }
-
-    return NextResponse.next()
+  if (pathname === "/login") {
+    return hasValidSession
+      ? NextResponse.redirect(new URL("/dashboard", request.url))
+      : NextResponse.next()
   }
 
-  const hasToken = request.cookies.has(TENANT_TOKEN_COOKIE_NAME)
-
-  if (!hasToken) {
+  if (!hasValidSession) {
     return NextResponse.redirect(new URL("/login", request.url))
   }
 

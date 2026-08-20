@@ -29,9 +29,36 @@ export const GENERIC_LOGIN_ERROR = "Invalid credentials."
 export async function login(
   values: LoginFormValues
 ): Promise<{ success: true } | { success: false; message: string }> {
+  return postCredentials("/api/login", values)
+}
+
+/**
+ * Calls this app's own POST /api/admin/login route handler
+ * (app/api/admin/login/route.ts), which proxies to the backend's
+ * super-admin login (KOZ-8) server-side — the admin-side counterpart to
+ * `login` above. Same reasoning throughout: a same-origin proxy (Host
+ * header + no CORS), a generic error message regardless of cause, and no
+ * token/session value ever handled here — the backend hands the session
+ * back as a `Set-Cookie` the browser stores, forwarded verbatim by the
+ * proxy route.
+ *
+ * KOZ-14 rework (round 5): added alongside components/admin-login-form.tsx
+ * so /login has a real, working form for the admin context too, instead of
+ * the earlier admin/login placeholder page.
+ */
+export async function adminLogin(
+  values: LoginFormValues
+): Promise<{ success: true } | { success: false; message: string }> {
+  return postCredentials("/api/admin/login", values)
+}
+
+async function postCredentials(
+  path: string,
+  values: LoginFormValues
+): Promise<{ success: true } | { success: false; message: string }> {
   let response: Response
   try {
-    response = await fetch("/api/login", {
+    response = await fetch(path, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(values),
