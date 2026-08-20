@@ -213,15 +213,67 @@ entry point — no tenant, no admin, same as the old no-subdomain request.
   manually if Valet isn't installed).
 
 - **Dynamic tenant proxies** (`<tenant>.kozijnr(-koz-<n>)?.test`) are
-  registered automatically the moment a tenant is created — no manual step.
+  *queued* automatically the moment a tenant is created, whichever path
+  created it (the admin API, `tenant:provision`, ...), then registered by
+  running **`make valet-sync`** once. This is a two-step, deliberately
+  on-demand process rather than one automatic step — see "Why not fully
+  automatic?" just below for why.
+
   `App\Tenancy\Infrastructure\Valet\TenantValetProxyListener` is a
   dev-environment-only Doctrine `postPersist` listener (wired only in
-  `api/config/services_dev.yaml`, never in `test`/`prod`) that runs
-  `valet proxy <tenant>.<base>.test http://127.0.0.1:<port>` right after a
-  tenant is persisted, whichever path created it (the admin API,
-  `tenant:provision`, ...). It's best-effort: if `valet` isn't installed or
-  the call fails, a warning is logged and tenant creation still succeeds —
-  this is dev convenience, never a hard dependency.
+  `api/config/services_dev.yaml`, never in `test`/`prod`) that fires right
+  after a tenant is persisted. It never calls `valet` itself — the backend
+  runs inside a Docker container that has no `valet` binary and no access
+  to the host's Valet installation at all, so no amount of retrying from in
+  there could ever make a direct call work. Instead it *queues* the
+  request: `App\Tenancy\Infrastructure\Valet\FilesystemValetProxyQueue`
+  writes a small JSON file (domain + target) to
+  `api/var/valet-proxy-queue/pending/`, a path docker-compose.yml already
+  bind-mounts onto the host as part of `./api:/app` — so the file is
+  immediately visible on the host filesystem too, no extra Docker volume
+  needed. It's best-effort: if the queue directory can't be written to, a
+  warning is logged and tenant creation still succeeds — this is dev
+  convenience, never a hard dependency.
+
+  ```bash
+  make console args="tenant:provision acme"   # queues acme.kozijnr.test
+  make valet-sync                              # actually registers it with Valet
+  ```
+
+  `make valet-sync` (`scripts/valet-sync.sh`) runs on the host: it reads
+  every pending request, calls `valet proxy <domain> <target>` for it, and
+  moves the request to `api/var/valet-proxy-queue/processed/` on success
+  (kept for troubleshooting) — or leaves it pending, to retry on the next
+  run, if `valet proxy` fails. Safe to run any time, repeatedly, with
+  nothing pending (a no-op), and a no-op if Valet isn't installed at all.
+
+  #### Why not fully automatic?
+
+  Making this fully automatic would need something living on the host that
+  the container can reach — e.g. a small daemon listening on
+  `host.docker.internal` that the container calls into, which then runs
+  `valet proxy` for real. That was considered and rejected: it would need
+  to be started before it's useful, kept running in the background, and
+  managed as its own long-lived process (e.g. a `launchd` service) for
+  something only needed right after creating a tenant — a heavier,
+  higher-maintenance piece of infrastructure than the problem warrants.
+  Other bridging options (SSH from the container into the host, proxying
+  the Docker socket) have the same shape: a standing service and an open
+  channel into the host, for an operation that happens a handful of times
+  per dev session.
+
+  The file-based queue plus an on-demand `make valet-sync` needs no
+  background process, no listening port and no separate lifecycle to
+  manage — only filesystem I/O, run whenever it's convenient. If you want
+  near-real-time syncing without remembering to run `make valet-sync` by
+  hand, start an optional watcher in its own terminal (no code change
+  needed, and entirely optional — the file queue is what guarantees
+  correctness, this is just comfort on top):
+
+  ```bash
+  brew install fswatch   # one-time
+  fswatch -o api/var/valet-proxy-queue/pending | xargs -n1 -I{} make valet-sync
+  ```
 
 ### Verifying it works
 
@@ -230,7 +282,8 @@ proxies registered as above:
 
 ```bash
 curl http://api.kozijnr.test/api/health          # 200, public schema, no tenant
-make console args="tenant:provision acme"        # also auto-registers acme.kozijnr.test via Valet
+make console args="tenant:provision acme"        # queues acme.kozijnr.test (see above)
+make valet-sync                                   # registers it with Valet for real
 curl http://acme.kozijnr.test/api/health          # 200, search_path = tenant_acme, public
 curl http://admin.kozijnr.test/api/health         # 200, public schema, reserved admin domain
 ```

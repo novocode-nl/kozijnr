@@ -4,22 +4,26 @@
 # config/services_$env.yaml automatically after config/services.yaml, when
 # it exists — see src/Kernel.php). This is the *only* place the KOZ-12
 # tenant-auto-proxy listener is wired into the Doctrine postPersist event:
-# nothing here is loaded in test/prod/staging, so the `valet` CLI is never
-# invoked outside a developer's own machine running `make up` locally.
+# nothing here is loaded in test/prod/staging, so a proxy request is never
+# queued outside a developer's own machine running `make up` locally.
 #
 # App\Tenancy\Infrastructure\Valet\TenantValetProxyListener itself also
 # double-checks %kernel.environment% === 'dev' before ever calling the
-# proxy runner, as defense in depth (see its own docblock) — but this file
+# proxy queue, as defense in depth (see its own docblock) — but this file
 # not being loaded elsewhere is the primary guarantee.
 services:
     # Redeclared here (services.yaml's own _defaults doesn't apply to this
-    # file): needed so the $proxyRunner argument below is autowired to the
+    # file): needed so the $proxyQueue argument below is autowired to the
     # interface binding right underneath it.
     _defaults:
         autowire: true
         autoconfigure: true
 
-    App\Tenancy\Infrastructure\Valet\ValetProxyRunnerInterface: '@App\Tenancy\Infrastructure\Valet\SymfonyProcessValetProxyRunner'
+    App\Tenancy\Infrastructure\Valet\ValetProxyQueueInterface: '@App\Tenancy\Infrastructure\Valet\FilesystemValetProxyQueue'
+
+    App\Tenancy\Infrastructure\Valet\FilesystemValetProxyQueue:
+        arguments:
+            $queueDirectory: '%app.tenancy.valet_queue_directory%'
 
     App\Tenancy\Infrastructure\Valet\TenantValetProxyListener:
         arguments:

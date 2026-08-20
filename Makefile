@@ -5,7 +5,8 @@ COMPOSE := docker compose
 SHELL := /bin/bash
 
 .PHONY: up down build rebuild restart logs ps sh-backend sh-frontend \
-        composer console npm test-backend worktree-env worktree-valet-teardown ensure-env
+        composer console npm test-backend worktree-env worktree-valet-teardown ensure-env \
+        valet-sync
 
 ## Ensure a per-worktree .env exists before the stack starts. Runs
 ## automatically as a prerequisite of `up` so a single `make up` suffices in
@@ -105,3 +106,14 @@ worktree-env:
 ## worktree-cleanup step; safe to run manually too.
 worktree-valet-teardown:
 	./scripts/teardown-worktree-valet.sh $(n)
+
+## Drain this worktree's pending Valet proxy-request queue (KOZ-12,
+## rework): actually calls `valet proxy` on the host for every tenant proxy
+## the backend container has queued (e.g. via `tenant:provision` or the
+## admin API) since the last run. Run this after creating a tenant to make
+## its <tenant>.<base>.test domain resolve — see README.md "Local domains
+## via Laravel Valet" for why this is a deliberate on-demand step rather
+## than an always-running background daemon. Safe to run repeatedly (a
+## no-op with nothing pending), and a no-op if Valet isn't installed.
+valet-sync:
+	./scripts/valet-sync.sh
