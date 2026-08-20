@@ -65,16 +65,26 @@ security:
         # rather than being authenticated by this firewall — see
         # access_control below, which leaves it at PUBLIC_ACCESS.
         #
-        # stateless: true — no session/cookie is ever established here, on
-        # purpose: a bearer token is looked up fresh on every request via
-        # TenantApiTokenHandler, scoped to the current tenant schema by
-        # search_path alone, so there is nothing session-based that could
-        # ever be replayed across tenant subdomains (KOZ-11 DoD).
+        # stateless: true — no *Symfony Security* session is ever
+        # established here (unrelated to the KOZ-13 rework's HttpOnly
+        # cookie, which merely carries the same bearer token that used to
+        # sit in an Authorization header): the token is looked up fresh on
+        # every request via TenantApiTokenHandler, scoped to the current
+        # tenant schema by search_path alone, so there is nothing
+        # session-based that could ever be replayed across tenant
+        # subdomains (KOZ-11 DoD).
+        #
+        # token_extractors: KOZ-13 rework — reads the token from the
+        # HttpOnly cookie (App\TenantUser\Infrastructure\Security\TenantApiTokenCookie)
+        # instead of Symfony's default `Authorization: Bearer <token>`
+        # header extractor, so client-side JS never has a way to read the
+        # token value at all.
         tenant_users:
             pattern: ^/api
             stateless: true
             access_token:
                 token_handler: App\TenantUser\Infrastructure\Security\TenantApiTokenHandler
+                token_extractors: App\TenantUser\Infrastructure\Security\CookieAccessTokenExtractor
 
         # Everything else (the bare main domain, /api/health, ...) stays
         # unauthenticated at the Symfony Security layer.

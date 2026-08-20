@@ -4,6 +4,7 @@ namespace App\TenantUser\Infrastructure\Controller;
 
 use App\TenantUser\Application\LoginTenantUser;
 use App\TenantUser\Domain\Exception\InvalidCredentialsException;
+use App\TenantUser\Infrastructure\Security\TenantApiTokenCookie;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -13,9 +14,14 @@ use Symfony\Component\Routing\Attribute\Route;
  * POST /api/login (KOZ-11): tenant-user login. Only reachable on an
  * actually-resolved tenant subdomain (App\TenantUser\Infrastructure\TenantRouteGuardListener
  * 404s it elsewhere). Validates email+password against the tenant users
- * living in the current tenant schema and, on success, returns a fresh
- * bearer token to use as `Authorization: Bearer <token>` on subsequent
- * requests (see the `tenant_users` firewall, config/packages/security.yaml).
+ * living in the current tenant schema and, on success, issues a fresh
+ * bearer token as an HttpOnly cookie (KOZ-13 rework — see
+ * TenantApiTokenCookie) rather than in the JSON body: the whole point is
+ * that client-side JS never gets to see the token value at all, so a
+ * subsequent request only needs to include the cookie (which the browser
+ * does automatically) for the `tenant_users` firewall's access_token
+ * authenticator (config/packages/security.yaml) to resolve it via
+ * CookieAccessTokenExtractor.
  *
  * Deliberately a plain controller calling the Application use case
  * directly, not routed through Symfony Security's json_login (unlike the
@@ -56,6 +62,9 @@ final class LoginController
             return new JsonResponse(['message' => 'Invalid credentials.'], JsonResponse::HTTP_UNAUTHORIZED);
         }
 
-        return new JsonResponse(['token' => $token], JsonResponse::HTTP_OK);
+        $response = new JsonResponse(['message' => 'Logged in.'], JsonResponse::HTTP_OK);
+        $response->headers->setCookie(TenantApiTokenCookie::issue($token));
+
+        return $response;
     }
 }

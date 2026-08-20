@@ -9,9 +9,17 @@ use Symfony\Component\Security\Http\AccessToken\AccessTokenHandlerInterface;
 use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
 
 /**
- * Resolves an `Authorization: Bearer <token>` header to a TenantUser for
- * the `tenant_users` firewall (config/packages/security.yaml).
+ * Resolves an already-extracted bearer token to a TenantUser for the
+ * `tenant_users` firewall (config/packages/security.yaml). Symfony's
+ * access_token authenticator splits "where does the token come from" and
+ * "is it valid" into two separate collaborators: extraction is
+ * CookieAccessTokenExtractor's job (KOZ-13 rework — the token now travels
+ * in an HttpOnly cookie, TenantApiTokenCookie, rather than an
+ * `Authorization: Bearer <token>` header), this class only ever receives
+ * the plaintext token value already pulled out of wherever it came from
+ * and has no need to know or care which extractor produced it.
  *
+
  * Looks the token up only via TenantApiTokenRepositoryInterface, which
  * (through the current Doctrine connection's search_path,
  * App\Tenancy\Infrastructure\TenantResolverListener) only ever sees rows in
