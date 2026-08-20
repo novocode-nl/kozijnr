@@ -5,7 +5,8 @@ COMPOSE := docker compose
 SHELL := /bin/bash
 
 .PHONY: up down build rebuild restart logs ps sh-backend sh-frontend \
-        composer console npm test-backend worktree-env ensure-env
+        composer console npm test-backend worktree-env worktree-valet-teardown ensure-env \
+        valet-sync valet-watch
 
 ## Ensure a per-worktree .env exists before the stack starts. Runs
 ## automatically as a prerequisite of `up` so a single `make up` suffices in
@@ -98,3 +99,35 @@ test-backend:
 ## number, e.g. `make worktree-env n=12` for KOZ-12. See README.md.
 worktree-env:
 	./scripts/setup-worktree-env.sh $(n)
+
+## Remove a worktree's Laravel Valet proxies (KOZ-12), e.g.
+## `make worktree-valet-teardown n=12` for KOZ-12. See README.md and
+## scripts/teardown-worktree-valet.sh. Used by the asana-user-review skill's
+## worktree-cleanup step; safe to run manually too.
+worktree-valet-teardown:
+	./scripts/teardown-worktree-valet.sh $(n)
+
+## Drain this worktree's pending Valet proxy-request queue (KOZ-12,
+## rework): actually calls `valet proxy` on the host for every tenant proxy
+## the backend container has queued (e.g. via `tenant:provision` or the
+## admin API) since the last run. Run this after creating a tenant to make
+## its <tenant>.<base>.test domain resolve — see README.md "Local domains
+## via Laravel Valet" for why this is a deliberate on-demand step rather
+## than an always-running background daemon. Safe to run repeatedly (a
+## no-op with nothing pending), and a no-op if Valet isn't installed.
+valet-sync:
+	./scripts/valet-sync.sh
+
+## Watch this worktree's pending Valet proxy-request queue and run
+## `make valet-sync` automatically whenever a new request appears (KOZ-12,
+## rework round 3) — e.g. from `tenant:provision` (CLI) or `POST
+## /api/admin/tenants` (admin API), since both write to the same queue via
+## App\Tenancy\Infrastructure\Valet\TenantValetProxyListener /
+## FilesystemValetProxyQueue, with no distinction needed here. Requires
+## `fswatch` (`brew install fswatch`). Deliberately on-demand: run this in a
+## spare terminal tab while working on tenants, stop it with Ctrl+C — not a
+## background daemon, see README.md "Local domains via Laravel Valet". The
+## queue + `make valet-sync` remains the underlying guarantee even without
+## this running.
+valet-watch:
+	./scripts/valet-watch.sh

@@ -1,12 +1,16 @@
-# Ports (FRONTEND_PORT/BACKEND_PORT/DATABASE_PORT), NEXT_PUBLIC_API_URL and
-# COMPOSE_PROJECT_NAME (which namespaces container/volume names) are read from
-# the .env file in this directory, with the defaults below matching the
-# non-worktree workflow (3000/8000/5432, project name "kozijnr").
+# Ports (FRONTEND_PORT/BACKEND_PORT/DATABASE_PORT), NEXT_PUBLIC_API_URL,
+# APP_BASE_DOMAIN and COMPOSE_PROJECT_NAME (which namespaces container/volume
+# names) are read from the .env file in this directory, with the defaults
+# below matching the non-worktree workflow (3000/8000/5432, project name
+# "kozijnr", APP_BASE_DOMAIN kozijnr.test).
 #
-# For an isolated per-worktree environment (see KOZ-5), generate a .env with:
+# For an isolated per-worktree environment (see KOZ-5, and KOZ-12 for the
+# Valet domains), generate a .env with:
 #   scripts/setup-worktree-env.sh <issue-number>
 # e.g. `scripts/setup-worktree-env.sh 12` for KOZ-12 sets
-# COMPOSE_PROJECT_NAME=koz-12, frontend on 3012, backend on 8012, database on 5444.
+# COMPOSE_PROJECT_NAME=koz-12, frontend on 3012, backend on 8012, database on
+# 5444, APP_BASE_DOMAIN=kozijnr-koz-12.test (api.kozijnr-koz-12.test /
+# admin.kozijnr-koz-12.test / <tenant>.kozijnr-koz-12.test via Valet).
 services:
   database:
     image: postgres:16-alpine
@@ -35,6 +39,14 @@ services:
     environment:
       APP_ENV: dev
       DATABASE_URL: "postgresql://app:app@database:5432/app?serverVersion=16&charset=utf8"
+      # Passed through as real container env vars (see api/config/services.yaml
+      # / services_dev.yaml) so the app inside the container knows both which
+      # *.test domain it should be reachable on via Valet (KOZ-12) and which
+      # host port that domain's Valet proxy needs to target. Defaults match
+      # the non-worktree main checkout; scripts/setup-worktree-env.sh sets
+      # both per worktree in the repo-root .env this file reads from.
+      APP_BASE_DOMAIN: "${APP_BASE_DOMAIN:-kozijnr.test}"
+      BACKEND_PORT: "${BACKEND_PORT:-8000}"
     depends_on:
       database:
         condition: service_healthy
