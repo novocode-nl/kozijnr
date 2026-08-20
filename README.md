@@ -266,14 +266,20 @@ entry point — no tenant, no admin, same as the old no-subdomain request.
   background process, no listening port and no separate lifecycle to
   manage — only filesystem I/O, run whenever it's convenient. If you want
   near-real-time syncing without remembering to run `make valet-sync` by
-  hand, start an optional watcher in its own terminal (no code change
-  needed, and entirely optional — the file queue is what guarantees
-  correctness, this is just comfort on top):
+  hand, run the optional watcher in its own terminal tab instead (entirely
+  optional — the file queue plus `make valet-sync` is what guarantees
+  correctness; this is just comfort on top, and works identically
+  regardless of whether the tenant was created via `tenant:provision` or
+  the admin API, since both write to the same queue directory):
 
   ```bash
   brew install fswatch   # one-time
-  fswatch -o api/var/valet-proxy-queue/pending | xargs -n1 -I{} make valet-sync
+  make valet-watch       # run in a spare terminal tab; Ctrl+C to stop
   ```
+
+  This still isn't a background daemon — it's a foreground process you
+  start and stop yourself (see `scripts/valet-watch.sh`), consistent with
+  the on-demand approach above.
 
 ### Verifying it works
 
