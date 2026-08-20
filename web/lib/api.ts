@@ -1,0 +1,54 @@
+import type { LoginFormValues } from "@/lib/schemas/login"
+
+/**
+ * Generic message the backend always returns for /api/login, regardless of
+ * what specifically made the credentials invalid (KOZ-11 DoD: no
+ * distinguishing technical detail leaks to the client). Used as the
+ * fallback whenever the response can't be parsed at all, so the UI never
+ * shows anything more specific than the backend itself would.
+ */
+export const GENERIC_LOGIN_ERROR = "Invalid credentials."
+
+export interface LoginSuccess {
+  token: string
+}
+
+/**
+ * Calls this app's own POST /api/login route handler (app/api/login/route.ts),
+ * which proxies to the actual backend (KOZ-11) server-side — see that
+ * route's docstring for why a same-origin proxy is used instead of calling
+ * the backend directly from the browser (tenant subdomain + CORS).
+ *
+ * Never throws for an invalid-credentials response — that is a normal,
+ * expected outcome the caller renders inline — only for genuine
+ * network/unexpected failures, always with the same generic message so
+ * nothing technical ever reaches the UI.
+ */
+export async function login(values: LoginFormValues): Promise<
+  { success: true; data: LoginSuccess } | { success: false; message: string }
+> {
+  let response: Response
+  try {
+    response = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(values),
+    })
+  } catch {
+    return { success: false, message: GENERIC_LOGIN_ERROR }
+  }
+
+  if (!response.ok) {
+    return { success: false, message: GENERIC_LOGIN_ERROR }
+  }
+
+  try {
+    const data = (await response.json()) as LoginSuccess
+    if (!data.token) {
+      return { success: false, message: GENERIC_LOGIN_ERROR }
+    }
+    return { success: true, data }
+  } catch {
+    return { success: false, message: GENERIC_LOGIN_ERROR }
+  }
+}
