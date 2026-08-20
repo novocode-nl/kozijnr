@@ -69,10 +69,27 @@ final class AdminMeApiTest extends WebTestCase
         // browser would for the `super_admin` firewall's session.
         $this->client->request('GET', '/api/admin/me', server: ['HTTP_HOST' => self::ADMIN_HOST]);
 
+        // KOZ-14 rework (round 4, non-blocking review finding): the only
+        // caller (web/proxy.ts's hasValidAdminSession) only ever inspects
+        // the status code, never the body — returning the admin's email
+        // and roles here was unnecessary data exposure. A bare 200 is
+        // enough to say "yes, valid session".
         self::assertResponseIsSuccessful();
-        $payload = json_decode((string) $this->client->getResponse()->getContent(), true);
-        self::assertSame('admin@kozijnr.nl', $payload['email']);
-        self::assertSame(['ROLE_SUPER_ADMIN'], $payload['roles']);
+        self::assertSame('', $this->client->getResponse()->getContent());
+    }
+
+    public function testAnInvalidSessionCookieIsRejectedJustLikeAMissingOne(): void
+    {
+        // A cookie that merely has the right name but doesn't correspond to
+        // any session the backend recognises (expired, forged, or from a
+        // session store that was cleared) must be treated identically to
+        // "no cookie at all" — not distinguished in any way that could leak
+        // information about session validity.
+        $this->client->getCookieJar()->set(new \Symfony\Component\BrowserKit\Cookie('PHPSESSID', 'not-a-real-session-id'));
+
+        $this->client->request('GET', '/api/admin/me', server: ['HTTP_HOST' => self::ADMIN_HOST]);
+
+        self::assertResponseStatusCodeSame(401);
     }
 
     public function testTheMeEndpointIsNotReachableOnTheBareMainDomain(): void

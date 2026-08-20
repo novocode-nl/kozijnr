@@ -2,9 +2,7 @@
 
 namespace App\User\Infrastructure\Controller;
 
-use App\User\Domain\User;
-use Symfony\Bundle\SecurityBundle\Security;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -24,21 +22,22 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Split from AdminLoginController/AdminLogoutController per KOZ-10's one
  * route/action per controller class rule — this is a third, distinct
  * action, not a second method bolted onto either of those.
+ *
+ * KOZ-14 rework (round 4, non-blocking review finding): the only caller
+ * (web/proxy.ts's hasValidAdminSession) only ever inspects the HTTP status
+ * code — it never reads the response body. Returning the admin's email and
+ * roles here was therefore unnecessary data exposure (low risk — it's the
+ * logged-in admin's own data, and it never reached the client — but
+ * pointless all the same). `#[IsGranted]` already does all the actual
+ * work: the presence of a 200 response *is* the "yes, valid session"
+ * signal, so the body can just be empty.
  */
 final class AdminMeController
 {
-    public function __construct(private readonly Security $security)
-    {
-    }
-
     #[Route('/api/admin/me', name: 'admin_me', methods: ['GET'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    public function __invoke(): JsonResponse
+    public function __invoke(): Response
     {
-        $user = $this->security->getUser();
-        $email = $user instanceof User ? $user->getEmail() : $user?->getUserIdentifier();
-        $roles = $user?->getRoles() ?? [];
-
-        return new JsonResponse(['email' => $email, 'roles' => $roles], JsonResponse::HTTP_OK);
+        return new Response('', Response::HTTP_OK);
     }
 }

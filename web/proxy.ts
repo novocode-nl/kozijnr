@@ -1,6 +1,6 @@
-import { request as httpRequest } from "node:http"
 import { NextRequest, NextResponse } from "next/server"
 
+import { sendBackendRequest } from "@/lib/backend-request"
 import { TENANT_TOKEN_COOKIE_NAME } from "@/lib/auth/token-cookie"
 import { resolveAppContext } from "@/lib/context/app-context"
 
@@ -69,6 +69,19 @@ import { resolveAppContext } from "@/lib/context/app-context"
  *    this ticket's DoD is that the *guard* is complete and unconditional:
  *    every admin route redirects somewhere when there's no valid session,
  *    and that somewhere renders instead of 404ing.
+ *
+ * KOZ-14 (round 4, this rework) — automated code review flagged that the
+ * round-3 GET /api/admin/me round-trip had no timeout: if the backend
+ * accepted the connection but never responded (hang, deadlock, a slow
+ * query), `hasValidAdminSession` would await forever, blocking *every*
+ * admin route — not just a login attempt, but also already-logged-in
+ * admins — for as long as the backend stayed unresponsive. Fixed by
+ * routing the request through the new shared `sendBackendRequest` helper
+ * (`lib/backend-request.ts`, also now used by app/api/login/route.ts),
+ * which applies a bounded timeout via `req.setTimeout` and rejects instead
+ * of hanging. A rejection here (timeout or any other network failure) is
+ * treated the same as "no valid session" — fail closed, but within a
+ * short, predictable time instead of indefinitely.
  */
 const PUBLIC_PATHS = new Set(["/login", "/admin/login", "/api/login", "/api/logout"])
 
@@ -103,26 +116,33 @@ export async function proxy(request: NextRequest) {
 /**
  * Asks the backend whether the session cookie on this request is a valid
  * KOZ-8 super-admin session, via GET /api/admin/me (added in this rework
- * — see api/src/User/Infrastructure/Controller/AdminMeController.php).
- * Mirrors app/api/login/route.ts's `proxyToBackend` helper exactly (same
- * internal-network reachability constraints, same reason for `node:http`
- * over `fetch` — see this file's top docstring): forwards the incoming
- * request's Host header (so the backend's tenant/admin resolution sees
- * the actual admin.<domein> host, not the internal `backend:8000`
- * address) and its Cookie header (whatever session cookie the browser
- * sent, forwarded byte-for-byte — this code never needs to know its name
- * or parse it) unchanged, and reports whether the backend answered 200.
+ * — see api/src/User/Infrastructure/Controller/AdminMeController.php),
+ * through the shared `sendBackendRequest` helper (`lib/backend-request.ts`
+ * — same helper `app/api/login/route.ts` uses, see that file's docstring
+ * for the full "why node:http, why the internal host/port" background).
+ * Forwards the incoming request's Host header (so the backend's
+ * tenant/admin resolution sees the actual admin.<domein> host, not the
+ * internal `backend:8000` address) and its Cookie header (whatever
+ * session cookie the browser sent, forwarded byte-for-byte — this code
+ * never needs to know its name or parse it) unchanged, and reports
+ * whether the backend answered 200.
  *
  * A request with no Cookie header at all is rejected immediately, without
  * a network round-trip: there is nothing for the backend to validate
  * either way, and this is the overwhelmingly common case (a
  * session-less visitor hitting the admin subdomain for the first time).
+ *
+ * Fail-closed on any failure to confirm a valid session — a network
+ * error, a non-200 response, *and* (round 4 fix) a request that times out
+ * because the backend never responded — all resolve `false`, never leave
+ * the caller hanging. See `sendBackendRequest`'s docstring for the
+ * timeout mechanics.
  */
-function hasValidAdminSession(request: NextRequest): Promise<boolean> {
+async function hasValidAdminSession(request: NextRequest): Promise<boolean> {
   const cookieHeader = request.headers.get("cookie")
 
   if (!cookieHeader) {
-    return Promise.resolve(false)
+    return false
   }
 
   const incomingHost = request.headers.get("host") ?? "localhost"
@@ -130,30 +150,23 @@ function hasValidAdminSession(request: NextRequest): Promise<boolean> {
   const backendInternalHost = process.env.BACKEND_INTERNAL_HOST ?? "backend"
   const backendInternalPort = Number(process.env.BACKEND_INTERNAL_PORT ?? 8000)
 
-  return new Promise((resolve) => {
-    const req = httpRequest(
-      {
-        host: backendInternalHost,
-        port: backendInternalPort,
-        path: "/api/admin/me",
-        method: "GET",
-        headers: {
-          Host: hostname,
-          Cookie: cookieHeader,
-        },
-      },
-      (res) => {
-        res.resume()
-        res.on("end", () => resolve(res.statusCode === 200))
-      }
-    )
+  try {
+    const { status } = await sendBackendRequest({
+      host: backendInternalHost,
+      port: backendInternalPort,
+      path: "/api/admin/me",
+      method: "GET",
+      tenantHost: hostname,
+      headers: { Cookie: cookieHeader },
+    })
 
-    // Network/backend failure: fail closed, same spirit as the redirect
-    // this feeds into — no valid session could be confirmed, so none is
-    // assumed.
-    req.on("error", () => resolve(false))
-    req.end()
-  })
+    return status === 200
+  } catch {
+    // Network/backend failure (including a timed-out, hung backend): fail
+    // closed, same spirit as the redirect this feeds into — no valid
+    // session could be confirmed, so none is assumed.
+    return false
+  }
 }
 
 export const config = {

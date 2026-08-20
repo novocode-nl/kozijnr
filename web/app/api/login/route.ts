@@ -1,5 +1,6 @@
-import { request as httpRequest } from "node:http"
 import { NextRequest, NextResponse } from "next/server"
+
+import { sendBackendRequest } from "@/lib/backend-request"
 
 const GENERIC_ERROR = { message: "Invalid credentials." } as const
 
@@ -46,6 +47,15 @@ const GENERIC_ERROR = { message: "Invalid credentials." } as const
  * response it sends the browser, so the browser (not this server, and
  * definitely not client-side JS) is the one that ends up holding the
  * cookie. Nothing here ever reads or stores the token value itself.
+ *
+ * KOZ-14 rework (round 4): the actual `node:http` call now goes through
+ * the shared `sendBackendRequest` helper (`lib/backend-request.ts`),
+ * extracted alongside `proxy.ts`'s `hasValidAdminSession` — same
+ * boilerplate, now with a bounded timeout applied in one place instead of
+ * being (previously: not being) duplicated per call site. A timeout here
+ * surfaces as `sendBackendRequest` rejecting, which the existing catch
+ * block below already turns into the same generic 401 as any other
+ * backend failure.
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const incomingHost = request.headers.get("host") ?? "localhost"
@@ -62,11 +72,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const { status, setCookieHeaders } = await proxyToBackend({
+    const { status, headers } = await sendBackendRequest({
       host: backendInternalHost,
       port: backendInternalPort,
+      path: "/api/login",
+      method: "POST",
       tenantHost: hostname,
-      bodyText,
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": String(Buffer.byteLength(bodyText)),
+      },
+      body: bodyText,
     })
 
     if (status !== 200) {
@@ -74,6 +90,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const response = NextResponse.json({ success: true }, { status: 200 })
+    const setCookieHeaders = headers["set-cookie"] ?? []
     for (const cookie of setCookieHeaders) {
       response.headers.append("set-cookie", cookie)
     }
@@ -81,42 +98,4 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } catch {
     return NextResponse.json(GENERIC_ERROR, { status: 401 })
   }
-}
-
-function proxyToBackend(options: {
-  host: string
-  port: number
-  tenantHost: string
-  bodyText: string
-}): Promise<{ status: number; setCookieHeaders: string[] }> {
-  const { host, port, tenantHost, bodyText } = options
-
-  return new Promise((resolve, reject) => {
-    const req = httpRequest(
-      {
-        host,
-        port,
-        path: "/api/login",
-        method: "POST",
-        headers: {
-          Host: tenantHost,
-          "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(bodyText),
-        },
-      },
-      (res) => {
-        res.resume()
-        res.on("end", () => {
-          resolve({
-            status: res.statusCode ?? 500,
-            setCookieHeaders: res.headers["set-cookie"] ?? [],
-          })
-        })
-      }
-    )
-
-    req.on("error", reject)
-    req.write(bodyText)
-    req.end()
-  })
 }

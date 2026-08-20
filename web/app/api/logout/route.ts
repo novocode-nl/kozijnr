@@ -1,5 +1,6 @@
-import { request as httpRequest } from "node:http"
 import { NextRequest, NextResponse } from "next/server"
+
+import { sendBackendRequest } from "@/lib/backend-request"
 
 /**
  * Server-side proxy for tenant-user logout (KOZ-13 -> backend's
@@ -16,6 +17,12 @@ import { NextRequest, NextResponse } from "next/server"
  * The backend's response, in turn, sets an already-expired Set-Cookie to
  * actually clear it — forwarded back to the browser the same way
  * app/api/login/route.ts forwards the one that sets it.
+ *
+ * KOZ-14 rework (round 4): now goes through the shared `sendBackendRequest`
+ * helper (`lib/backend-request.ts`) too, so a hung backend here times out
+ * and falls into the existing catch block below (still a 204, per the
+ * best-effort reasoning already documented there) instead of leaving this
+ * request hanging as well.
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const incomingHost = request.headers.get("host") ?? "localhost"
@@ -25,14 +32,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const cookieHeader = request.headers.get("cookie") ?? ""
 
   try {
-    const { setCookieHeaders } = await proxyToBackend({
+    const { headers } = await sendBackendRequest({
       host: backendInternalHost,
       port: backendInternalPort,
+      path: "/api/logout",
+      method: "POST",
       tenantHost: hostname,
-      cookieHeader,
+      headers: { Cookie: cookieHeader },
     })
 
     const response = new NextResponse(null, { status: 204 })
+    const setCookieHeaders = headers["set-cookie"] ?? []
     for (const cookie of setCookieHeaders) {
       response.headers.append("set-cookie", cookie)
     }
@@ -41,43 +51,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Logging out is best-effort from this UI's perspective: the dashboard
     // placeholder always navigates back to /login regardless of the
     // outcome (see components handling this call), so a backend/network
-    // failure here has nothing more useful to report than "done".
+    // failure here (including a timeout) has nothing more useful to
+    // report than "done".
     return new NextResponse(null, { status: 204 })
   }
-}
-
-function proxyToBackend(options: {
-  host: string
-  port: number
-  tenantHost: string
-  cookieHeader: string
-}): Promise<{ status: number; setCookieHeaders: string[] }> {
-  const { host, port, tenantHost, cookieHeader } = options
-
-  return new Promise((resolve, reject) => {
-    const req = httpRequest(
-      {
-        host,
-        port,
-        path: "/api/logout",
-        method: "POST",
-        headers: {
-          Host: tenantHost,
-          Cookie: cookieHeader,
-        },
-      },
-      (res) => {
-        res.resume()
-        res.on("end", () => {
-          resolve({
-            status: res.statusCode ?? 500,
-            setCookieHeaders: res.headers["set-cookie"] ?? [],
-          })
-        })
-      }
-    )
-
-    req.on("error", reject)
-    req.end()
-  })
 }
