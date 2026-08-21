@@ -84,6 +84,13 @@ final class TenantResolverListener implements EventSubscriberInterface
             // it's a trustworthy context carrier. A request without an
             // Origin (curl, server-to-server) or with a foreign/api origin
             // stays on the public schema.
+            //
+            // Like the Host-based resolution above, this only *selects* the
+            // context — it grants nothing. Tenant credentials live inside
+            // the tenant's own schema and admin routes still require an
+            // admin session, so a caller picking another tenant here gets
+            // exactly what it would get by addressing that tenant's
+            // subdomain directly.
             $subdomain = $this->subdomainFromOrigin($request);
 
             if ($subdomain === null || $subdomain === Subdomain::RESERVED_API) {
