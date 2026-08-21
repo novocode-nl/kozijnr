@@ -1,16 +1,20 @@
-# Ports (FRONTEND_PORT/BACKEND_PORT/DATABASE_PORT), NEXT_PUBLIC_API_URL,
-# APP_BASE_DOMAIN and COMPOSE_PROJECT_NAME (which namespaces container/volume
-# names) are read from the .env file in this directory, with the defaults
-# below matching the non-worktree workflow (3000/8000/5432, project name
-# "kozijnr", APP_BASE_DOMAIN kozijnr.test).
+# Local dev stack for ONE checkout (main or a worktree). It has no published
+# ports for frontend/backend: both are reached through the shared nginx proxy
+# in docker/proxy (started by `make up` / `make proxy-up`) on
 #
-# For an isolated per-worktree environment (see KOZ-5, and KOZ-12 for the
-# Valet domains), generate a .env with:
-#   scripts/setup-worktree-env.sh <issue-number>
-# e.g. `scripts/setup-worktree-env.sh 12` for KOZ-12 sets
-# COMPOSE_PROJECT_NAME=koz-12, frontend on 3012, backend on 8012, database on
-# 5444, APP_BASE_DOMAIN=kozijnr-koz-12.test (api.kozijnr-koz-12.test /
-# admin.kozijnr-koz-12.test / <tenant>.kozijnr-koz-12.test via Valet).
+#   api.<base>    -> backend   (Symfony REST API)
+#   admin.<base>  -> frontend  (Next.js, super-admin context)
+#   <tenant>.<base> -> frontend (Next.js, tenant context)
+#
+# where <base> is kozijnr.localhost for the main checkout and
+# koz-<n>.kozijnr.localhost for the KOZ-n worktree. The proxy finds this
+# stack on the external `kozijnr-proxy` network by the aliases
+# <COMPOSE_PROJECT_NAME>-frontend / <COMPOSE_PROJECT_NAME>-backend.
+#
+# COMPOSE_PROJECT_NAME (namespaces container/volume names + the proxy
+# aliases), DATABASE_PORT and APP_BASE_DOMAIN are read from the .env file in
+# this directory; `make up` generates it (scripts/setup-worktree-env.sh). The
+# defaults below are the main checkout's.
 services:
   database:
     image: postgres:16-alpine
@@ -19,6 +23,8 @@ services:
       POSTGRES_USER: app
       POSTGRES_PASSWORD: app
     ports:
+      # The only published port: for a DB client on the host. Per worktree
+      # unique (5432 + <n>) so stacks can run side by side.
       - "${DATABASE_PORT:-5432}:5432"
     volumes:
       - database_data:/var/lib/postgresql/data
@@ -34,19 +40,18 @@ services:
     volumes:
       - ./api:/app
       - backend_vendor:/app/vendor
-    ports:
-      - "${BACKEND_PORT:-8000}:8000"
     environment:
       APP_ENV: dev
       DATABASE_URL: "postgresql://app:app@database:5432/app?serverVersion=16&charset=utf8"
-      # Passed through as real container env vars (see api/config/services.yaml
-      # / services_dev.yaml) so the app inside the container knows both which
-      # *.test domain it should be reachable on via Valet (KOZ-12) and which
-      # host port that domain's Valet proxy needs to target. Defaults match
-      # the non-worktree main checkout; scripts/setup-worktree-env.sh sets
-      # both per worktree in the repo-root .env this file reads from.
-      APP_BASE_DOMAIN: "${APP_BASE_DOMAIN:-kozijnr.test}"
-      BACKEND_PORT: "${BACKEND_PORT:-8000}"
+      # Real container env var (wins over api/.env): which base domain this
+      # stack's hostnames hang under, used for tenant/admin/api subdomain
+      # resolution, CORS and cookie scope. See api/config/services.yaml.
+      APP_BASE_DOMAIN: "${APP_BASE_DOMAIN:-kozijnr.localhost}"
+    networks:
+      default: {}
+      proxy:
+        aliases:
+          - "${COMPOSE_PROJECT_NAME:-kozijnr}-backend"
     depends_on:
       database:
         condition: service_healthy
@@ -57,13 +62,20 @@ services:
     volumes:
       - ./web:/app
       - frontend_node_modules:/app/node_modules
-    ports:
-      - "${FRONTEND_PORT:-3000}:3000"
     environment:
-      NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-http://localhost:8000}"
       WATCHPACK_POLLING: "true"
+    networks:
+      default: {}
+      proxy:
+        aliases:
+          - "${COMPOSE_PROJECT_NAME:-kozijnr}-frontend"
     depends_on:
       - backend
+
+networks:
+  proxy:
+    external: true
+    name: kozijnr-proxy
 
 volumes:
   database_data:

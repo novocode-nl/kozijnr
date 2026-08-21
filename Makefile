@@ -5,42 +5,65 @@ COMPOSE := docker compose
 SHELL := /bin/bash
 
 .PHONY: up down build rebuild restart logs ps sh-backend sh-frontend \
-        composer console npm test-backend worktree-env worktree-valet-teardown ensure-env \
-        valet-sync valet-watch
+        composer console npm test-backend worktree-env ensure-env \
+        proxy-up proxy-down proxy-logs
 
-## Ensure a per-worktree .env exists before the stack starts. Runs
-## automatically as a prerequisite of `up` so a single `make up` suffices in
-## a fresh worktree — see "Per-worktree test environments" in README.md.
+PROXY_COMPOSE := docker compose -f docker/proxy/docker-compose.yml
+PROXY_NETWORK := kozijnr-proxy
+
+## Ensure a .env exists before the stack starts. Runs automatically as a
+## prerequisite of `up` so a single `make up` suffices in a fresh checkout or
+## worktree — see "Per-worktree test environments" in README.md.
 ##
-## - If .env already exists, it is left untouched (no overwrite), so manual
-##   edits or a deliberately different issue number survive.
-## - Otherwise the issue number is derived from the current branch name,
-##   which is expected to follow the `koz-<n>` convention, and
-##   scripts/setup-worktree-env.sh <n> is invoked to generate .env.
-## - If the branch name doesn't match `koz-<n>` (e.g. `main`), this fails
-##   loudly with an explanation rather than silently falling back to the
-##   default ports (3000/8000/5432) — that fallback would be confusing to
-##   debug when several worktrees are meant to run side by side.
+## - If .env already exists, it is left untouched (no overwrite).
+## - On branch `main`, the main checkout's .env is generated
+##   (project "kozijnr", base domain kozijnr.localhost).
+## - On a `koz-<n>` branch, the issue number is derived from the branch name
+##   and an isolated per-worktree .env is generated (project "koz-<n>",
+##   base domain koz-<n>.kozijnr.localhost).
+## - Any other branch name fails loudly rather than guessing — when several
+##   stacks run side by side a silent default would be confusing to debug.
 ensure-env:
 	@if [ -f .env ]; then \
 		echo ".env already exists — leaving it as-is."; \
 	else \
 		BRANCH="$$(git rev-parse --abbrev-ref HEAD)"; \
-		if [[ "$$BRANCH" =~ ^koz-([1-9][0-9]*)$$ ]]; then \
+		if [ "$$BRANCH" = "main" ]; then \
+			echo "No .env found — generating the main checkout's .env."; \
+			./scripts/setup-worktree-env.sh main; \
+		elif [[ "$$BRANCH" =~ ^koz-([1-9][0-9]*)$$ ]]; then \
 			N="$${BASH_REMATCH[1]}"; \
 			echo "No .env found — deriving issue number $$N from branch '$$BRANCH'."; \
 			./scripts/setup-worktree-env.sh "$$N"; \
 		else \
-			echo "Error: no .env found, and current branch '$$BRANCH' does not match the 'koz-<n>' naming convention," >&2; \
-			echo "so the KOZ issue number could not be derived automatically." >&2; \
-			echo "Fix: checkout a branch named 'koz-<n>', or run 'make worktree-env n=<n>' (or create .env manually) first." >&2; \
+			echo "Error: no .env found, and current branch '$$BRANCH' is neither 'main' nor 'koz-<n>'," >&2; \
+			echo "so the environment could not be derived automatically." >&2; \
+			echo "Fix: run 'make worktree-env n=<n>' (or 'make worktree-env n=main'), or create .env by hand." >&2; \
 			exit 1; \
 		fi; \
 	fi
 
+## Start the shared nginx reverse proxy (idempotent; creates the external
+## docker network it needs). One proxy serves the main checkout AND every
+## worktree, routing api|admin|<tenant>[.koz-<n>].kozijnr.localhost by
+## hostname — see docker/proxy and README.md "Local domains via nginx".
+proxy-up:
+	@docker network inspect $(PROXY_NETWORK) >/dev/null 2>&1 || docker network create $(PROXY_NETWORK)
+	$(PROXY_COMPOSE) up -d
+
+## Stop the shared proxy (all stacks become unreachable over HTTP until
+## `make proxy-up` again; the stacks themselves keep running).
+proxy-down:
+	$(PROXY_COMPOSE) down
+
+## Tail the shared proxy's logs.
+proxy-logs:
+	$(PROXY_COMPOSE) logs -f
+
 ## Start the full stack in the background. Generates .env automatically
-## (see `ensure-env`) if it doesn't exist yet.
-up: ensure-env
+## (see `ensure-env`) if it doesn't exist yet, and makes sure the shared
+## proxy is running.
+up: ensure-env proxy-up
 	$(COMPOSE) up -d
 
 ## Stop and remove the stack's containers.
@@ -95,39 +118,7 @@ npm:
 test-backend:
 	$(COMPOSE) exec -e APP_ENV=test backend php bin/phpunit $(args)
 
-## Generate a per-worktree .env with ports/names derived from a KOZ issue
-## number, e.g. `make worktree-env n=12` for KOZ-12. See README.md.
+## (Re)generate .env for a KOZ issue number (`make worktree-env n=12`) or the
+## main checkout (`make worktree-env n=main`). See README.md.
 worktree-env:
 	./scripts/setup-worktree-env.sh $(n)
-
-## Remove a worktree's Laravel Valet proxies (KOZ-12), e.g.
-## `make worktree-valet-teardown n=12` for KOZ-12. See README.md and
-## scripts/teardown-worktree-valet.sh. Used by the asana-user-review skill's
-## worktree-cleanup step; safe to run manually too.
-worktree-valet-teardown:
-	./scripts/teardown-worktree-valet.sh $(n)
-
-## Drain this worktree's pending Valet proxy-request queue (KOZ-12,
-## rework): actually calls `valet proxy` on the host for every tenant proxy
-## the backend container has queued (e.g. via `tenant:provision` or the
-## admin API) since the last run. Run this after creating a tenant to make
-## its <tenant>.<base>.test domain resolve — see README.md "Local domains
-## via Laravel Valet" for why this is a deliberate on-demand step rather
-## than an always-running background daemon. Safe to run repeatedly (a
-## no-op with nothing pending), and a no-op if Valet isn't installed.
-valet-sync:
-	./scripts/valet-sync.sh
-
-## Watch this worktree's pending Valet proxy-request queue and run
-## `make valet-sync` automatically whenever a new request appears (KOZ-12,
-## rework round 3) — e.g. from `tenant:provision` (CLI) or `POST
-## /api/admin/tenants` (admin API), since both write to the same queue via
-## App\Tenancy\Infrastructure\Valet\TenantValetProxyListener /
-## FilesystemValetProxyQueue, with no distinction needed here. Requires
-## `fswatch` (`brew install fswatch`). Deliberately on-demand: run this in a
-## spare terminal tab while working on tenants, stop it with Ctrl+C — not a
-## background daemon, see README.md "Local domains via Laravel Valet". The
-## queue + `make valet-sync` remains the underlying guarantee even without
-## this running.
-valet-watch:
-	./scripts/valet-watch.sh
