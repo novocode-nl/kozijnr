@@ -12,11 +12,15 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
+  FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { AppleIcon, GoogleIcon } from "@/components/social-icons"
+import { LoginSidePanel } from "@/components/login-side-panel"
 
 export function LoginForm({
   className,
@@ -62,7 +66,7 @@ export function LoginForm({
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="overflow-hidden p-0">
-        <CardContent className="p-0">
+        <CardContent className="grid p-0 md:grid-cols-2">
           <form
             className="p-6 md:p-8"
             onSubmit={handleSubmit(onSubmit)}
@@ -75,6 +79,25 @@ export function LoginForm({
                   Log in op je Kozijnr-account
                 </p>
               </div>
+              {/*
+                KOZ-16: social login bovenaan. Beide knoppen zijn disabled —
+                er bestaat nog geen Apple- of Google-login-koppeling in de
+                backend, dit is puur de visuele plek voor latere
+                implementatie (Google expliciet vereist door het ticket).
+              */}
+              <Field className="grid grid-cols-2 gap-4">
+                <Button variant="outline" type="button" disabled>
+                  <AppleIcon />
+                  Apple
+                </Button>
+                <Button variant="outline" type="button" disabled>
+                  <GoogleIcon />
+                  Google
+                </Button>
+              </Field>
+              <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
+                Of ga verder met
+              </FieldSeparator>
               <Field data-invalid={!!errors.email}>
                 <FieldLabel htmlFor="email">E-mailadres</FieldLabel>
                 <Input
@@ -111,8 +134,12 @@ export function LoginForm({
                   {isSubmitting ? "Bezig met inloggen..." : "Inloggen"}
                 </Button>
               </Field>
+              <FieldDescription className="text-center">
+                <a href="#">Wachtwoord vergeten?</a>
+              </FieldDescription>
             </FieldGroup>
           </form>
+          <LoginSidePanel />
         </CardContent>
       </Card>
     </div>

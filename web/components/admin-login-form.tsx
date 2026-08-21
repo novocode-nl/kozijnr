@@ -12,11 +12,15 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
+  FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { AppleIcon, GoogleIcon } from "@/components/social-icons"
+import { LoginSidePanel } from "@/components/login-side-panel"
 
 /**
  * Super-admin counterpart to components/login-form.tsx (KOZ-14 rework,
@@ -31,6 +35,13 @@ import { Input } from "@/components/ui/input"
  * Rendered by app/login/page.tsx when the Host resolves to the admin
  * context (lib/context/app-context.ts) — /login is the single path for
  * both forms, this component is never routed to directly.
+ *
+ * KOZ-16 rework: rebuilt on shadcn's login-04 block, social-buttons-on-top
+ * variant, keeping the block's default two-column layout (form left,
+ * decorative image side panel right, hidden below md) — disabled
+ * Apple/Google buttons (components/social-icons.tsx) above the form,
+ * "Wachtwoord vergeten?" link where the block's default "Sign up" link
+ * goes. Purely visual/structural, the auth logic above is unchanged.
  */
 export function AdminLoginForm({
   className,
@@ -72,7 +83,7 @@ export function AdminLoginForm({
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="overflow-hidden p-0">
-        <CardContent className="p-0">
+        <CardContent className="grid p-0 md:grid-cols-2">
           <form
             className="p-6 md:p-8"
             onSubmit={handleSubmit(onSubmit)}
@@ -85,6 +96,25 @@ export function AdminLoginForm({
                   Log in als beheerder
                 </p>
               </div>
+              {/*
+                KOZ-16: social login bovenaan. Beide knoppen zijn disabled —
+                er bestaat nog geen Apple- of Google-login-koppeling in de
+                backend, dit is puur de visuele plek voor latere
+                implementatie (Google expliciet vereist door het ticket).
+              */}
+              <Field className="grid grid-cols-2 gap-4">
+                <Button variant="outline" type="button" disabled>
+                  <AppleIcon />
+                  Apple
+                </Button>
+                <Button variant="outline" type="button" disabled>
+                  <GoogleIcon />
+                  Google
+                </Button>
+              </Field>
+              <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
+                Of ga verder met
+              </FieldSeparator>
               <Field data-invalid={!!errors.email}>
                 <FieldLabel htmlFor="email">E-mailadres</FieldLabel>
                 <Input
@@ -121,8 +151,12 @@ export function AdminLoginForm({
                   {isSubmitting ? "Bezig met inloggen..." : "Inloggen"}
                 </Button>
               </Field>
+              <FieldDescription className="text-center">
+                <a href="#">Wachtwoord vergeten?</a>
+              </FieldDescription>
             </FieldGroup>
           </form>
+          <LoginSidePanel />
         </CardContent>
       </Card>
     </div>
