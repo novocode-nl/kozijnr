@@ -22,6 +22,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { adminLogout, logout } from "@/lib/api"
 import type { AppContext } from "@/lib/context/app-context"
 import { contextLabel } from "@/lib/navigation/menu-config"
 
@@ -37,18 +38,11 @@ export function NavUser({ context }: { context: AppContext }) {
   const router = useRouter()
 
   async function handleLogout() {
-    // Both contexts now have a real frontend session to invalidate
-    // (KOZ-14 rework, round 5 added the admin login form + PHPSESSID
-    // session; round 6 fixed this call to actually invalidate it instead
-    // of just navigating away): tenant calls the KOZ-13 logout proxy
-    // (app/api/logout/route.ts), admin calls its counterpart
-    // (app/api/admin/logout/route.ts) — both invalidate the session
-    // server-side before the redirect below, so a subsequent /dashboard
-    // visit correctly bounces back to /login instead of the round-5
-    // "already valid session -> /dashboard" redirect firing again.
-    await fetch(context === "admin" ? "/api/admin/logout" : "/api/logout", {
-      method: "POST",
-    })
+    // Invalidate the session on the API first (tenant token cookie or
+    // admin PHPSESSID), so a subsequent /dashboard visit bounces back to
+    // /login instead of the "already valid session -> /dashboard" redirect
+    // in proxy.ts firing again.
+    await (context === "admin" ? adminLogout() : logout())
     router.push("/login")
   }
 

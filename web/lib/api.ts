@@ -1,65 +1,46 @@
+import { apiBaseUrl } from "@/lib/api-base-url"
 import type { LoginFormValues } from "@/lib/schemas/login"
 
 /**
- * Generic message the backend always returns for /api/login, regardless of
- * what specifically made the credentials invalid (KOZ-11 DoD: no
- * distinguishing technical detail leaks to the client). Used as the
- * fallback whenever the response can't be parsed at all, so the UI never
- * shows anything more specific than the backend itself would.
+ * Browser-side service layer over the REST API on api.<base>. Components
+ * call these functions; nothing else in the frontend talks to the backend.
+ *
+ * Every call is cross-origin (admin.<base> / <tenant>.<base> -> api.<base>)
+ * but same-site, so `credentials: "include"` carries the HttpOnly
+ * session/token cookies the API sets and the API's CorsListener allows the
+ * origin through. Which tenant/admin context a call belongs to is derived
+ * by the API from the browser-set Origin header.
  */
 export const GENERIC_LOGIN_ERROR = "Invalid credentials."
 
-/**
- * Calls this app's own POST /api/login route handler (app/api/login/route.ts),
- * which proxies to the actual backend (KOZ-11) server-side — see that
- * route's docstring for why a same-origin proxy is used instead of calling
- * the backend directly from the browser (tenant subdomain + CORS).
- *
- * KOZ-13 rework: on success there is no token to hand back to the caller
- * anymore — the backend sets it as an HttpOnly cookie
- * (App\TenantUser\Infrastructure\Security\TenantApiTokenCookie), forwarded
- * onto the browser's response by the proxy route itself. This function's
- * only job is to report whether the login succeeded.
- *
- * Never throws for an invalid-credentials response — that is a normal,
- * expected outcome the caller renders inline — only for genuine
- * network/unexpected failures, always with the same generic message so
- * nothing technical ever reaches the UI.
- */
-export async function login(
-  values: LoginFormValues
-): Promise<{ success: true } | { success: false; message: string }> {
+export type LoginResult = { success: true } | { success: false; message: string }
+
+export async function login(values: LoginFormValues): Promise<LoginResult> {
   return postCredentials("/api/login", values)
 }
 
-/**
- * Calls this app's own POST /api/admin/login route handler
- * (app/api/admin/login/route.ts), which proxies to the backend's
- * super-admin login (KOZ-8) server-side — the admin-side counterpart to
- * `login` above. Same reasoning throughout: a same-origin proxy (Host
- * header + no CORS), a generic error message regardless of cause, and no
- * token/session value ever handled here — the backend hands the session
- * back as a `Set-Cookie` the browser stores, forwarded verbatim by the
- * proxy route.
- *
- * KOZ-14 rework (round 5): added alongside components/admin-login-form.tsx
- * so /login has a real, working form for the admin context too, instead of
- * the earlier admin/login placeholder page.
- */
-export async function adminLogin(
-  values: LoginFormValues
-): Promise<{ success: true } | { success: false; message: string }> {
+export async function adminLogin(values: LoginFormValues): Promise<LoginResult> {
   return postCredentials("/api/admin/login", values)
 }
 
-async function postCredentials(
-  path: string,
-  values: LoginFormValues
-): Promise<{ success: true } | { success: false; message: string }> {
+export async function logout(): Promise<void> {
+  await postBestEffort("/api/logout")
+}
+
+export async function adminLogout(): Promise<void> {
+  await postBestEffort("/api/admin/logout")
+}
+
+function backendUrl(path: string): string {
+  return `${apiBaseUrl(window.location.host, window.location.protocol)}${path}`
+}
+
+async function postCredentials(path: string, values: LoginFormValues): Promise<LoginResult> {
   let response: Response
   try {
-    response = await fetch(path, {
+    response = await fetch(backendUrl(path), {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(values),
     })
@@ -72,4 +53,14 @@ async function postCredentials(
   }
 
   return { success: true }
+}
+
+// Logout is best effort: whatever the API answers, the caller navigates to
+// /login next and the route guard takes over.
+async function postBestEffort(path: string): Promise<void> {
+  try {
+    await fetch(backendUrl(path), { method: "POST", credentials: "include" })
+  } catch {
+    // ignore — see above
+  }
 }

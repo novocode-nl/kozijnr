@@ -1,24 +1,17 @@
 import { type IncomingHttpHeaders, request as httpRequest } from "node:http"
 
 /**
- * Shared server-to-server request helper for talking to the backend from
- * this frontend (KOZ-14 rework, round 4). Extracted out of
- * `app/api/login/route.ts`'s `proxyToBackend` and `proxy.ts`'s
- * `hasValidAdminSession` — both were near-identical `node:http` boilerplate
- * (same reason for `node:http` over `fetch`, same internal-network
- * reachability constraints; see either call site's docstring for the full
- * "why http.request, why the internal host/port" background, not repeated
- * here).
+ * Server-to-server request helper for the one place this frontend talks to
+ * the backend from its own server side: the route guard in `proxy.ts`
+ * (admin session check). Uses `node:http` instead of `fetch` because it
+ * needs to set the `Host` header explicitly (Fetch forbids that), and
+ * targets the backend's internal container address (`backend:8000`) since
+ * the public api.<base> hostname only resolves on the developer's machine,
+ * not inside the container network.
  *
- * The concrete bug this consolidation fixes: neither call site had a
- * timeout on the request. If the backend accepts the TCP connection but
- * never responds (hang, deadlock, a slow query holding a DB connection),
- * the request — and therefore every caller awaiting it — would hang
- * indefinitely. For `hasValidAdminSession` in particular, that request sits
- * on the guard for *every* admin route, so a hung backend would hang the
- * entire admin surface, not just a login attempt. Fixing it once here
- * means both call sites get the fix, instead of needing the same
- * `req.setTimeout` boilerplate duplicated a second time.
+ * Applies a bounded timeout: if the backend accepts the TCP connection but
+ * never responds, the request rejects instead of hanging — important
+ * because the guard sits on every admin route.
  */
 const DEFAULT_TIMEOUT_MS = 5000
 
