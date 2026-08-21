@@ -45,7 +45,7 @@ final class TenantApiTokenCookieTest extends TestCase
 
         // null = Symfony's "auto" mode: Response::prepare() turns this on
         // only when the inbound request is itself HTTPS, so the exact same
-        // code works over plain-HTTP local dev (Valet's *.test domains)
+        // code works over plain-HTTP local dev (plain-HTTP *.kozijnr.localhost)
         // and a real HTTPS deployment.
         self::assertTrue(self::secureAttributeIsAuto($cookie));
     }

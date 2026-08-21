@@ -82,10 +82,9 @@ final class TenantResolverListener implements EventSubscriberInterface
         }
 
         if ($subdomain === Subdomain::RESERVED_API) {
-            // Reserved "api" domain (KOZ-12): under Valet there is no more
-            // bare-host request to reach the app on, so "api.<base>" is the
-            // stand-in for that — no tenant, no admin, stays on the public
-            // schema, same as the $subdomain === null branch above.
+            // Reserved "api" domain: the API's own hostname behind the nginx
+            // proxy — no tenant, no admin, stays on the public schema, same
+            // as the $subdomain === null branch above.
             return;
         }
 

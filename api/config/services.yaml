@@ -10,16 +10,11 @@ parameters:
     # Domain requests are matched against to detect a tenant subdomain, e.g.
     # a request to "acme.<base>" resolves tenant "acme"; a request to
     # "<base>" itself (or any host not ending in ".<base>") stays on the
-    # public schema. See README.md for how to test this locally via Laravel
-    # Valet (KOZ-12, e.g. "kozijnr.test" for the main checkout,
-    # "kozijnr-koz-<n>.test" per worktree).
-    #
-    # Also reused as-is (KOZ-12) by the dev-only Valet auto-proxy listener
-    # (App\Tenancy\Infrastructure\Valet\TenantValetProxyListener) to build
-    # the full "<tenant>.<app.tenancy.base_domain>" domain it queues a
-    # Valet proxy request for — deliberately the same parameter rather than
-    # a second one, since it must always match what TenantResolverListener
-    # itself resolves subdomains against.
+    # public schema. Locally this is "kozijnr.localhost" (main checkout) or
+    # "koz-<n>.kozijnr.localhost" (worktree) — see README.md "Local domains
+    # via nginx"; in production the real apex domain, e.g. kozijnr.nl.
+    # Also used by CorsListener to decide which browser origins may call
+    # this API on api.<base>.
     app.tenancy.base_domain: '%env(APP_BASE_DOMAIN)%'
 
     # Tenant migrations (per tenant-schema) live in a directory separate from
@@ -27,33 +22,6 @@ parameters:
     # so the two sets never run against each other. See
     # App\Tenancy\Infrastructure\TenantSchemaMigrator and the KOZ-7 ticket.
     app.tenancy.migrations_path: '%kernel.project_dir%/migrations-tenant'
-
-    # Host-side port the backend container is published on (BACKEND_PORT in
-    # the repo-root .env / docker-compose.yml — see scripts/setup-worktree-env.sh
-    # and README.md "Per-worktree test environments"), passed through by
-    # docker-compose as a real container env var. Only consumed by the
-    # KOZ-12 dev-only Valet auto-proxy listener
-    # (App\Tenancy\Infrastructure\Valet\TenantValetProxyListener, wired in
-    # config/services_dev.yaml) to know which port a freshly created
-    # tenant's queued
-    # `valet proxy <tenant>.<app.tenancy.base_domain> http://127.0.0.1:<port>`
-    # request should target once scripts/valet-sync.sh drains the queue.
-    app.tenancy.valet_backend_port: '%env(int:BACKEND_PORT)%'
-
-    # Directory the KOZ-12 dev-only Valet auto-proxy listener
-    # (App\Tenancy\Infrastructure\Valet\TenantValetProxyListener via
-    # App\Tenancy\Infrastructure\Valet\FilesystemValetProxyQueue, wired in
-    # config/services_dev.yaml) writes pending proxy *requests* to, instead
-    # of ever calling `valet` itself — the backend container has no `valet`
-    # binary and no access to the host's Valet install at all. Defaults to
-    # `%kernel.project_dir%/var/valet-proxy-queue`, i.e. `/app/var/...`
-    # inside the container, which is `./api/var/valet-proxy-queue` on the
-    # host thanks to docker-compose.yml's `./api:/app` bind mount — no extra
-    # Docker volume needed. scripts/valet-sync.sh, run on the host via `make
-    # valet-sync`, reads that same host-side path and actually calls `valet
-    # proxy` for each pending request. See README.md "Local domains via
-    # Laravel Valet".
-    app.tenancy.valet_queue_directory: '%kernel.project_dir%/var/valet-proxy-queue'
 
 services:
     # default configuration for services in *this* file

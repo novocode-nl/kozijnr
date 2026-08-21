@@ -15,6 +15,10 @@
         <ini name="error_reporting" value="-1" />
         <server name="APP_ENV" value="test" force="true" />
         <server name="SHELL_VERBOSITY" value="-1" />
+        <!-- The test suite hardcodes "localhost"-based hostnames. docker-compose
+             passes APP_BASE_DOMAIN into the container as a real env var (which
+             would otherwise beat .env.test), so force it here. -->
+        <env name="APP_BASE_DOMAIN" value="localhost" force="true" />
     </php>
 
     <testsuites>

@@ -16,22 +16,21 @@ use Symfony\Component\HttpFoundation\Cookie;
  * - Secure left `null` (Symfony's "auto" mode, see Cookie::create's
  *   `$secure` param): Response::prepare() enables it automatically once
  *   the *inbound* request is itself HTTPS, so the exact same code works
- *   over plain-HTTP local dev (Valet's `*.test` domains aren't served over
- *   TLS — see README.md "Local domains via Laravel Valet") and a real
+ *   over plain-HTTP local dev (the nginx `*.kozijnr.localhost` domains
+ *   aren't served over TLS — see README.md "Local domains via nginx") and a real
  *   HTTPS deployment, without a separate flag to keep in sync.
- * - SameSite=Lax: from the browser's perspective this cookie is always
- *   first-party — the browser only ever talks to it via the Next.js
- *   frontend's own server-side proxy route (web/app/api/login/route.ts and
- *   web/app/api/logout/route.ts), which forwards the Set-Cookie/Cookie
- *   headers server-to-server; the browser itself never makes a cross-site
- *   request to the API. Lax is the strictest setting that still survives a
- *   plain top-level navigation (SameSite=Strict would drop the cookie on
- *   e.g. an external link landing on /dashboard), and SameSite=None would
- *   only be needed for an actually cross-site flow, which this isn't.
- * - No explicit Domain: a host-only cookie, scoped to exactly the tenant
- *   subdomain the browser is currently on — lines up with the
- *   subdomain-per-tenant scheme KOZ-6/KOZ-12 already use, with no extra
- *   configuration needed to keep the two in sync.
+ * - SameSite=Lax: the browser client (admin.<base> / <tenant>.<base>)
+ *   calls this API cross-origin on api.<base>, but that is still the same
+ *   *site* (same registrable domain), so Lax cookies are sent along with
+ *   `credentials: "include"` fetches. Lax is the strictest setting that
+ *   still survives a plain top-level navigation (SameSite=Strict would drop
+ *   the cookie on e.g. an external link landing on /dashboard), and
+ *   SameSite=None would only be needed for an actually cross-site flow,
+ *   which this isn't.
+ * - No explicit Domain: a host-only cookie, scoped to exactly the host it
+ *   was issued on — api.<base>, the only host the browser client ever
+ *   sends API requests to. The tenant itself is carried by the request's
+ *   Origin (see TenantResolverListener), not by the cookie's scope.
  * - 30-day lifetime: matches TenantApiToken's own sliding-expiry window
  *   (App\TenantUser\Domain\TenantApiToken::EXPIRY_PERIOD) — the cookie
  *   should never meaningfully outlive, or expire before, the token inside

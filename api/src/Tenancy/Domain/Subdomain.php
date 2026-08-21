@@ -24,12 +24,11 @@ final class Subdomain
 
     /**
      * The reserved "api" subdomain label (api.kozijnr.nl in production,
-     * api.kozijnr.test locally under Valet — see KOZ-12) — functionally the
-     * replacement for what used to be "no subdomain" / a bare
-     * localhost:<port> request: no tenant context, no admin context, stays
-     * on the public schema. Needed because Valet's proxy layer (unlike a
-     * bare `docker compose` port mapping) always requires *some* host, so
-     * there is no more "no subdomain at all" request to fall back to.
+     * api.kozijnr.localhost locally behind the nginx proxy): the hostname
+     * the REST API itself is served on. No tenant context, no admin
+     * context, stays on the public schema — unless a browser client on a
+     * sibling subdomain identifies its context via the Origin header (see
+     * TenantResolverListener).
      * Recognized by TenantResolverListener exactly like RESERVED_ADMIN, and
      * rejected by TenantName so it can never be provisioned as an actual
      * tenant either.
