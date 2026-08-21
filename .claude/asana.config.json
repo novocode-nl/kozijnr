@@ -15,7 +15,7 @@
     "default_view": "board"
   },
   "ticket_prefix": "KOZ",
-  "next_number": 16,
+  "next_number": 17,
   "sections": [
     { "gid": "1217604953169406", "name": "Backlog" },
     { "gid": "1217604953169407", "name": "Todo" },
