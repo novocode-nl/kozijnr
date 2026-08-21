@@ -81,9 +81,15 @@ configureerbaar voor als 80 toch bezet is; dan staat de poort in de URL.
   zoals nu. Ongeldige/andere-domein `Origin` → genegeerd (public). Geldt in
   elke omgeving (prod werkt identiek: `admin.kozijnr.nl` → `api.kozijnr.nl`).
   Het dev-only `X-Tenant-Host`-experiment vervalt.
-- **Cookies** — ongewijzigd: `api.` en `admin.`/`<t>.` zijn same-site, dus
-  bestaande `SameSite=Lax`-sessie/token-cookies werken met
-  `credentials: "include"`.
+- **Cookies** — `api.` en `admin.`/`<t>.` zijn same-site, dus
+  `SameSite=Lax`-cookies werken met `credentials: "include"`. Maar: de
+  cookies worden door `api.<base>` gezet en moeten óók de frontend-hosts
+  bereiken (de route-guard in `web/proxy.ts` checkt de tenant-cookie op
+  aanwezigheid en stuurt de admin-sessiecookie door naar `/api/admin/me`).
+  Host-only cookies komen daar nooit aan, dus beide cookies krijgen
+  `Domain=<APP_BASE_DOMAIN>` (`TenantApiTokenCookie::issue($token, $domain)`
+  / `clear($domain)`, `framework.session.cookie_domain`). Tenant-isolatie
+  blijft een server-side garantie (token-lookup in het tenant-schema).
 - **Valet-code weg** — `Tenancy/Infrastructure/Valet/*` (listener, queue,
   interface, DevCorsListener) + tests, `services(_dev).yaml`-wiring en de
   parameters `valet_frontend_port` / `valet_queue_directory`; `FRONTEND_PORT`
