@@ -110,4 +110,27 @@ final class AdminRouteGuardListenerTest extends WebTestCase
     {
         return static::getContainer()->get(Connection::class);
     }
+
+    public function testAdminOriginOnTheApiHostReachesAdminRoutes(): void
+    {
+        // The browser client on admin.<base> calls api.<base>; its Origin is
+        // what makes this an admin-context request.
+        $this->client->request('POST', '/api/admin/login', server: [
+            'HTTP_HOST' => 'api.' . self::BASE_DOMAIN,
+            'HTTP_ORIGIN' => 'http://admin.' . self::BASE_DOMAIN,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['email' => 'nobody@example.com', 'password' => 'wrong']));
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testTenantOriginOnTheApiHostDoesNotReachAdminRoutes(): void
+    {
+        $this->client->request('GET', '/api/admin/tenants', server: [
+            'HTTP_HOST' => 'api.' . self::BASE_DOMAIN,
+            'HTTP_ORIGIN' => 'http://tenant-a.' . self::BASE_DOMAIN,
+        ]);
+
+        self::assertResponseStatusCodeSame(404);
+    }
 }

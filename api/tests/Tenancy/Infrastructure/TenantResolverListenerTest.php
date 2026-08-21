@@ -151,4 +151,75 @@ final class TenantResolverListenerTest extends WebTestCase
     {
         return static::getContainer()->get(Connection::class);
     }
+
+    public function testOriginHeaderSelectsTheTenantOnTheApiHost(): void
+    {
+        $this->client->request('GET', '/api/health', server: [
+            'HTTP_HOST' => 'api.' . self::BASE_DOMAIN,
+            'HTTP_ORIGIN' => 'http://tenant-a.' . self::BASE_DOMAIN,
+        ]);
+
+        self::assertResponseIsSuccessful();
+
+        $bodies = array_column($this->connection()->fetchAllAssociative('SELECT body FROM notes'), 'body');
+        self::assertSame(['secret from tenant A'], $bodies);
+    }
+
+    public function testOriginWithPortSelectsTheTenantOnTheApiHost(): void
+    {
+        $this->client->request('GET', '/api/health', server: [
+            'HTTP_HOST' => 'api.' . self::BASE_DOMAIN,
+            'HTTP_ORIGIN' => 'http://tenant-b.' . self::BASE_DOMAIN . ':8080',
+        ]);
+
+        self::assertResponseIsSuccessful();
+
+        $bodies = array_column($this->connection()->fetchAllAssociative('SELECT body FROM notes'), 'body');
+        self::assertSame(['secret from tenant B'], $bodies);
+    }
+
+    public function testUnknownTenantInOriginOnTheApiHostReturns404(): void
+    {
+        $this->client->request('GET', '/api/health', server: [
+            'HTTP_HOST' => 'api.' . self::BASE_DOMAIN,
+            'HTTP_ORIGIN' => 'http://does-not-exist.' . self::BASE_DOMAIN,
+        ]);
+
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testOriginIsIgnoredWhenTheHostItselfIsATenantSubdomain(): void
+    {
+        $this->client->request('GET', '/api/health', server: [
+            'HTTP_HOST' => 'tenant-b.' . self::BASE_DOMAIN,
+            'HTTP_ORIGIN' => 'http://tenant-a.' . self::BASE_DOMAIN,
+        ]);
+
+        self::assertResponseIsSuccessful();
+
+        $bodies = array_column($this->connection()->fetchAllAssociative('SELECT body FROM notes'), 'body');
+        self::assertSame(['secret from tenant B'], $bodies);
+    }
+
+    public function testForeignOriginOnTheApiHostStaysOnThePublicSchema(): void
+    {
+        $this->client->request('GET', '/api/health', server: [
+            'HTTP_HOST' => 'api.' . self::BASE_DOMAIN,
+            'HTTP_ORIGIN' => 'http://tenant-a.localhost.evil.example',
+        ]);
+
+        self::assertResponseIsSuccessful();
+        self::assertSame('public', $this->connection()->fetchOne('SELECT current_schema()'));
+    }
+
+    public function testApiOriginOnTheApiHostStaysOnThePublicSchema(): void
+    {
+        $this->client->request('GET', '/api/health', server: [
+            'HTTP_HOST' => 'api.' . self::BASE_DOMAIN,
+            'HTTP_ORIGIN' => 'http://api.' . self::BASE_DOMAIN,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        self::assertSame('public', $this->connection()->fetchOne('SELECT current_schema()'));
+    }
 }

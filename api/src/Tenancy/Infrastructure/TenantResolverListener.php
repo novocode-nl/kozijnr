@@ -6,6 +6,7 @@ use App\Tenancy\Domain\Subdomain;
 use App\Tenancy\Domain\TenantRepositoryInterface;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -64,27 +65,35 @@ final class TenantResolverListener implements EventSubscriberInterface
         // request (on a reused connection) might have left set.
         $this->connection->executeStatement('SET search_path TO public');
 
-        $host = $event->getRequest()->getHost();
-        $subdomain = Subdomain::extractFrom($host, $this->baseDomain);
+        $request = $event->getRequest();
+        $subdomain = Subdomain::extractFrom($request->getHost(), $this->baseDomain);
 
         if ($subdomain === null) {
             // Main domain / no subdomain: request stays on the public schema.
             return;
         }
 
-        if ($subdomain === Subdomain::RESERVED_ADMIN) {
-            // Reserved super-admin domain: not a tenant, stays on the
-            // public schema, and must never fall into the "unknown
-            // tenant" 404 branch below.
-            $event->getRequest()->attributes->set(self::ADMIN_REQUEST_ATTRIBUTE, true);
+        if ($subdomain === Subdomain::RESERVED_API) {
+            // The API's own hostname (api.<base>, behind the nginx proxy
+            // locally, the real api.<apex> in production). Browser clients
+            // live on a sibling subdomain (admin.<base>, <tenant>.<base>)
+            // and call this host cross-origin, so the browser-set Origin
+            // header is what tells us which context they belong to. Origin
+            // is set by the browser itself — page scripts can't forge it —
+            // and CorsListener only ever lets sibling origins through, so
+            // it's a trustworthy context carrier. A request without an
+            // Origin (curl, server-to-server) or with a foreign/api origin
+            // stays on the public schema.
+            $subdomain = $this->subdomainFromOrigin($request);
 
-            return;
+            if ($subdomain === null || $subdomain === Subdomain::RESERVED_API) {
+                return;
+            }
         }
 
-        if ($subdomain === Subdomain::RESERVED_API) {
-            // Reserved "api" domain: the API's own hostname behind the nginx
-            // proxy — no tenant, no admin, stays on the public schema, same
-            // as the $subdomain === null branch above.
+        if ($subdomain === Subdomain::RESERVED_ADMIN) {
+            $request->attributes->set(self::ADMIN_REQUEST_ATTRIBUTE, true);
+
             return;
         }
 
@@ -99,6 +108,19 @@ final class TenantResolverListener implements EventSubscriberInterface
             $this->connection->quoteSingleIdentifier($tenant->getSchemaName()),
         ));
 
-        $event->getRequest()->attributes->set(self::REQUEST_ATTRIBUTE, $tenant);
+        $request->attributes->set(self::REQUEST_ATTRIBUTE, $tenant);
+    }
+
+    private function subdomainFromOrigin(Request $request): ?string
+    {
+        $origin = $request->headers->get('Origin');
+
+        if ($origin === null) {
+            return null;
+        }
+
+        $host = parse_url($origin, PHP_URL_HOST);
+
+        return is_string($host) ? Subdomain::extractFrom($host, $this->baseDomain) : null;
     }
 }
