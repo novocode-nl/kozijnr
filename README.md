@@ -11,9 +11,13 @@ Monorepo containing:
 ## Requirements
 
 - Docker Desktop (or an equivalent Docker Engine + Compose v2 install)
-- [Laravel Valet](https://laravel.com/docs/valet) (macOS only) — **optional**, but recommended: gives every checkout/worktree nice `*.test` domains (`api.kozijnr.test`, `admin.kozijnr.test`, `<tenant>.kozijnr.test`) instead of having to remember a port number. See "Local domains via Laravel Valet" below. Everything in this README also works without it, using `localhost:<port>` directly.
 
-Nothing else needs to be installed on the host — PHP, Composer, Node and npm all run inside the containers. Valet itself is the one exception: it's a thin host-level DNS + reverse-proxy layer sitting *in front of* Docker, not a replacement for it — Docker still runs the actual backend/frontend/database containers exactly as described below.
+Nothing else needs to be installed on the host — PHP, Composer, Node, npm and
+nginx all run inside containers. Local hostnames use `*.kozijnr.localhost`,
+which every browser resolves to `127.0.0.1` by itself, so there is no DNS or
+`/etc/hosts` setup either. Port 80 on the host must be free for the shared
+proxy (if Laravel Valet or another local web server owns it, stop that first
+or see `PROXY_PORT` under "Local domains via nginx").
 
 ## Quick start
 
@@ -21,10 +25,13 @@ Nothing else needs to be installed on the host — PHP, Composer, Node and npm a
 make up
 ```
 
-This builds the images (first run only) and starts everything in the background:
+This generates the root `.env` for this checkout (see "Per-worktree test
+environments"), starts the shared nginx proxy if it isn't running yet, builds
+the images (first run only) and starts everything in the background:
 
-- Frontend (Next.js): http://localhost:3000
-- Backend (Symfony): http://localhost:8000 — health check at http://localhost:8000/api/health, or (with Valet set up — see below) http://api.kozijnr.test/api/health
+- REST API (Symfony): http://api.kozijnr.localhost — health check at http://api.kozijnr.localhost/api/health
+- Super-admin frontend (Next.js): http://admin.kozijnr.localhost
+- Tenant frontend (Next.js): http://<tenant>.kozijnr.localhost — once a tenant exists, see "Provisioning tenants"
 - Database (PostgreSQL 16): localhost:5432 (user `app`, password `app`, database `app`)
 
 Follow logs with:
@@ -43,7 +50,7 @@ make down
 
 | Target | What it does |
 | --- | --- |
-| `make up` | Start the stack in the background (builds images if needed) |
+| `make up` | Start the stack in the background (generates `.env`, starts the shared proxy, builds images if needed) |
 | `make down` | Stop and remove the stack's containers |
 | `make build` | Build (or rebuild) all images |
 | `make rebuild` | Rebuild images from scratch and restart the stack |
@@ -56,6 +63,8 @@ make down
 | `make console args="cache:clear"` | Run a `bin/console` command in the backend container |
 | `make npm args="run lint"` | Run an npm command in the frontend container |
 | `make test-backend args="tests/Tenancy"` | Run the backend PHPUnit suite (or a subset) in the backend container |
+| `make worktree-env n=12` | (Re)generate `.env` for KOZ-12 (`n=main` for the main checkout) |
+| `make proxy-up` / `proxy-down` / `proxy-logs` | Start / stop / tail the shared nginx proxy (see "Local domains via nginx") |
 
 These are thin wrappers around `docker compose` — nothing here does more than the
 target's one-line `docker compose ...` invocation, see the `Makefile` itself.
@@ -78,233 +87,116 @@ target's one-line `docker compose ...` invocation, see the `Makefile` itself.
 
 ## Per-worktree test environments
 
-Each git worktree (typically one per KOZ ticket) can run its own isolated
-copy of the stack — different container names, different volumes, different
-ports — so multiple tickets can be developed and tested locally at the same
-time without conflicts.
+Each git worktree (typically one per KOZ ticket) runs its own isolated copy
+of the stack — different container names, volumes, database port and
+hostnames — so multiple tickets can be developed and tested locally at the
+same time without conflicts. All of them share the single nginx proxy (next
+section), which tells them apart by hostname:
 
-The convention is based on the KOZ issue number `<n>`:
-
-| Service | Port formula | Example for KOZ-12 |
+| | main checkout | worktree for KOZ-`<n>` (e.g. 12) |
 | --- | --- | --- |
-| Frontend | `3000 + <n>` | `http://localhost:3012` |
-| Backend | `8000 + <n>` | `http://localhost:8012`, or `api.kozijnr-koz-12.test` via Valet |
-| Database | `5432 + <n>` | `localhost:5444` |
+| API | `api.kozijnr.localhost` | `api.koz-12.kozijnr.localhost` |
+| Admin frontend | `admin.kozijnr.localhost` | `admin.koz-12.kozijnr.localhost` |
+| Tenant frontend | `<tenant>.kozijnr.localhost` | `<tenant>.koz-12.kozijnr.localhost` |
+| Database (host port) | `5432` | `5432 + <n>` = `5444` |
+| Compose project | `kozijnr` | `koz-12` |
 
-Container and volume names are namespaced by setting `COMPOSE_PROJECT_NAME=koz-<n>`
-(instead of the default `kozijnr`), so e.g. KOZ-12's backend container becomes
-`koz-12-backend-1` and its database volume `koz-12_database_data` — distinct
-from any other worktree's containers/volumes running at the same time.
+The compose project name namespaces containers and volumes (KOZ-12's backend
+becomes `koz-12-backend-1`, its database volume `koz-12_database_data`) and
+is also the name the proxy routes to on the shared `kozijnr-proxy` docker
+network (`koz-12-backend`, `koz-12-frontend`). Frontend and backend publish
+no host ports at all — the proxy is the only way in.
 
-This is set up automatically: `make up` derives the issue number `<n>` from
-the current branch name (expected to follow the `koz-<n>` convention, e.g.
-branch `koz-12`) and generates the worktree's `.env` on the fly if one
-doesn't exist yet — via `scripts/setup-worktree-env.sh <n>` — before starting
-the stack. So in a fresh `koz-<n>` worktree, a single
+This is set up automatically: `make up` derives the environment from the
+current branch (`main`, or `koz-<n>`) and generates the root `.env` on the
+fly via `scripts/setup-worktree-env.sh` if one doesn't exist yet. So in a
+fresh `koz-<n>` worktree, a single
 
 ```bash
 make up
 ```
 
-is enough; there's no separate setup step to remember. If `.env` already
-exists (e.g. from a previous run, or a manually created one), it is left
-untouched — `make up` never overwrites it.
-
-If the current branch doesn't follow the `koz-<n>` convention (e.g. `main`,
-or a differently named branch) and no `.env` exists yet, `make up` fails
-with an explanatory error instead of silently falling back to the default
-ports — that fallback would be confusing to debug when several worktrees
-are meant to run side by side. In that case, either checkout a `koz-<n>`
-branch, or generate/override `.env` explicitly:
+is enough. If `.env` already exists it is left untouched — `make up` never
+overwrites it. On any other branch name with no `.env`, `make up` fails with
+an explanation instead of guessing; generate one explicitly:
 
 ```bash
-make worktree-env n=12   # for KOZ-12 — (re)generates .env regardless of branch name
+make worktree-env n=12     # KOZ-12's environment, regardless of branch name
+make worktree-env n=main   # the main checkout's environment
 ```
 
-or directly:
+The generated `.env` (gitignored, one per worktree — see `.env.example`)
+holds `COMPOSE_PROJECT_NAME`, `DATABASE_PORT` and `APP_BASE_DOMAIN`; the
+latter is passed into the backend container so it resolves tenant/admin/api
+subdomains, CORS origins and cookie scope against the right base domain.
 
-```bash
-scripts/setup-worktree-env.sh 12
+## Local domains via nginx
+
+One shared nginx container (`docker/proxy/`, compose project `kozijnr-proxy`)
+listens on host port 80 and reverse-proxies every stack by hostname:
+
+```
+api.kozijnr.localhost             -> main backend   (kozijnr-backend:8000)
+admin|<tenant>.kozijnr.localhost  -> main frontend  (kozijnr-frontend:3000)
+api.koz-<n>.kozijnr.localhost     -> KOZ-n backend  (koz-<n>-backend:8000)
+*.koz-<n>.kozijnr.localhost       -> KOZ-n frontend (koz-<n>-frontend:3000)
 ```
 
-This writes a `.env` file (gitignored, one per worktree — see `.env.example`
-for the shape) with `COMPOSE_PROJECT_NAME`, `FRONTEND_PORT`, `BACKEND_PORT`,
-`DATABASE_PORT`, `NEXT_PUBLIC_API_URL` and `APP_BASE_DOMAIN` set for that issue
-number, and (KOZ-12) registers that worktree's `api.`/`admin.` Valet proxies if
-the `valet` CLI is available — see "Local domains via Laravel Valet" above. Use it
-whenever you need to (re)generate `.env` with a specific issue number,
-regardless of what the current branch is named — e.g. to override the
-number `make up` would have derived automatically, or to regenerate after
-manually editing `.env`.
-`docker-compose.yml` reads these variables with the plain defaults
-(3000/8000/5432, project name `kozijnr`) as fallback, so the regular
-non-worktree workflow described above is unaffected if `.env` is absent and
-you're not on a `koz-<n>` branch (e.g. when running `docker compose` outside
-of `make up` directly).
+Every app stack joins the external docker network `kozijnr-proxy` with those
+aliases (see `docker-compose.yml`); nginx resolves them per request through
+Docker's DNS, so stacks can be started and stopped at will without touching
+the proxy — a stack that isn't running just answers 502 on its hostnames.
+Tenant subdomains need no registration anywhere: the wildcard matches.
 
-Because `NEXT_PUBLIC_API_URL` is derived from the same `.env`, the frontend
-in each worktree automatically talks to its own worktree's backend port —
-no manual wiring needed.
+`make up` starts the proxy automatically (`make proxy-up` does it on its own,
+`make proxy-down` stops it, `make proxy-logs` tails it). It only needs to be
+running once, no matter how many worktrees are up.
 
-## Local domains via Laravel Valet (KOZ-12)
-
-The port-based URLs above (`localhost:8000`, `localhost:8012`, ...) always
-work and remain the fallback, but they're easy to lose track of once
-several worktrees are running side by side. [Laravel Valet](https://laravel.com/docs/valet)
-adds a nicer, per-worktree `*.test` domain scheme on top — Valet is **only**
-a local DNS + reverse-proxy layer in front of the same Docker containers;
-it never replaces Docker, and it's entirely optional.
-
-### One-time setup (per developer machine, macOS only)
-
-```bash
-brew install php composer   # if not already installed — Valet itself needs a host PHP, unrelated to the Dockerized backend
-composer global require laravel/valet
-valet install                # sets up Valet's DnsMasq + Nginx daemons and the .test TLD
-```
-
-Then, **once**, from the repo root of your main `kozijnr` checkout:
-
-```bash
-valet park
-```
-
-`valet park` registers the *directory* (not a specific project) — every
-subdirectory of the parked directory automatically gets proxy support, so
-this is not repeated per worktree. If your worktrees live in a sibling
-directory rather than under the main checkout (e.g. `.worktrees/koz-12`
-inside the repo itself, per this repo's convention — see "Per-worktree test
-environments" above), a single `valet park` on the repo root already covers
-them, since they're nested underneath it.
-
-### Domain scheme
-
-| Checkout | api (base domain, no tenant) | admin | tenant |
-| --- | --- | --- | --- |
-| Main checkout | `api.kozijnr.test` | `admin.kozijnr.test` | `<tenant>.kozijnr.test` |
-| Worktree `koz-<n>` | `api.kozijnr-koz-<n>.test` | `admin.kozijnr-koz-<n>.test` | `<tenant>.kozijnr-koz-<n>.test` |
-
-`api` is a second reserved subdomain name (`App\Tenancy\Domain\Subdomain::RESERVED_API`,
-alongside the existing `admin` — see "Multi-tenancy" below) standing in for
-what used to be a bare `localhost:<port>` request with no subdomain at all:
-under Valet there's always *some* host, so `api.<base>` is the base-domain
-entry point — no tenant, no admin, same as the old no-subdomain request.
-`api`/`admin` can never be provisioned as an actual tenant name either
-(`TenantName` rejects both).
-
-### How the proxies get registered
-
-- **Static (`api.`/`admin.`) proxies**, both for the main checkout and for
-  each worktree, are `valet proxy <domain> http://127.0.0.1:<port>`
-  registrations — Valet's `proxy` driver doesn't support wildcard
-  subdomains, so `admin`/`api` need their own explicit entry rather than
-  matching a `*.kozijnr.test` pattern. For the main checkout, register these
-  by hand once:
+- **Browsers** resolve `*.localhost` to `127.0.0.1` themselves — nothing to
+  configure.
+- **curl** does not. Pass `--resolve`:
 
   ```bash
-  valet proxy api.kozijnr.test http://127.0.0.1:8000
-  valet proxy admin.kozijnr.test http://127.0.0.1:8000
+  curl --resolve api.kozijnr.localhost:80:127.0.0.1 http://api.kozijnr.localhost/api/health
   ```
 
-  For a worktree, `scripts/setup-worktree-env.sh <n>` (the same script that
-  generates the worktree's `.env` — see "Per-worktree test environments"
-  above) registers these two automatically, in addition to the ports, if the
-  `valet` CLI is available; it prints what it registered (or a note to do it
-  manually if Valet isn't installed).
+- **Port 80 taken?** Copy `docker/proxy/.env.example` to `docker/proxy/.env`
+  and set `PROXY_PORT=8080` (or anything free). URLs then carry the port:
+  `http://admin.kozijnr.localhost:8080`. Laravel Valet, if installed, owns
+  port 80 while running — `valet stop` frees it.
 
-- **Dynamic tenant proxies** (`<tenant>.kozijnr(-koz-<n>)?.test`) are
-  *queued* automatically the moment a tenant is created, whichever path
-  created it (the admin API, `tenant:provision`, ...), then registered by
-  running **`make valet-sync`** once. This is a two-step, deliberately
-  on-demand process rather than one automatic step — see "Why not fully
-  automatic?" just below for why.
+### How the frontend talks to the API
 
-  `App\Tenancy\Infrastructure\Valet\TenantValetProxyListener` is a
-  dev-environment-only Doctrine `postPersist` listener (wired only in
-  `api/config/services_dev.yaml`, never in `test`/`prod`) that fires right
-  after a tenant is persisted. It never calls `valet` itself — the backend
-  runs inside a Docker container that has no `valet` binary and no access
-  to the host's Valet installation at all, so no amount of retrying from in
-  there could ever make a direct call work. Instead it *queues* the
-  request: `App\Tenancy\Infrastructure\Valet\FilesystemValetProxyQueue`
-  writes a small JSON file (domain + target) to
-  `api/var/valet-proxy-queue/pending/`, a path docker-compose.yml already
-  bind-mounts onto the host as part of `./api:/app` — so the file is
-  immediately visible on the host filesystem too, no extra Docker volume
-  needed. It's best-effort: if the queue directory can't be written to, a
-  warning is logged and tenant creation still succeeds — this is dev
-  convenience, never a hard dependency.
+The frontend is a pure REST client. Pages on `admin.<base>` and
+`<tenant>.<base>` call `http://api.<base>/api/...` directly from the browser
+(`web/lib/api.ts`, with `credentials: "include"`); there are no API routes in
+the Next.js app. Two backend pieces make that cross-origin-but-same-site setup
+work, in every environment (production is `admin.kozijnr.nl` → `api.kozijnr.nl`):
 
-  ```bash
-  make console args="tenant:provision acme"   # queues acme.kozijnr.test
-  make valet-sync                              # actually registers it with Valet
-  ```
-
-  `make valet-sync` (`scripts/valet-sync.sh`) runs on the host: it reads
-  every pending request, calls `valet proxy <domain> <target>` for it, and
-  moves the request to `api/var/valet-proxy-queue/processed/` on success
-  (kept for troubleshooting) — or leaves it pending, to retry on the next
-  run, if `valet proxy` fails. Safe to run any time, repeatedly, with
-  nothing pending (a no-op), and a no-op if Valet isn't installed at all.
-
-  #### Why not fully automatic?
-
-  Making this fully automatic would need something living on the host that
-  the container can reach — e.g. a small daemon listening on
-  `host.docker.internal` that the container calls into, which then runs
-  `valet proxy` for real. That was considered and rejected: it would need
-  to be started before it's useful, kept running in the background, and
-  managed as its own long-lived process (e.g. a `launchd` service) for
-  something only needed right after creating a tenant — a heavier,
-  higher-maintenance piece of infrastructure than the problem warrants.
-  Other bridging options (SSH from the container into the host, proxying
-  the Docker socket) have the same shape: a standing service and an open
-  channel into the host, for an operation that happens a handful of times
-  per dev session.
-
-  The file-based queue plus an on-demand `make valet-sync` needs no
-  background process, no listening port and no separate lifecycle to
-  manage — only filesystem I/O, run whenever it's convenient. If you want
-  near-real-time syncing without remembering to run `make valet-sync` by
-  hand, run the optional watcher in its own terminal tab instead (entirely
-  optional — the file queue plus `make valet-sync` is what guarantees
-  correctness; this is just comfort on top, and works identically
-  regardless of whether the tenant was created via `tenant:provision` or
-  the admin API, since both write to the same queue directory):
-
-  ```bash
-  brew install fswatch   # one-time
-  make valet-watch       # run in a spare terminal tab; Ctrl+C to stop
-  ```
-
-  This still isn't a background daemon — it's a foreground process you
-  start and stop yourself (see `scripts/valet-watch.sh`), consistent with
-  the on-demand approach above.
+- `App\Tenancy\Infrastructure\CorsListener` allows exactly the origins on the
+  base domain (`admin.<base>`, `<tenant>.<base>`) and answers preflights.
+- `TenantResolverListener` derives the tenant/admin context of a request on
+  `api.<base>` from the browser-set `Origin` header — `Origin:
+  http://acme.<base>` means "tenant acme", `Origin: http://admin.<base>` means
+  "admin". No `Origin` (curl, server-to-server) means the public schema.
+- Session/token cookies are issued with `Domain=<base>` so they reach both
+  `api.<base>` and the frontend hosts (whose server-side route guard,
+  `web/proxy.ts`, checks them before rendering a protected page).
 
 ### Verifying it works
 
-With the stack running (`make up`) and (for the main checkout) the static
-proxies registered as above:
+With the stack running (`make up`):
 
 ```bash
-curl http://api.kozijnr.test/api/health          # 200, public schema, no tenant
-make console args="tenant:provision acme"        # queues acme.kozijnr.test (see above)
-make valet-sync                                   # registers it with Valet for real
-curl http://acme.kozijnr.test/api/health          # 200, search_path = tenant_acme, public
-curl http://admin.kozijnr.test/api/health         # 200, public schema, reserved admin domain
+R="--resolve api.kozijnr.localhost:80:127.0.0.1"
+curl $R http://api.kozijnr.localhost/api/health                                            # 200, public schema
+make console args="tenant:provision acme"
+curl $R -H 'Origin: http://acme.kozijnr.localhost'  http://api.kozijnr.localhost/api/health  # 200, search_path = tenant_acme, public
+curl $R -H 'Origin: http://admin.kozijnr.localhost' http://api.kozijnr.localhost/api/health  # 200, public schema, admin context
 ```
 
-For a worktree, substitute `kozijnr-koz-<n>.test` for `kozijnr.test` — see
-the domain scheme table above.
-
-### Cleaning up a worktree's proxies
-
-`scripts/teardown-worktree-valet.sh <n>` (or `make worktree-valet-teardown n=<n>`)
-removes a worktree's `api.`/`admin.` proxies and every tenant proxy
-registered under its domain. This runs automatically as part of worktree
-cleanup once a ticket is merged — see the project's `asana-user-review`
-workflow — so finished worktrees don't leave dead proxy registrations
-behind. Safe to run manually too, and a no-op if Valet isn't installed.
+and in a browser: http://admin.kozijnr.localhost/login, http://acme.kozijnr.localhost/login.
+For a worktree, substitute `koz-<n>.kozijnr.localhost` for `kozijnr.localhost`.
 
 ## Multi-tenancy: subdomain → schema resolution
 
@@ -319,8 +211,9 @@ other tenants at the database level. On every request, `App\Tenancy\Infrastructu
    dev server and standard PHP-FPM already start clean per request, but the reset
    makes that guarantee explicit rather than assumed).
 2. Extracts the subdomain from the request's `Host` header (via `App\Tenancy\Domain\Subdomain`),
-   relative to the `APP_BASE_DOMAIN` env var (default `localhost`; set to the real
-   apex domain, e.g. `kozijnr.nl`, in production).
+   relative to the `APP_BASE_DOMAIN` env var (`kozijnr.localhost` locally,
+   `koz-<n>.kozijnr.localhost` per worktree; set to the real apex domain, e.g.
+   `kozijnr.nl`, in production).
    - No subdomain, or a request to the base domain itself → stays on the `public`
      schema. No tenant lookup happens.
    - `admin` subdomain (e.g. `admin.localhost`, `admin.kozijnr.nl` in production) →
@@ -328,12 +221,12 @@ other tenants at the database level. On every request, `App\Tenancy\Infrastructu
      admin" below) and stays on the `public` schema. Never looked up in `tenants`,
      and can never itself be provisioned as a tenant name — `TenantName` rejects
      `admin` outright.
-   - `api` subdomain (KOZ-12; e.g. `api.kozijnr.test` locally via Valet, `api.kozijnr.nl`
-     in production) → also reserved, also stays on the `public` schema, also rejected
-     by `TenantName` as a tenant name. Functionally the replacement for what used to
-     be a bare no-subdomain request: under Valet's proxy layer there's always *some*
-     host, so `api.<base>` is the base-domain entry point rather than a truly
-     subdomain-less request. See "Local domains via Laravel Valet" above.
+   - `api` subdomain (`api.kozijnr.localhost` locally, `api.kozijnr.nl` in production)
+     → the REST API's own hostname: also reserved, also rejected by `TenantName` as
+     a tenant name. On its own it stays on the `public` schema; when the request
+     carries a browser `Origin` on a sibling subdomain (`http://acme.<base>`,
+     `http://admin.<base>`), the tenant/admin context is taken from that Origin
+     instead — see "How the frontend talks to the API" above.
    - Any other subdomain → looked up in the `tenants` table (public schema, see the
      `Version20260819053803` migration) for its `subdomain` → `schema_name` mapping.
 3. Unknown subdomain → `404 Not Found`. There is no fallback to `public` or to any
@@ -391,38 +284,19 @@ version. One tenant failing to migrate is reported but does not stop the others.
 
 ### Testing multiple subdomains locally
 
-The recommended way is Valet (see "Local domains via Laravel Valet" above) — nice
-`*.kozijnr(-koz-<n>)?.test` domains, no port to remember, tenant proxies registered
-automatically on creation.
-
-Without Valet, the same thing works directly against the port-based URLs:
-`*.localhost` (e.g. `tenant-a.localhost`, `tenant-b.localhost`) resolves to `127.0.0.1`
-on most systems out of the box (macOS, and most modern Linux/Windows setups) — no
-`/etc/hosts` edits needed. If that's not the case on your machine, add entries like:
-
-```
-127.0.0.1 tenant-a.localhost
-127.0.0.1 tenant-b.localhost
-```
-
-to `/etc/hosts` instead. This requires overriding `APP_BASE_DOMAIN` back to
-`localhost` (its default is `kozijnr.test`, for Valet — see `api/.env`), e.g. via
-`api/.env.local`.
-
-With the stack running (`make up`), provision a tenant with `tenant:provision` for a
-manual smoke test — e.g. for KOZ-6's worktree (backend on port 8006, database on port
-5438), with `APP_BASE_DOMAIN=localhost`:
+Every `<tenant>.kozijnr.localhost` (or `<tenant>.koz-<n>.kozijnr.localhost` in
+a worktree) is routed by the shared proxy without any registration — see
+"Local domains via nginx". With the stack running (`make up`), provision a
+tenant and hit it, either in the browser or with curl (which needs `--resolve`):
 
 ```bash
 make console args="tenant:provision acme"
 
-curl http://acme.localhost:8006/api/health        # 200, served with search_path = tenant_acme, public
-curl http://localhost:8006/api/health             # 200, served with search_path = public (no tenant)
-curl http://unknown-tenant.localhost:8006/api/health  # 404, no fallback to any schema
+R="--resolve api.kozijnr.localhost:80:127.0.0.1"
+curl $R -H 'Origin: http://acme.kozijnr.localhost' http://api.kozijnr.localhost/api/health            # 200, search_path = tenant_acme, public
+curl $R http://api.kozijnr.localhost/api/health                                                      # 200, search_path = public (no tenant)
+curl $R -H 'Origin: http://unknown-tenant.kozijnr.localhost' http://api.kozijnr.localhost/api/health  # 404, no fallback to any schema
 ```
-
-Adjust the port to whichever worktree you're in (see "Per-worktree test environments"
-above).
 
 ### Super admin (KOZ-8)
 
@@ -434,31 +308,29 @@ and create tenants. Create one with:
 make console args="super-admin:create admin@kozijnr.nl"
 ```
 
-(prompts for a password if omitted from the arguments), then, on the reserved
-`admin` subdomain (`admin.kozijnr.nl` in production; locally, `admin.kozijnr.test`
-via Valet or `admin.localhost:<port>` without it — see "Local domains via Laravel
-Valet" / "Testing multiple subdomains locally" above) — and *only* there.
-`/api/admin/*` 404s everywhere else: on any tenant subdomain, on an unrecognized
-subdomain, and on the bare main domain too, since `admin.kozijnr.nl` is the one
-place admin business happens, not a fallback available from the apex domain. See
-`App\Tenancy\Infrastructure\AdminRouteGuardListener`:
+(prompts for a password if omitted from the arguments), then log in at
+http://admin.kozijnr.localhost/login. The admin API lives under `/api/admin/*`
+on `api.<base>` and is reachable *only* in the admin context — i.e. with
+`Origin: http://admin.<base>` (what the browser on the admin frontend sends);
+it 404s for tenant origins, for unrecognized origins and without any origin.
+See `App\Tenancy\Infrastructure\AdminRouteGuardListener`. From curl:
 
 ```bash
-curl -i -c cookies.txt -X POST http://admin.kozijnr.test/api/admin/login \
+R="--resolve api.kozijnr.localhost:80:127.0.0.1"
+O="Origin: http://admin.kozijnr.localhost"
+
+curl $R -i -c cookies.txt -X POST -H "$O" http://api.kozijnr.localhost/api/admin/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"admin@kozijnr.nl","password":"<password>"}'
 
-curl -b cookies.txt http://admin.kozijnr.test/api/admin/tenants                 # list: subdomain + createdAt
+curl $R -b cookies.txt -H "$O" http://api.kozijnr.localhost/api/admin/tenants            # list: subdomain + createdAt
 
-curl -b cookies.txt -X POST http://admin.kozijnr.test/api/admin/tenants \
+curl $R -b cookies.txt -H "$O" -X POST http://api.kozijnr.localhost/api/admin/tenants \
   -H 'Content-Type: application/json' \
-  -d '{"name":"acme"}'                                                          # create, via KOZ-7's tenant:provision
-                                                                                  # (also auto-registers acme.kozijnr.test via Valet, see KOZ-12)
+  -d '{"name":"acme"}'                                                                     # create, via KOZ-7's tenant:provision
 ```
 
-For a worktree, substitute `admin.kozijnr-koz-<n>.test`. Without Valet, substitute
-`admin.localhost:<port>` for whichever worktree you're in instead (and set
-`APP_BASE_DOMAIN=localhost` — see "Testing multiple subdomains locally" above).
+For a worktree, substitute `koz-<n>.kozijnr.localhost` for `kozijnr.localhost`.
 
 ## Versions
 
