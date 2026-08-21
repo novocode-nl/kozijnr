@@ -22,19 +22,14 @@ use Symfony\Component\HttpFoundation\Cookie;
  * create real tenant schemas, exactly like TenantAdminApiTest does for the
  * super-admin flow.
  *
- * The test client's own cookie jar (Symfony\Component\BrowserKit) already
- * mirrors real browser behaviour here: a cookie set without an explicit
- * Domain is host-only, so it is only replayed automatically on later
- * requests to the *same* host the client used when it was issued —
- * exactly the tenant-subdomain scoping this suite relies on. Most tests
- * below therefore don't need to touch the cookie at all; the client sends
- * it automatically. The one test proving tenant isolation
- * (testATokenIssuedOnOneTenantSubdomainGrantsNoAccessOnAnotherTenantSubdomain)
- * deliberately bypasses that browser-side convenience and attaches the
- * cookie value by hand to a request against the *other* subdomain, because
- * the guarantee under test is a server-side one (search_path-scoped token
- * lookup) — the client's own same-host cookie scoping must not be the only
- * thing standing between tenants.
+ * The cookie is scoped to the base domain (it has to reach both api.<base>
+ * and the frontend hosts — see TenantApiTokenCookie), so the test client's
+ * cookie jar (Symfony\Component\BrowserKit) replays it on every subdomain.
+ * Tenant isolation is therefore a purely server-side guarantee: the token
+ * lookup runs inside the tenant schema the request resolved to, so a token
+ * issued for tenant A is simply unknown when the request resolves to tenant
+ * B — proven by
+ * testATokenIssuedOnOneTenantSubdomainGrantsNoAccessOnAnotherTenantSubdomain.
  */
 final class TenantLoginApiTest extends WebTestCase
 {
@@ -77,7 +72,7 @@ final class TenantLoginApiTest extends WebTestCase
         self::assertNotSame('', $cookie->getValue());
         self::assertTrue($cookie->isHttpOnly());
         self::assertSame(Cookie::SAMESITE_LAX, $cookie->getSameSite());
-        self::assertNull($cookie->getDomain());
+        self::assertSame(self::BASE_DOMAIN, $cookie->getDomain());
     }
 
     public function testLoggingInWithAnUnknownEmailFailsWithAGenericMessage(): void

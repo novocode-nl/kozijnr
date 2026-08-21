@@ -59,6 +59,17 @@ services:
         arguments:
             $baseDomain: '%app.tenancy.base_domain%'
 
+    # The tenant token cookie is scoped to the base domain so it reaches both
+    # api.<base> (where it is issued and validated) and the frontend hosts
+    # (whose route guard checks for its presence) — see TenantApiTokenCookie.
+    App\TenantUser\Infrastructure\Controller\LoginController:
+        arguments:
+            $baseDomain: '%app.tenancy.base_domain%'
+
+    App\TenantUser\Infrastructure\Controller\LogoutController:
+        arguments:
+            $baseDomain: '%app.tenancy.base_domain%'
+
     App\Tenancy\Infrastructure\TenantSchemaMigrator:
         arguments:
             $migrationsPath: '%app.tenancy.migrations_path%'

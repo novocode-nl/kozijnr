@@ -35,6 +35,7 @@ final class LoginController
     public function __construct(
         private readonly LoginTenantUser $loginTenantUser,
         private readonly LoggerInterface $logger,
+        private readonly string $baseDomain,
     ) {
     }
 
@@ -63,7 +64,7 @@ final class LoginController
         }
 
         $response = new JsonResponse(['message' => 'Logged in.'], JsonResponse::HTTP_OK);
-        $response->headers->setCookie(TenantApiTokenCookie::issue($token));
+        $response->headers->setCookie(TenantApiTokenCookie::issue($token, $this->baseDomain));
 
         return $response;
     }

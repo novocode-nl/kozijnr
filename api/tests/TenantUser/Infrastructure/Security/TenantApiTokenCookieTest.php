@@ -10,38 +10,38 @@ use Symfony\Component\HttpFoundation\Cookie;
  * Unit coverage for the cookie shape itself (KOZ-13 rework: HttpOnly
  * cookie-based tokens instead of localStorage) — the attributes that make
  * it safe to hand a bearer token to the browser via Set-Cookie: HttpOnly
- * (never JS-readable), no explicit Domain (host-only, scoped to whichever
- * tenant subdomain issued it), SameSite=Lax, and secure left "auto"
+ * (never JS-readable), Domain pinned to the base domain (so it reaches
+ * api.<base> and the frontend hosts alike), SameSite=Lax, and secure left "auto"
  * (Symfony resolves it from the request's own scheme at send time).
  */
 final class TenantApiTokenCookieTest extends TestCase
 {
     public function testIssueProducesAnHttpOnlyCookieCarryingThePlainTextToken(): void
     {
-        $cookie = TenantApiTokenCookie::issue('some-plain-text-token');
+        $cookie = TenantApiTokenCookie::issue('some-plain-text-token', 'kozijnr.localhost');
 
         self::assertSame(TenantApiTokenCookie::NAME, $cookie->getName());
         self::assertSame('some-plain-text-token', $cookie->getValue());
         self::assertTrue($cookie->isHttpOnly());
     }
 
-    public function testIssueDoesNotPinAnExplicitDomainSoItStaysHostOnly(): void
+    public function testIssueScopesTheCookieToTheGivenBaseDomain(): void
     {
-        $cookie = TenantApiTokenCookie::issue('some-plain-text-token');
+        $cookie = TenantApiTokenCookie::issue('some-plain-text-token', 'kozijnr.localhost');
 
-        self::assertNull($cookie->getDomain());
+        self::assertSame('kozijnr.localhost', $cookie->getDomain());
     }
 
     public function testIssueUsesSameSiteLax(): void
     {
-        $cookie = TenantApiTokenCookie::issue('some-plain-text-token');
+        $cookie = TenantApiTokenCookie::issue('some-plain-text-token', 'kozijnr.localhost');
 
         self::assertSame(Cookie::SAMESITE_LAX, $cookie->getSameSite());
     }
 
     public function testIssueLeavesSecureAsAutoRatherThanForcingItOnOrOff(): void
     {
-        $cookie = TenantApiTokenCookie::issue('some-plain-text-token');
+        $cookie = TenantApiTokenCookie::issue('some-plain-text-token', 'kozijnr.localhost');
 
         // null = Symfony's "auto" mode: Response::prepare() turns this on
         // only when the inbound request is itself HTTPS, so the exact same
@@ -52,7 +52,7 @@ final class TenantApiTokenCookieTest extends TestCase
 
     public function testIssueSetsAFutureExpiry(): void
     {
-        $cookie = TenantApiTokenCookie::issue('some-plain-text-token');
+        $cookie = TenantApiTokenCookie::issue('some-plain-text-token', 'kozijnr.localhost');
 
         self::assertGreaterThan(time(), $cookie->getExpiresTime());
         // Roughly 30 days out — matches TenantApiToken's own sliding-expiry
@@ -62,7 +62,7 @@ final class TenantApiTokenCookieTest extends TestCase
 
     public function testClearProducesAnAlreadyExpiredCookieWithTheSameName(): void
     {
-        $cookie = TenantApiTokenCookie::clear();
+        $cookie = TenantApiTokenCookie::clear('kozijnr.localhost');
 
         self::assertSame(TenantApiTokenCookie::NAME, $cookie->getName());
         self::assertNull($cookie->getValue());

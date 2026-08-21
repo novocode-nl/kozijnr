@@ -30,8 +30,10 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  */
 final class LogoutController
 {
-    public function __construct(private readonly LogoutTenantUser $logoutTenantUser)
-    {
+    public function __construct(
+        private readonly LogoutTenantUser $logoutTenantUser,
+        private readonly string $baseDomain,
+    ) {
     }
 
     #[Route('/api/logout', name: 'tenant_logout', methods: ['POST'])]
@@ -43,7 +45,7 @@ final class LogoutController
         ($this->logoutTenantUser)($token);
 
         $response = new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
-        $response->headers->setCookie(TenantApiTokenCookie::clear());
+        $response->headers->setCookie(TenantApiTokenCookie::clear($this->baseDomain));
 
         return $response;
     }

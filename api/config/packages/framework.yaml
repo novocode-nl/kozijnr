@@ -3,7 +3,12 @@ framework:
     secret: '%env(APP_SECRET)%'
 
     # Note that the session will be started ONLY if you read or write from it.
-    session: true
+    # The (super-admin) session cookie is scoped to the base domain for the
+    # same reason as the tenant token cookie (see TenantApiTokenCookie): it
+    # is issued by api.<base> but the frontend on admin.<base> must be able
+    # to forward it when it asks the API whether the session is still valid.
+    session:
+        cookie_domain: '%env(APP_BASE_DOMAIN)%'
 
     #esi: true
     #fragments: true

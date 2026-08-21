@@ -27,10 +27,13 @@ use Symfony\Component\HttpFoundation\Cookie;
  *   the cookie on e.g. an external link landing on /dashboard), and
  *   SameSite=None would only be needed for an actually cross-site flow,
  *   which this isn't.
- * - No explicit Domain: a host-only cookie, scoped to exactly the host it
- *   was issued on — api.<base>, the only host the browser client ever
- *   sends API requests to. The tenant itself is carried by the request's
- *   Origin (see TenantResolverListener), not by the cookie's scope.
+ * - Domain = the base domain (kozijnr.localhost / kozijnr.nl): the cookie is
+ *   issued by api.<base> but must also reach the frontend on admin.<base>
+ *   / <tenant>.<base>, whose server-side route guard (web/proxy.ts) checks
+ *   for its presence before rendering a protected page. A host-only cookie
+ *   would only ever travel back to api.<base>. Which tenant a token belongs
+ *   to is carried by the request's Origin (see TenantResolverListener) and
+ *   enforced by the tenant-schema-scoped token lookup, not by cookie scope.
  * - 30-day lifetime: matches TenantApiToken's own sliding-expiry window
  *   (App\TenantUser\Domain\TenantApiToken::EXPIRY_PERIOD) — the cookie
  *   should never meaningfully outlive, or expire before, the token inside
@@ -42,14 +45,14 @@ final class TenantApiTokenCookie
 
     private const LIFETIME_SECONDS = 60 * 60 * 24 * 30;
 
-    public static function issue(string $plainTextToken): Cookie
+    public static function issue(string $plainTextToken, string $domain): Cookie
     {
         return Cookie::create(
             name: self::NAME,
             value: $plainTextToken,
             expire: time() + self::LIFETIME_SECONDS,
             path: '/',
-            domain: null,
+            domain: $domain,
             secure: null,
             httpOnly: true,
             raw: false,
@@ -64,14 +67,14 @@ final class TenantApiTokenCookie
      * deleting the token server-side leaves a stale cookie behind
      * otherwise.
      */
-    public static function clear(): Cookie
+    public static function clear(string $domain): Cookie
     {
         return Cookie::create(
             name: self::NAME,
             value: null,
             expire: 1,
             path: '/',
-            domain: null,
+            domain: $domain,
             secure: null,
             httpOnly: true,
             raw: false,
