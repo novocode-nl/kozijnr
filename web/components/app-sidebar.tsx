@@ -3,6 +3,7 @@
 import * as React from "react"
 
 import { NavMain } from "@/components/nav-main"
+import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -15,7 +16,12 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import type { AppContext } from "@/lib/context/app-context"
-import { contextIcon, contextLabel, getNavMainForContext } from "@/lib/navigation/menu-config"
+import {
+  contextIcon,
+  contextLabel,
+  getNavMainForContext,
+  getNavSecondaryForContext,
+} from "@/lib/navigation/menu-config"
 
 /**
  * The one sidebar shell shared by the admin and tenant environments.
@@ -28,6 +34,7 @@ export function AppSidebar({
   ...props
 }: { context: AppContext } & React.ComponentProps<typeof Sidebar>) {
   const items = getNavMainForContext(context)
+  const secondaryItems = getNavSecondaryForContext(context)
   const Icon = contextIcon[context]
 
   return (
@@ -50,6 +57,7 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={items} />
+        <NavSecondary items={secondaryItems} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser context={context} />
