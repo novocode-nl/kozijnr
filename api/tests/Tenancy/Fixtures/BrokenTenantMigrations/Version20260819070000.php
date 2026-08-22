@@ -9,15 +9,12 @@ use Doctrine\Migrations\AbstractMigration;
 
 /**
  * Deliberately failing tenant migration, used only by
- * ProvisionTenantTest::testAFailedMigrationLeavesNoOrphanedSchemaBehind (KOZ-7
- * review rework) to prove that `ProvisionTenant` cleans up the schema it just
- * created when the migration step fails partway through — including the case
- * where the failure is a real Postgres error raised mid-transaction (not just
- * a PHP-level exception), which is what actually risks leaving the
- * connection in Postgres's "current transaction is aborted" state.
- *
- * Never referenced by the real tenant migration set
- * (migrations-tenant/, App\Migrations\Tenant) or run outside this test.
+ * ProvisionTenantTest::testAFailedMigrationLeavesNoOrphanedSchemaBehind to
+ * prove that `ProvisionTenant` cleans up the schema it just created when
+ * the migration fails partway through — including a real Postgres error
+ * raised mid-transaction (not just a PHP-level exception), which is what
+ * actually risks leaving the connection in an aborted-transaction state.
+ * Never referenced by the real tenant migration set.
  */
 final class Version20260819070000 extends AbstractMigration
 {

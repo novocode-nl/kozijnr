@@ -1,20 +1,13 @@
 import { getAppContext } from "@/lib/context/app-context"
 
 /**
- * Deliberate placeholder (KOZ-13, now rendered inside the shared shell from
- * KOZ-14 — see app/(app)/layout.tsx): the real home-page content for either
- * context is out of this ticket's scope too, only the layout/sidebar shell
- * it now renders inside is.
- *
- * KOZ-21: this is now the single authenticated home for both contexts,
- * living at `/` itself rather than a separate `/dashboard` route — that
- * route no longer exists as its own concept, /dashboard always redirects
- * to / (see proxy.ts). The Host-based context detection
- * (lib/context/app-context.ts) already exists and already drives which
- * sidebar menu renders (app/(app)/layout.tsx); this page reuses the exact
- * same detection to pick which placeholder copy to show, so there is only
- * ever one page component to maintain instead of two near-identical ones
- * that could drift apart.
+ * Deliberate placeholder. The real home-page content for either context is
+ * out of scope here. This is the single authenticated home for both
+ * contexts, living at `/` — `/dashboard` redirects here (see proxy.ts)
+ * rather than existing as its own route. Reuses the Host-based context
+ * detection (lib/context/app-context.ts) that also drives the sidebar
+ * menu (app/(app)/layout.tsx) to pick the placeholder copy, so there is
+ * only one page component instead of two near-identical ones.
  */
 export default async function HomePage() {
   const context = await getAppContext()

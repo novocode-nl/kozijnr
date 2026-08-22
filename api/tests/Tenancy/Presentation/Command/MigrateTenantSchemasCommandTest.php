@@ -8,11 +8,10 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Tester\CommandTester;
 
 /**
- * Functional test for `bin/console tenant:migrate --all` (KOZ-7), against
- * the real Postgres test database. Proves the command brings every
- * registered tenant schema up to the latest tenant migration version — the
- * mechanism a schema-wide rollout across all tenants relies on — and that
- * one tenant's failure doesn't stop the others from being migrated.
+ * Functional test for `bin/console tenant:migrate --all`, against the real
+ * Postgres test database. Proves the command brings every registered
+ * tenant schema up to the latest tenant migration version, and that one
+ * tenant's failure doesn't stop the others from being migrated.
  */
 final class MigrateTenantSchemasCommandTest extends KernelTestCase
 {

@@ -7,31 +7,22 @@ use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 /**
- * A tenant-scoped end-user account (KOZ-11) — the first tenant-side
- * authentication model in this codebase. Rows of this entity live
- * exclusively inside a tenant schema (see migrations-tenant/): the public
- * schema has no `tenant_users` table at all, so a tenant user is
- * structurally invisible outside its own tenant schema, exactly mirroring
- * how App\User\Domain\User (the super-admin account) is structurally
- * invisible from within a tenant schema. This is what makes cross-tenant
- * access structurally impossible rather than merely access-controlled
- * away, matching the KOZ-6/7 tenant-isolation approach.
+ * A tenant-scoped end-user account. Rows live exclusively inside a tenant
+ * schema — the public schema has no `tenant_users` table at all, so a
+ * tenant user is structurally invisible outside its own tenant schema,
+ * mirroring how App\User\Domain\User (the super-admin account) is
+ * structurally invisible from within a tenant schema. This makes
+ * cross-tenant access structurally impossible rather than merely
+ * access-controlled away.
  *
- * Deliberately its own bounded context and its own UserInterface
- * implementation, entirely separate from App\User\Domain\User: a tenant
- * user is its own domain concept (an end-user who happens to belong to one
- * tenant), not a "sub-type" of the super-admin User — see the KOZ-11 ticket
- * notes and the earlier KOZ-8 bounded-context-separation feedback this
- * follows.
+ * Deliberately its own bounded context and UserInterface implementation,
+ * entirely separate from App\User\Domain\User: a tenant user is its own
+ * domain concept, not a "sub-type" of the super-admin User.
  *
  * Roles are a plain string array here, not the Role/Permission entity
- * model App\User uses (KOZ-9): this is a deliberately minimal first version
- * (see the KOZ-11 ticket's "Out of scope"/"Kernpunten"). getRoles() is
- * enough to carry "the right role" onto the session/token and to work with
- * Symfony Security's built-in role checks; a fine-grained
- * permission-per-role model for tenant users, mirroring KOZ-9, can follow
- * as its own ticket if/when tenant-side authorization actually needs it —
- * the same evolution App\User went through from KOZ-8 to KOZ-9.
+ * model App\User uses — a deliberately minimal first version. A
+ * fine-grained permission-per-role model can follow if/when tenant-side
+ * authorization actually needs it.
  */
 #[ORM\Entity]
 #[ORM\Table(name: 'tenant_users')]

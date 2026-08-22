@@ -8,8 +8,8 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * Replaces the plain `roles` JSON column on `users` (KOZ-8) with a proper
- * roles-with-permissions model (KOZ-9), all in the public schema:
+ * Replaces the plain `roles` JSON column on `users` with a proper
+ * roles-with-permissions model, all in the public schema:
  *
  * - `permissions`: fine-grained permission names (e.g. `tenant:list`).
  * - `roles`: named roles (e.g. `ROLE_SUPER_ADMIN`).
@@ -17,18 +17,14 @@ use Doctrine\Migrations\AbstractMigration;
  * - `user_roles`: which roles a user has (many-to-many), replacing the old
  *   `users.roles` JSON column.
  *
- * Seeds exactly the permission set this ticket's DoD requires — no more,
- * no less: `tenant:list` and `tenant:create`, both granted to
- * ROLE_SUPER_ADMIN, matching what the admin tenant API actually does today
- * (App\Tenancy\Infrastructure\Controller\ListTenantsController and
- * CreateTenantController, split from a single TenantAdminController in
- * KOZ-10). No permissions are invented ahead of functionality that doesn't
- * exist yet.
+ * Seeds exactly the permission set currently needed — `tenant:list` and
+ * `tenant:create`, both granted to ROLE_SUPER_ADMIN. No permissions are
+ * invented ahead of functionality that doesn't exist yet.
  *
- * Since KOZ-8 has not shipped and carries no production data, this drops
- * `users.roles` outright rather than migrating existing rows — any
- * super-admin account created before this migration needs to be recreated
- * via `bin/console super-admin:create` afterwards.
+ * No production data exists yet, so this drops `users.roles` outright
+ * rather than migrating existing rows — any super-admin account created
+ * before this migration needs to be recreated via `bin/console
+ * super-admin:create` afterwards.
  */
 final class Version20260819170000 extends AbstractMigration
 {

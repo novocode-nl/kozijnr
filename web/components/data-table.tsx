@@ -25,10 +25,10 @@ import {
 } from "@/components/ui/table"
 
 /**
- * Generic, reusable data table (KOZ-24), built on shadcn's Data Table
- * pattern (Table primitives + @tanstack/react-table) so future overviews
- * (KOZ-25 and beyond) can reuse it by supplying their own `columns`/`data`
- * rather than each screen hand-rolling its own `<table>` markup.
+ * Generic, reusable data table, built on shadcn's Data Table pattern (Table
+ * primitives + @tanstack/react-table) so future overviews can reuse it by
+ * supplying their own `columns`/`data` rather than each screen hand-rolling
+ * its own `<table>` markup.
  *
  * `dataTableFeatures` fixes one shared feature set — row sorting, plus
  * column visibility (required by v9's `row.getVisibleCells()` used for

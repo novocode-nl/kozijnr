@@ -6,15 +6,10 @@ use App\TenantUser\Domain\TenantApiToken;
 use App\TenantUser\Domain\TenantApiTokenRepositoryInterface;
 
 /**
- * Revokes a tenant-user's bearer token (KOZ-15): the counterpart to
- * LoginTenantUser. Removing the row is enough — TenantApiTokenHandler only
- * ever accepts a token it can look up by hash, so once the row is gone the
- * plaintext token can never authenticate again.
- *
- * Deliberately a no-op, not an error, when the token can't be found: by the
- * time this runs the caller has already passed the `tenant_users` firewall
- * with this exact token, so it existed a moment ago; if it's already gone
- * (e.g. a concurrent logout) there's simply nothing left to revoke.
+ * Revokes a tenant-user's bearer token. Removing the row is enough —
+ * TenantApiTokenHandler only accepts a token it can look up by hash.
+ * A no-op, not an error, when the token can't be found (e.g. a concurrent
+ * logout already removed it).
  */
 final class LogoutTenantUser
 {

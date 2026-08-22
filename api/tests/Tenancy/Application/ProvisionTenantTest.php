@@ -11,16 +11,14 @@ use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * Functional test for `App\Tenancy\Application\ProvisionTenant` (KOZ-7
- * review rework), against the real Postgres test database. Complements
- * ProvisionTenantCommandTest, which only covers failures that happen
- * *before* `CREATE SCHEMA` runs (invalid name, duplicate subdomain, existing
- * schema). This test proves the DoD claim that ProvisionTenant "fails
- * cleanly with no half-provisioned state" for the one path those tests
- * cannot reach: a migration that fails *after* the schema has already been
- * created.
+ * Functional test for `App\Tenancy\Application\ProvisionTenant`, against
+ * the real Postgres test database. Complements ProvisionTenantCommandTest,
+ * which only covers failures *before* `CREATE SCHEMA` runs. This proves
+ * ProvisionTenant "fails cleanly with no half-provisioned state" for the
+ * one path those tests can't reach: a migration failing *after* the schema
+ * has already been created.
  *
- * It uses a real, deliberately-broken tenant migration (see
+ * Uses a real, deliberately-broken tenant migration (see
  * tests/Tenancy/Fixtures/BrokenTenantMigrations/) that fails with a genuine
  * Postgres error raised mid-transaction, rather than a PHP-level exception
  * thrown before any query runs. That distinction matters: Postgres refuses

@@ -9,16 +9,13 @@ use App\TenantUser\Domain\TenantApiTokenRepositoryInterface;
 use App\TenantUser\Domain\TenantUserRepositoryInterface;
 
 /**
- * Validates an email+password combination against the tenant users living
- * in the *current* tenant schema (search_path already set by
- * App\Tenancy\Infrastructure\TenantResolverListener before this ever runs)
- * and, on success, issues a fresh TenantApiToken.
+ * Validates an email+password combination against the tenant users in the
+ * *current* tenant schema and, on success, issues a fresh TenantApiToken.
  *
  * Deliberately raises the exact same InvalidCredentialsException — same
  * class, same message — whether the email is unknown or the password is
- * wrong (KOZ-11 DoD): this is checked *here*, in Application, not left to
- * the controller to obscure after the fact, so there is no code path that
- * could leak the distinction some other way.
+ * wrong, checked here rather than left to the controller to obscure after
+ * the fact, so no code path can leak the distinction.
  */
 final class LoginTenantUser
 {

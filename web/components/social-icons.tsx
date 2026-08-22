@@ -1,10 +1,4 @@
-/**
- * Shared brand icons for the social-login buttons on the login page
- * (KOZ-16). Extracted so both the tenant and admin login forms
- * (components/login-form.tsx, components/admin-login-form.tsx) render the
- * exact same markup instead of duplicating inline SVGs — the standard
- * icons from shadcn's login-04 block.
- */
+/** Shared brand icons for the social-login buttons, used by both login forms. */
 export function AppleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...props}>

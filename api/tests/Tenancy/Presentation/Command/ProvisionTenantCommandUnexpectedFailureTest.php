@@ -15,20 +15,14 @@ use Symfony\Component\Console\Tester\CommandTester;
 
 /**
  * Unit test for `tenant:provision`'s handling of failures that are *not*
- * one of ProvisionTenant's own domain exceptions (KOZ-7 review rework,
- * finding 3).
- *
- * `ProvisionTenant::__invoke()` (see App\Tenancy\Application\ProvisionTenant)
- * runs its existence checks and `TenantSchemaManager::create()` *before* its
- * try/catch block starts. In a real race between two concurrent
- * `tenant:provision` runs for the same name, both processes can pass the
- * `exists()` check before either has created the schema, and then the
+ * one of ProvisionTenant's own domain exceptions. In a real race between
+ * two concurrent `tenant:provision` runs for the same name, both processes
+ * can pass the `exists()` check before either creates the schema, so the
  * second process's raw `CREATE SCHEMA` fails with a plain
- * Doctrine\DBAL\Exception rather than a `SchemaAlreadyExistsException`. This
- * test reproduces that shape directly (a raw DBAL exception from `create()`,
- * with no real Postgres involved) and proves ProvisionTenantCommand still
- * reports it via `io->error()` and Command::FAILURE, instead of letting it
- * escape as an uncaught stack trace.
+ * Doctrine\DBAL\Exception rather than a `SchemaAlreadyExistsException`.
+ * This reproduces that shape directly and proves ProvisionTenantCommand
+ * still reports it cleanly instead of letting it escape as an uncaught
+ * stack trace.
  */
 final class ProvisionTenantCommandUnexpectedFailureTest extends TestCase
 {

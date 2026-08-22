@@ -9,11 +9,9 @@ use App\TenantUser\Domain\TenantUserRepositoryInterface;
 
 /**
  * Creates a tenant user account within the *current* tenant schema
- * (search_path already pointed at the right tenant by the caller — see
- * App\TenantUser\Infrastructure\Command\CreateTenantUserCommand). There is
- * no self-service registration route on purpose (out of scope for KOZ-11,
- * same reasoning as CreateSuperAdmin): only an operator with console access
- * can create a tenant user account today.
+ * (search_path already pointed at the right tenant by the caller). No
+ * self-service registration route exists — only an operator with console
+ * access can create a tenant user account today.
  */
 final class CreateTenantUser
 {

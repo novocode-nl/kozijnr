@@ -7,44 +7,32 @@ import { resolveAppContext } from "@/lib/context/app-context"
 import { REDIRECT_PARAM, buildRedirectTarget } from "@/lib/navigation/safe-redirect"
 
 /**
- * Server-side route guard (Next.js 16 `proxy.ts` convention, formerly
- * `middleware.ts`; runs on the Node.js runtime, which is what makes the
- * `node:http` call in `hasValidAdminSession` possible).
+ * Server-side route guard (Next.js `proxy.ts` convention; runs on the
+ * Node.js runtime, needed for the `node:http` call in `hasValidAdminSession`).
  *
  * Every route on either subdomain sits behind a login:
- * - tenant context (<tenant>.<base>): the HttpOnly token cookie the API
- *   sets on login merely has to be present — its validity is checked by
- *   the API on every real call anyway.
- * - admin context (admin.<base>): the super-admin session is an opaque
- *   Symfony session cookie this frontend can't introspect, so the API is
- *   asked (GET /api/admin/me) whether it's still valid. Fails closed on any
- *   error or timeout.
+ * - tenant context: the HttpOnly token cookie merely has to be present —
+ *   its validity is checked by the API on every real call anyway.
+ * - admin context: the session is an opaque Symfony session cookie this
+ *   frontend can't introspect, so the API is asked (GET /api/admin/me)
+ *   whether it's still valid. Fails closed on any error or timeout.
  *
  * `/login` is the single login path for both contexts; an already
- * authenticated visitor is sent on to /. There are no API routes in this
- * frontend — the browser talks to api.<base> directly (see lib/api.ts), so
- * nothing under /api needs carving out here.
+ * authenticated visitor is sent on to /. `/dashboard` no longer exists as
+ * its own route — it always redirects to / before the login-status check,
+ * regardless of context.
  *
- * `/dashboard` (KOZ-21): no longer exists as its own route on either
- * subdomain — it always redirects to / before the login-status check below,
- * so it behaves the same whether the visitor is logged in or not, and
- * regardless of admin vs. tenant context.
+ * The login-status check below already covers "unknown route, not logged
+ * in": since every path other than /login redirects when there's no valid
+ * session, a nonexistent route bounces to /login without ever reaching
+ * Next's routing/notFound(). Order matters — only a session-holding
+ * visitor ever reaches Next's route resolution, where
+ * app/(app)/not-found.tsx renders the branded 404.
  *
- * 404 handling (KOZ-21): the login-status check below already covers
- * "unknown route, not logged in" — since every path other than /login
- * redirects to /login when there's no valid session, a nonexistent route
- * bounces to /login exactly like a real one would, without ever reaching
- * Next's routing/notFound() at all. Order matters here: login status is
- * resolved first, and only a session-holding visitor ever reaches Next's
- * route resolution (where app/(app)/not-found.tsx renders the branded 404
- * for a route that truly doesn't exist).
- *
- * KOZ-20: a bounce to `/login` carries the originally requested page as
+ * A bounce to `/login` carries the originally requested page as
  * `?redirect=<path>` (lib/navigation/safe-redirect.ts) so the login form
  * can send the visitor back there on success, instead of always landing on
- * /. Navigating to `/login` directly (not via this guard) carries no such
- * param, so that case's behavior is unchanged (see safe-redirect.ts's
- * `DEFAULT_REDIRECT_PATH`, which KOZ-21 updated from /dashboard to /).
+ * /.
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -79,14 +67,9 @@ export async function proxy(request: NextRequest) {
 
 /**
  * Asks the API whether the session cookie on this request is a valid
- * super-admin session (GET /api/admin/me) the same way the browser would:
- * addressed to api.<base> with the page's origin as `Origin`, so the API's
- * TenantResolverListener resolves the admin context from it. Goes over the
- * internal container network (`backend:8000`), setting the `Host` header to
- * the public api.<base> hostname.
- *
- * No Cookie header at all -> false without a round-trip. Any network
- * failure, non-200 or timeout -> false (fail closed).
+ * super-admin session, over the internal container network, with the
+ * `Host` header set to the public api.<base> hostname so the API resolves
+ * the admin context correctly. Fails closed on any error, non-200, or timeout.
  */
 async function hasValidAdminSession(request: NextRequest): Promise<boolean> {
   const cookieHeader = request.headers.get("cookie")

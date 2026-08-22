@@ -10,20 +10,12 @@ use Doctrine\Migrations\MigratorConfiguration;
 use Psr\Log\NullLogger;
 
 /**
- * Runs the *tenant* migration set (migrations-tenant/, namespace
- * App\Migrations\Tenant) against a single tenant schema, bringing it up to
- * the latest tenant migration version.
- *
- * This is deliberately independent of the *public* migration set
- * (config/packages/doctrine_migrations.yaml, migrations/) and of the
- * bundle-registered `doctrine:migrations:migrate` command: that command only
- * ever touches the public schema's migration table, and never this one, so
- * the two migration histories can evolve independently and never interleave.
- *
- * Each tenant schema gets its own `doctrine_migration_versions` tracking
- * table, living inside that schema (created by pointing the connection's
- * search_path at the schema before building the migrations DependencyFactory
- * — the table name is unqualified, so it resolves relative to search_path).
+ * Runs the *tenant* migration set against a single tenant schema, bringing
+ * it up to the latest tenant migration version. Deliberately independent
+ * of the *public* migration set and the bundle's `doctrine:migrations:migrate`
+ * command, so the two migration histories never interleave. Each tenant
+ * schema gets its own `doctrine_migration_versions` tracking table, created
+ * by pointing search_path at the schema before building the DependencyFactory.
  */
 final class TenantSchemaMigrator
 {

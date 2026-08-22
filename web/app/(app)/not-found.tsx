@@ -6,7 +6,7 @@ import { getAppContext } from "@/lib/context/app-context"
 /**
  * Branded 404, scoped to the (app) route group so it renders inside the
  * shared AppShell (app/(app)/layout.tsx) — sidebar/nav and all — instead of
- * Next's generic, unstyled 404 (KOZ-21). Only reached by a visitor with a
+ * Next's generic, unstyled 404. Only reached by a visitor with a
  * valid session: proxy.ts already redirects anyone without one straight to
  * /login before Next's routing (and therefore this boundary) ever runs, so
  * by the time this renders we already know the visitor is logged in.

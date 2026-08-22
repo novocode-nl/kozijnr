@@ -1,8 +1,8 @@
 /**
- * KOZ-20: shared logic for "come back here after login" redirects.
+ * Shared logic for "come back here after login" redirects.
  *
- * proxy.ts's route guard (KOZ-14) redirects an unauthenticated visitor to
- * `/login`, carrying the page they originally asked for as a query param so
+ * proxy.ts's route guard redirects an unauthenticated visitor to `/login`,
+ * carrying the page they originally asked for as a query param so
  * the login form can send them back there on success. This file is the one
  * place that both (a) builds that query param on the way to `/login`, and
  * (b) validates/sanitizes it on the way back — kept together so the two
@@ -22,10 +22,9 @@ export const REDIRECT_PARAM = "redirect"
 
 /**
  * Where a plain, un-redirected login sends the user — unchanged default
- * behavior for "navigated to /login directly" (out of scope for KOZ-20) and
- * the fallback whenever the carried value fails validation. `/` (KOZ-21) —
- * the authenticated home within the shared AppShell now that /dashboard no
- * longer exists as its own route.
+ * behavior for "navigated to /login directly", and the fallback whenever
+ * the carried value fails validation. `/` is the authenticated home within
+ * the shared AppShell; /dashboard no longer exists as its own route.
  */
 export const DEFAULT_REDIRECT_PATH = "/"
 

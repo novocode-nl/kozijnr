@@ -5,31 +5,22 @@ namespace App\TenantUser\Domain;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * An issued bearer token for a TenantUser (KOZ-11). Rows live exclusively
- * inside a tenant schema, exactly like TenantUser itself — a token issued
- * on tenant A's schema simply does not exist when looked up while the
- * request's search_path is set to tenant B's schema (App\Tenancy\Infrastructure\TenantResolverListener),
- * regardless of what the caller presents. That structural separation, not
- * an explicit "does this token's tenant match the current tenant" check,
- * is what makes a token tenant-bound — the same approach KOZ-6/7 use for
- * tenant data isolation in general.
+ * An issued bearer token for a TenantUser. Rows live exclusively inside a
+ * tenant schema, exactly like TenantUser itself — a token issued on tenant
+ * A's schema simply does not exist when looked up under tenant B's
+ * search_path. That structural separation is what makes a token
+ * tenant-bound, not an explicit tenant-match check.
  *
- * Only a SHA-256 hash of the token is ever persisted, never the plaintext
- * — a stolen database row must not directly hand out a working token. A
- * cryptographic password hasher (bcrypt/argon2) is deliberately not used
- * here: those are salted and non-deterministic by design, so they cannot
- * be looked up by hash directly, whereas an opaque high-entropy random
- * token that is only ever compared once (not brute-forceable the way a
- * human-chosen password is) is safely looked up by a fast deterministic
- * hash instead.
+ * Only a SHA-256 hash of the token is ever persisted, never the plaintext.
+ * A cryptographic password hasher (bcrypt/argon2) is deliberately not used
+ * here: those are salted/non-deterministic and can't be looked up by hash
+ * directly, whereas a high-entropy random token is safe to look up by a
+ * fast deterministic hash.
  *
- * Sliding expiry (KOZ-15): issueFor() sets expiresAt EXPIRY_PERIOD out from
- * the issue moment, and every successful use renews it the same distance
- * out from that moment (renewExpiry(), called by
- * App\TenantUser\Infrastructure\Security\TenantApiTokenHandler on every
- * request it authenticates) — an actively used token effectively never
- * expires, while an abandoned one lapses on its own EXPIRY_PERIOD after the
- * last time it was actually used, with no separate refresh mechanism.
+ * Sliding expiry: issueFor() sets expiresAt EXPIRY_PERIOD out from issue
+ * time, and every successful use renews it the same distance out
+ * (renewExpiry()) — an actively used token effectively never expires,
+ * while an abandoned one lapses EXPIRY_PERIOD after its last use.
  */
 #[ORM\Entity]
 #[ORM\Table(name: 'tenant_user_api_tokens')]
@@ -37,12 +28,10 @@ use Doctrine\ORM\Mapping as ORM;
 class TenantApiToken
 {
     /**
-     * The sliding-expiry window (KOZ-15): how long an issued token stays
-     * valid after it was issued, or, on every subsequent successful use,
-     * after that use — see renewExpiry(). 30 days was chosen as a generous
-     * default for an active user (so a normal usage cadence never forces a
-     * re-login) while still ensuring an abandoned token doesn't stay valid
-     * indefinitely.
+     * The sliding-expiry window: how long an issued token stays valid after
+     * issue, or after each subsequent use — see renewExpiry(). 30 days is a
+     * generous default so normal usage never forces a re-login, while an
+     * abandoned token still lapses eventually.
      */
     private const EXPIRY_PERIOD = 'P30D';
 
@@ -134,11 +123,7 @@ class TenantApiToken
         return $now > $this->expiresAt;
     }
 
-    /**
-     * Sliding expiry (KOZ-15): pushes expiresAt EXPIRY_PERIOD out from
-     * $now. Called on every successful token validation, not just at issue
-     * time — see App\TenantUser\Infrastructure\Security\TenantApiTokenHandler.
-     */
+    /** Sliding expiry: pushes expiresAt EXPIRY_PERIOD out from $now. */
     public function renewExpiry(\DateTimeImmutable $now): void
     {
         $this->expiresAt = self::expiryFrom($now);

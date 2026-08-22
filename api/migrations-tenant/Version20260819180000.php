@@ -9,19 +9,14 @@ use Doctrine\Migrations\AbstractMigration;
 
 /**
  * Creates the `tenant_users` and `tenant_user_api_tokens` tables inside a
- * tenant schema (KOZ-11): the first tenant-side authentication model in
- * this codebase, structurally isolated per tenant the same way
- * App\User\Domain\User (the public-schema-only super-admin account) is
- * structurally isolated from every tenant schema — neither table exists in
- * `public`, so a tenant user (and any token issued for one) is invisible
- * outside its own tenant schema, not merely access-controlled away from it.
+ * tenant schema, structurally isolated per tenant — neither table exists
+ * in `public`, so a tenant user (and any token issued for one) is
+ * invisible outside its own tenant schema.
  *
  * `roles` is a plain JSON array of role names for now, not the
- * Role/Permission entity model KOZ-9 introduced for App\User — deliberately
- * minimal first version (see the KOZ-11 ticket).
- *
- * `tenant_user_api_tokens` only ever stores the SHA-256 hash of an issued
- * bearer token, never the plaintext (see App\TenantUser\Domain\TenantApiToken).
+ * Role/Permission entity model App\User uses — a deliberately minimal
+ * first version. `tenant_user_api_tokens` only ever stores the SHA-256
+ * hash of an issued bearer token, never the plaintext.
  */
 final class Version20260819180000 extends AbstractMigration
 {

@@ -29,12 +29,8 @@ final class TenantResolverListener implements EventSubscriberInterface
     public const REQUEST_ATTRIBUTE = '_tenant';
 
     /**
-     * Set (to `true`) on the request when the host resolved to the
-     * reserved "admin" subdomain (admin.kozijnr.nl / admin.localhost) —
-     * the tenant-independent super-admin domain. Mutually exclusive with
-     * REQUEST_ATTRIBUTE: a request either resolves to a tenant, resolves
-     * to the admin domain, or is on the bare main domain (neither
-     * attribute set).
+     * Set to `true` when the host resolved to the reserved "admin"
+     * subdomain. Mutually exclusive with REQUEST_ATTRIBUTE.
      */
     public const ADMIN_REQUEST_ATTRIBUTE = '_super_admin_domain';
 
@@ -74,23 +70,14 @@ final class TenantResolverListener implements EventSubscriberInterface
         }
 
         if ($subdomain === Subdomain::RESERVED_API) {
-            // The API's own hostname (api.<base>, behind the nginx proxy
-            // locally, the real api.<apex> in production). Browser clients
-            // live on a sibling subdomain (admin.<base>, <tenant>.<base>)
-            // and call this host cross-origin, so the browser-set Origin
-            // header is what tells us which context they belong to. Origin
-            // is set by the browser itself — page scripts can't forge it —
-            // and CorsListener only ever lets sibling origins through, so
-            // it's a trustworthy context carrier. A request without an
-            // Origin (curl, server-to-server) or with a foreign/api origin
-            // stays on the public schema.
-            //
-            // Like the Host-based resolution above, this only *selects* the
-            // context — it grants nothing. Tenant credentials live inside
-            // the tenant's own schema and admin routes still require an
-            // admin session, so a caller picking another tenant here gets
-            // exactly what it would get by addressing that tenant's
-            // subdomain directly.
+            // The API's own hostname: browser clients call it cross-origin
+            // from a sibling subdomain, so the browser-set Origin header
+            // tells us which context they belong to. Browser page scripts
+            // can't forge this header, but non-browser callers (curl,
+            // server-to-server) can send anything or omit it, which is
+            // why subdomainFromOrigin() falls back to null in that case.
+            // This only *selects* the context — it grants nothing beyond
+            // what addressing that tenant's subdomain directly would.
             $subdomain = $this->subdomainFromOrigin($request);
 
             if ($subdomain === null || $subdomain === Subdomain::RESERVED_API) {

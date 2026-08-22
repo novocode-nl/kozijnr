@@ -12,14 +12,11 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
- * Proves KOZ-9's core claim end to end: authorization on the admin tenant
- * API is decided by the authenticated user's *permissions*
- * (tenant:list / tenant:create), not by a ROLE_SUPER_ADMIN role-name
- * string comparison. Both users below can authenticate on the
- * `super_admin` firewall (login stays role-based, unaffected by this
- * ticket) but are assigned custom roles carrying only one of the two
- * permissions each, to prove access is granted or denied per permission
- * rather than "is this a super admin at all".
+ * Proves that authorization on the admin tenant API is decided by the
+ * authenticated user's *permissions* (tenant:list / tenant:create), not by
+ * a ROLE_SUPER_ADMIN role-name comparison. Both users below can
+ * authenticate on the `super_admin` firewall but are assigned custom roles
+ * carrying only one of the two permissions each.
  */
 final class TenantAdminPermissionAuthorizationTest extends WebTestCase
 {

@@ -8,19 +8,12 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * Baseline tenant-schema migration (KOZ-7).
- *
- * This is the first migration in the *tenant* migration set — separate from
- * the *public* migration set under /migrations (see
- * config/packages/doctrine_migrations.yaml and App\Tenancy\Infrastructure\TenantSchemaMigrator).
- * It runs once per tenant schema, tracked by its own `doctrine_migration_versions`
- * table living inside that schema, rather than in `public`.
- *
- * It only creates a small marker table for now, proving the tenant
- * migration set runs independently of the public one end to end
- * (`tenant:provision`, `tenant:migrate --all`). Future tenant-schema tables
- * (orders, products, ...) are added as further migrations in this
- * directory/namespace.
+ * Baseline tenant-schema migration: the first migration in the *tenant*
+ * migration set, separate from the *public* set under /migrations. Runs
+ * once per tenant schema, tracked by its own `doctrine_migration_versions`
+ * table living inside that schema rather than in `public`. Only creates a
+ * small marker table for now, proving the tenant migration set runs
+ * independently of the public one end to end.
  */
 final class Version20260819060000 extends AbstractMigration
 {
