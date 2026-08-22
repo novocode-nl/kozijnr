@@ -6,7 +6,7 @@ SHELL := /bin/bash
 
 .PHONY: up down build rebuild restart logs ps sh-backend sh-frontend \
         composer console npm test-backend worktree-env ensure-env \
-        proxy-up proxy-down proxy-logs
+        proxy-up proxy-down proxy-logs seed
 
 PROXY_COMPOSE := docker compose -f docker/proxy/docker-compose.yml
 PROXY_NETWORK := kozijnr-proxy
@@ -61,10 +61,30 @@ proxy-logs:
 	$(PROXY_COMPOSE) logs -f
 
 ## Start the full stack in the background. Generates .env automatically
-## (see `ensure-env`) if it doesn't exist yet, and makes sure the shared
-## proxy is running.
+## (see `ensure-env`) if it doesn't exist yet, makes sure the shared proxy
+## is running, and seeds the standard dev/test accounts (see `seed`).
 up: ensure-env proxy-up
 	$(COMPOSE) up -d
+	$(MAKE) seed
+
+## Run pending public-schema migrations, then seed the standard dev/test
+## accounts (KOZ-22): super-admin admin@kozijnr.nl, tenant "tenant1" and its
+## tenant-user tenant@kozijnr.nl — all with password "password". Runs
+## automatically as part of `make up`; both steps are idempotent (no-op if
+## already applied/present), and the seed command itself refuses to run
+## against a production environment (see
+## App\Shared\Infrastructure\Command\SeedDevFixturesCommand), so this is
+## safe to re-run any time the stack starts. Waits for the backend
+## container's first-boot `composer install` (docker-entrypoint.sh) to
+## finish before running console commands against it.
+seed:
+	@echo "Waiting for the backend container to be ready..."
+	@for i in $$(seq 1 60); do \
+		$(COMPOSE) exec backend test -f vendor/autoload.php 2>/dev/null && break; \
+		sleep 1; \
+	done
+	$(COMPOSE) exec backend php bin/console doctrine:migrations:migrate --no-interaction
+	$(COMPOSE) exec backend php bin/console app:seed-dev-fixtures
 
 ## Stop and remove the stack's containers.
 down:
