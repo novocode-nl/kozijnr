@@ -29,4 +29,10 @@ interface TenantRepositoryInterface
      * Registers a newly provisioned tenant in the public `tenants` table.
      */
     public function add(Tenant $tenant): void;
+
+    /**
+     * Persists changes made to an already-registered tenant (e.g. after
+     * `Tenant::rename()`).
+     */
+    public function update(Tenant $tenant): void;
 }

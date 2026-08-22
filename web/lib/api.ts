@@ -1,5 +1,6 @@
 import { apiBaseUrl } from "@/lib/api-base-url"
 import type { LoginFormValues } from "@/lib/schemas/login"
+import type { ActionResult } from "@/lib/forms/types"
 
 /**
  * Browser-side service layer over the REST API on api.<base>. Every call
@@ -53,6 +54,68 @@ export async function listTenants(): Promise<TenantSummary[]> {
 
 export async function adminLogout(): Promise<void> {
   await postBestEffort("/api/admin/logout")
+}
+
+/** Payload shape both CreateTenantController and UpdateTenantController expect. */
+export type TenantNamePayload = { name: string }
+
+const TENANT_CREATE_FAILED_MESSAGE = "Kon de tenant niet aanmaken. Probeer het opnieuw."
+const TENANT_UPDATE_FAILED_MESSAGE = "Kon de tenant niet bijwerken. Probeer het opnieuw."
+
+/**
+ * Tenant creation: POST /api/admin/tenants, guarded backend-side by the
+ * `tenant:create` permission (see CreateTenantController). The backend
+ * reports failures (invalid name, subdomain already in use) as a single
+ * `{ message }`, not a field-keyed map — since the tenant form has exactly
+ * one field (`subdomain`), that message is attached to it here so
+ * `<ConfigForm>` shows it in the right place.
+ */
+export async function createTenant(payload: TenantNamePayload): Promise<ActionResult<TenantSummary>> {
+  return submitTenantNamePayload("/api/admin/tenants", "POST", payload, TENANT_CREATE_FAILED_MESSAGE)
+}
+
+/**
+ * Tenant edit: PATCH /api/admin/tenants/{subdomain}, guarded backend-side
+ * by the `tenant:update` permission (see UpdateTenantController). Same
+ * message -> `subdomain` field-error mapping as `createTenant`.
+ */
+export async function updateTenant(
+  currentSubdomain: string,
+  payload: TenantNamePayload
+): Promise<ActionResult<TenantSummary>> {
+  return submitTenantNamePayload(
+    `/api/admin/tenants/${encodeURIComponent(currentSubdomain)}`,
+    "PATCH",
+    payload,
+    TENANT_UPDATE_FAILED_MESSAGE
+  )
+}
+
+async function submitTenantNamePayload(
+  path: string,
+  method: "POST" | "PATCH",
+  payload: TenantNamePayload,
+  networkErrorMessage: string
+): Promise<ActionResult<TenantSummary>> {
+  let response: Response
+  try {
+    response = await fetch(backendUrl(path), {
+      method,
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+  } catch {
+    return { success: false, message: networkErrorMessage }
+  }
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null)
+    const message = typeof body?.message === "string" ? body.message : networkErrorMessage
+    return { success: false, fieldErrors: { subdomain: message } }
+  }
+
+  return { success: true, data: await response.json() }
 }
 
 function backendUrl(path: string): string {

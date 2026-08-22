@@ -84,6 +84,36 @@ final class TenantAdminPermissionAuthorizationTest extends WebTestCase
         self::assertResponseStatusCodeSame(403);
     }
 
+    public function testAUserWithoutTheUpdatePermissionCannotRenameATenant(): void
+    {
+        $this->createUserWithPermissions('list-only@kozijnr.nl', 'super-secret-123', ['tenant:list']);
+        $this->login('list-only@kozijnr.nl', 'super-secret-123');
+
+        $this->client->request('PATCH', '/api/admin/tenants/acme', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['name' => 'acme-bv']));
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testAUserWithTheUpdatePermissionCanRenameATenant(): void
+    {
+        $this->createUserWithPermissions('update-only@kozijnr.nl', 'super-secret-123', ['tenant:create', 'tenant:update']);
+        $this->login('update-only@kozijnr.nl', 'super-secret-123');
+
+        $this->client->request('POST', '/api/admin/tenants', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['name' => 'acme']));
+        self::assertResponseStatusCodeSame(201);
+
+        $this->client->request('PATCH', '/api/admin/tenants/acme', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['name' => 'acme-bv']));
+        self::assertResponseIsSuccessful();
+    }
+
     /**
      * @param list<string> $permissionNames Must already exist (seeded by
      *                                       migration), e.g. 'tenant:list'.

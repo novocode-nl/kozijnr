@@ -47,4 +47,23 @@ final class TenantTest extends TestCase
 
         new Tenant('acme', '');
     }
+
+    public function testRenameChangesTheSubdomainButNotTheSchemaName(): void
+    {
+        $tenant = new Tenant('acme', 'tenant_acme');
+
+        $tenant->rename('acme-bv');
+
+        self::assertSame('acme-bv', $tenant->getSubdomain());
+        self::assertSame('tenant_acme', $tenant->getSchemaName());
+    }
+
+    public function testRenameRejectsAnEmptySubdomain(): void
+    {
+        $tenant = new Tenant('acme', 'tenant_acme');
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        $tenant->rename('   ');
+    }
 }
