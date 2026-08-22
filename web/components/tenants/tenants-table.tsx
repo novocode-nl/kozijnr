@@ -33,7 +33,7 @@ const columns = [
       <DataTableSortableHeader
         label="Subdomain"
         sorted={column.getIsSorted()}
-        onSort={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        onSort={() => column.toggleSorting()}
       />
     ),
     cell: ({ row }) => (
@@ -45,7 +45,7 @@ const columns = [
       <DataTableSortableHeader
         label="Aangemaakt op"
         sorted={column.getIsSorted()}
-        onSort={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        onSort={() => column.toggleSorting()}
       />
     ),
     cell: ({ row }) => dateFormatter.format(new Date(row.original.createdAt)),

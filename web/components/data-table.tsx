@@ -80,7 +80,7 @@ export function DataTableSortableHeader({
       ) : sorted === "desc" ? (
         <ArrowDown />
       ) : (
-        <ArrowUpDown className="text-muted-foreground" />
+        <ArrowUpDown className="text-muted-foreground/50" />
       )}
     </Button>
   )
