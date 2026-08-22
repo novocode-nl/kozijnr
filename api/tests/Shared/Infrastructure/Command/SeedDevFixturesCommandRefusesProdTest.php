@@ -14,17 +14,23 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 
 /**
- * KOZ-22's hard "never in production" guard: the command must refuse to run
- * (with a clear error, not a silent no-op) when it is wired up with
- * environment "prod" — regardless of what the real services would do — so a
- * fixed, publicly known password can never be seeded against a production
- * configuration.
+ * KOZ-22's hard "only ever in dev/test" guard: the command must refuse to
+ * run (with a clear error, not a silent no-op) unless it is wired up with
+ * environment "dev" or "test" — regardless of what the real services would
+ * do — so a fixed, publicly known password can never be seeded against a
+ * production (or any other non-dev/test) configuration.
+ *
+ * This is an allowlist, not a blocklist: it must refuse "prod" AND any
+ * other environment name that isn't explicitly "dev"/"test" — e.g.
+ * "staging", a typo, or any future/unknown environment name — since a
+ * blocklist that only checks for "prod" would let those slip through.
  *
  * Constructs the command directly (rather than resolving it from the
  * container, which is always booted in the "test" environment here) with
- * environment explicitly set to "prod", using the real services from the
- * test container. If the guard were missing or came after the seeding
- * calls, this test would create real rows and fail on the assertions below.
+ * environment explicitly set to a disallowed value, using the real services
+ * from the test container. If the guard were missing or came after the
+ * seeding calls, this test would create real rows and fail on the
+ * assertions below.
  */
 final class SeedDevFixturesCommandRefusesProdTest extends KernelTestCase
 {
@@ -45,6 +51,21 @@ final class SeedDevFixturesCommandRefusesProdTest extends KernelTestCase
 
     public function testRefusesToRunWhenEnvironmentIsProd(): void
     {
+        $this->assertRefusesToRunFor('prod');
+    }
+
+    /**
+     * The allowlist gap this covers: a blocklist that only rejects "prod"
+     * would let "staging" (or any other non-dev/test name) through and seed
+     * the fixed, publicly known password into it.
+     */
+    public function testRefusesToRunWhenEnvironmentIsStaging(): void
+    {
+        $this->assertRefusesToRunFor('staging');
+    }
+
+    private function assertRefusesToRunFor(string $environment): void
+    {
         $container = self::getContainer();
 
         $command = new SeedDevFixturesCommand(
@@ -54,14 +75,14 @@ final class SeedDevFixturesCommandRefusesProdTest extends KernelTestCase
             $container->get(TenantRepositoryInterface::class),
             $container->get(Connection::class),
             $container->get(LoggerInterface::class),
-            'prod',
+            $environment,
         );
 
         $tester = new CommandTester($command);
         $exitCode = $tester->execute([]);
 
         self::assertNotSame(Command::SUCCESS, $exitCode);
-        self::assertStringContainsString('prod', strtolower($tester->getDisplay()));
+        self::assertStringContainsString(strtolower($environment), strtolower($tester->getDisplay()));
 
         $connection = $this->connection();
         self::assertCount(0, $connection->fetchAllAssociative('SELECT * FROM public.users'));

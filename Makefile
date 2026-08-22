@@ -61,28 +61,38 @@ proxy-logs:
 	$(PROXY_COMPOSE) logs -f
 
 ## Start the full stack in the background. Generates .env automatically
-## (see `ensure-env`) if it doesn't exist yet, makes sure the shared proxy
-## is running, and seeds the standard dev/test accounts (see `seed`).
+## (see `ensure-env`) if it doesn't exist yet, and makes sure the shared
+## proxy is running. Does NOT seed the standard dev/test accounts — that is
+## a separate, explicit step (see `seed`), so that this Makefile/compose
+## setup stays safe to reuse for a non-dev/test-like environment without
+## silently seeding a fixed, publicly known password as a side effect of
+## just starting the stack.
 up: ensure-env proxy-up
 	$(COMPOSE) up -d
-	$(MAKE) seed
 
 ## Run pending public-schema migrations, then seed the standard dev/test
 ## accounts (KOZ-22): super-admin admin@kozijnr.nl, tenant "tenant1" and its
-## tenant-user tenant@kozijnr.nl — all with password "password". Runs
-## automatically as part of `make up`; both steps are idempotent (no-op if
-## already applied/present), and the seed command itself refuses to run
-## against a production environment (see
+## tenant-user tenant@kozijnr.nl — all with password "password". This is a
+## deliberate, explicit step — it is NOT run automatically by `make up`.
+## Both steps are idempotent (no-op if already applied/present), and the
+## seed command itself refuses to run unless the environment is explicitly
+## "dev" or "test" (see
 ## App\Shared\Infrastructure\Command\SeedDevFixturesCommand), so this is
-## safe to re-run any time the stack starts. Waits for the backend
-## container's first-boot `composer install` (docker-entrypoint.sh) to
-## finish before running console commands against it.
+## safe to re-run any time. Waits for the backend container's first-boot
+## `composer install` (docker-entrypoint.sh) to finish before running
+## console commands against it; fails loudly if the backend never becomes
+## ready within the timeout, rather than proceeding as if it were ready.
 seed:
 	@echo "Waiting for the backend container to be ready..."
-	@for i in $$(seq 1 60); do \
-		$(COMPOSE) exec backend test -f vendor/autoload.php 2>/dev/null && break; \
+	@ready=0; \
+	for i in $$(seq 1 60); do \
+		$(COMPOSE) exec backend test -f vendor/autoload.php 2>/dev/null && { ready=1; break; }; \
 		sleep 1; \
-	done
+	done; \
+	if [ "$$ready" != "1" ]; then \
+		echo "Error: backend container was not ready after 60s (vendor/autoload.php never appeared)." >&2; \
+		exit 1; \
+	fi
 	$(COMPOSE) exec backend php bin/console doctrine:migrations:migrate --no-interaction
 	$(COMPOSE) exec backend php bin/console app:seed-dev-fixtures
 

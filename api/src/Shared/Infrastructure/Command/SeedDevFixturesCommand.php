@@ -33,15 +33,19 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
  * already exists, so this command is safe to run on every environment
  * bootstrap, not just the first one.
  *
- * Hard-refuses to run when the environment is "prod" — this fixed, publicly
- * known password must never end up in a production environment. This is a
- * loud failure (a clear console error, non-zero exit code), not a silent
- * no-op, so a misconfigured pipeline can't mistake "did nothing" for
- * "succeeded".
+ * Hard-refuses to run unless the environment is explicitly "dev" or "test"
+ * — this fixed, publicly known password must never end up in anything other
+ * than a local/dev or automated-test environment. This is an allowlist, not
+ * a blocklist: any environment name that isn't explicitly "dev"/"test"
+ * (including "prod", "staging", a typo, or any future/unknown environment
+ * name) is refused, so a new non-dev/test environment can never accidentally
+ * fall through. This is a loud failure (a clear console error, non-zero exit
+ * code), not a silent no-op, so a misconfigured pipeline can't mistake "did
+ * nothing" for "succeeded".
  */
 #[AsCommand(
     name: 'app:seed-dev-fixtures',
-    description: 'Seeds the standard dev/test super-admin, tenant1 and tenant-user accounts. Refuses to run in prod.',
+    description: 'Seeds the standard dev/test super-admin, tenant1 and tenant-user accounts. Only runs in dev/test.',
 )]
 final class SeedDevFixturesCommand extends Command
 {
@@ -49,6 +53,9 @@ final class SeedDevFixturesCommand extends Command
     private const TENANT_NAME = 'tenant1';
     private const TENANT_USER_EMAIL = 'tenant@kozijnr.nl';
     private const FIXED_PASSWORD = 'password';
+
+    /** @var string[] */
+    private const ALLOWED_ENVIRONMENTS = ['dev', 'test'];
 
     public function __construct(
         private readonly CreateSuperAdmin $createSuperAdmin,
@@ -66,12 +73,14 @@ final class SeedDevFixturesCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        if ($this->environment === 'prod') {
+        if (!\in_array($this->environment, self::ALLOWED_ENVIRONMENTS, true)) {
             $io->error(sprintf(
                 'Refusing to seed dev fixtures: APP_ENV/kernel environment is "%s". '
                 . 'This command creates accounts with a fixed, publicly known password '
-                . 'and must never run against a production environment.',
+                . 'and must never run against a production environment. It only runs '
+                . 'when the environment is explicitly one of: %s.',
                 $this->environment,
+                implode(', ', self::ALLOWED_ENVIRONMENTS),
             ));
 
             return Command::FAILURE;
@@ -130,10 +139,10 @@ final class SeedDevFixturesCommand extends Command
             // conflict) and was allowed to propagate, so this line is
             // unreachable in that case — this guard only covers the
             // in-principle case of the tenant vanishing between the two
-            // lookups above.
-            $io->error(sprintf('Tenant "%s" could not be found after provisioning.', self::TENANT_NAME));
-
-            return;
+            // lookups above. Throwing (rather than just reporting via $io
+            // and returning) ensures execute()'s catch block still turns
+            // this into a non-zero exit code — no silent no-op.
+            throw new \RuntimeException(sprintf('Tenant "%s" could not be found after provisioning.', self::TENANT_NAME));
         }
 
         $this->connection->executeStatement(sprintf(
