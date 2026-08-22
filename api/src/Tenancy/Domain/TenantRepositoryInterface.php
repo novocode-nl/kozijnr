@@ -18,12 +18,29 @@ interface TenantRepositoryInterface
     public function findBySchemaName(string $schemaName): ?Tenant;
 
     /**
-     * All registered tenants, used to migrate every tenant schema to the
-     * latest tenant migration version (see `tenant:migrate --all`).
+     * All registered tenants regardless of archived status, used to
+     * migrate every tenant schema to the latest tenant migration version
+     * (see `tenant:migrate --all`).
      *
      * @return Tenant[]
      */
     public function findAll(): array;
+
+    /**
+     * Active (non-archived) tenants only, used by the default admin tenant
+     * overview.
+     *
+     * @return Tenant[]
+     */
+    public function findAllActive(): array;
+
+    /**
+     * Archived tenants only, used by the "show archived" view of the admin
+     * tenant overview.
+     *
+     * @return Tenant[]
+     */
+    public function findAllArchived(): array;
 
     /**
      * Registers a newly provisioned tenant in the public `tenants` table.

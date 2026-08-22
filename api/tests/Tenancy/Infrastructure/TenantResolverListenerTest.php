@@ -42,8 +42,8 @@ final class TenantResolverListenerTest extends WebTestCase
 
         $connection->executeStatement('DELETE FROM public.tenants');
         $connection->executeStatement(
-            "INSERT INTO public.tenants (subdomain, schema_name, created_at) VALUES "
-            . "('tenant-a', 'tenant_a', NOW()), ('tenant-b', 'tenant_b', NOW())"
+            "INSERT INTO public.tenants (name, subdomain, schema_name, created_at) VALUES "
+            . "('Tenant A', 'tenant-a', 'tenant_a', NOW()), ('Tenant B', 'tenant-b', 'tenant_b', NOW())"
         );
     }
 
@@ -84,6 +84,18 @@ final class TenantResolverListenerTest extends WebTestCase
     {
         $client = $this->client;
         $client->request('GET', '/api/health', server: ['HTTP_HOST' => 'does-not-exist.' . self::BASE_DOMAIN]);
+
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testArchivedTenantSubdomainReturns404JustLikeAnUnknownOne(): void
+    {
+        $this->connection()->executeStatement(
+            "UPDATE public.tenants SET archived_at = NOW() WHERE subdomain = 'tenant-a'"
+        );
+
+        $client = $this->client;
+        $client->request('GET', '/api/health', server: ['HTTP_HOST' => 'tenant-a.' . self::BASE_DOMAIN]);
 
         self::assertResponseStatusCodeSame(404);
     }

@@ -27,6 +27,21 @@ final class DoctrineTenantRepository implements TenantRepositoryInterface
         return $this->entityManager->getRepository(Tenant::class)->findAll();
     }
 
+    public function findAllActive(): array
+    {
+        return $this->entityManager->getRepository(Tenant::class)->findBy(['archivedAt' => null]);
+    }
+
+    public function findAllArchived(): array
+    {
+        return $this->entityManager->createQueryBuilder()
+            ->select('t')
+            ->from(Tenant::class, 't')
+            ->where('t.archivedAt IS NOT NULL')
+            ->getQuery()
+            ->getResult();
+    }
+
     public function add(Tenant $tenant): void
     {
         $this->entityManager->persist($tenant);

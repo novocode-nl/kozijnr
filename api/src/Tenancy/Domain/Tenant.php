@@ -15,10 +15,20 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\UniqueConstraint(name: 'uniq_tenants_schema_name', columns: ['schema_name'])]
 class Tenant
 {
+    private const MAX_NAME_LENGTH = 255;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
     private ?int $id = null;
+
+    /**
+     * Free-text display name (e.g. "Acme B.V."), distinct from the
+     * subdomain: the subdomain is a URL-safe slug, the name is whatever a
+     * super admin wants to call the tenant.
+     */
+    #[ORM\Column(type: 'string', length: 255)]
+    private string $name;
 
     #[ORM\Column(type: 'string', length: 63)]
     private string $subdomain;
@@ -29,10 +39,33 @@ class Tenant
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
-    public function __construct(string $subdomain, string $schemaName, ?\DateTimeImmutable $createdAt = null)
-    {
+    /**
+     * Set when the tenant has been archived (soft-deleted): `null` means
+     * active. An archived tenant is kept around (never hard-deleted) but
+     * becomes structurally unreachable — see TenantResolverListener, which
+     * treats an archived tenant's subdomain exactly like an unknown one.
+     */
+    #[ORM\Column(name: 'archived_at', type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $archivedAt = null;
+
+    public function __construct(
+        string $name,
+        string $subdomain,
+        string $schemaName,
+        ?\DateTimeImmutable $createdAt = null,
+        ?\DateTimeImmutable $archivedAt = null,
+    ) {
+        $name = trim($name);
         $subdomain = trim($subdomain);
         $schemaName = trim($schemaName);
+
+        if ($name === '') {
+            throw new \InvalidArgumentException('Tenant name cannot be empty.');
+        }
+
+        if (mb_strlen($name) > self::MAX_NAME_LENGTH) {
+            throw new \InvalidArgumentException(sprintf('Tenant name cannot be longer than %d characters.', self::MAX_NAME_LENGTH));
+        }
 
         if ($subdomain === '') {
             throw new \InvalidArgumentException('Tenant subdomain cannot be empty.');
@@ -42,14 +75,21 @@ class Tenant
             throw new \InvalidArgumentException('Tenant schema name cannot be empty.');
         }
 
+        $this->name = $name;
         $this->subdomain = $subdomain;
         $this->schemaName = $schemaName;
         $this->createdAt = $createdAt ?? new \DateTimeImmutable();
+        $this->archivedAt = $archivedAt;
     }
 
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
     }
 
     public function getSubdomain(): string
@@ -67,20 +107,56 @@ class Tenant
         return $this->createdAt;
     }
 
-    /**
-     * Changes the subdomain this tenant is reachable at. The Postgres
-     * schema name is deliberately left untouched — it's an internal
-     * storage detail, not part of the tenant's public identity, so a
-     * rename never needs to move any data.
-     */
-    public function rename(string $subdomain): void
+    public function getArchivedAt(): ?\DateTimeImmutable
     {
+        return $this->archivedAt;
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->archivedAt !== null;
+    }
+
+    /**
+     * Updates the tenant's display name and subdomain. The Postgres schema
+     * name is deliberately left untouched — it's an internal storage
+     * detail, not part of the tenant's public identity, so an update never
+     * needs to move any data.
+     */
+    public function updateDetails(string $name, string $subdomain): void
+    {
+        $name = trim($name);
         $subdomain = trim($subdomain);
+
+        if ($name === '') {
+            throw new \InvalidArgumentException('Tenant name cannot be empty.');
+        }
+
+        if (mb_strlen($name) > self::MAX_NAME_LENGTH) {
+            throw new \InvalidArgumentException(sprintf('Tenant name cannot be longer than %d characters.', self::MAX_NAME_LENGTH));
+        }
 
         if ($subdomain === '') {
             throw new \InvalidArgumentException('Tenant subdomain cannot be empty.');
         }
 
+        $this->name = $name;
         $this->subdomain = $subdomain;
+    }
+
+    /** Idempotent: archiving an already-archived tenant is a no-op. */
+    public function archive(?\DateTimeImmutable $archivedAt = null): void
+    {
+        if ($this->isArchived()) {
+            return;
+        }
+
+        $this->archivedAt = $archivedAt ?? new \DateTimeImmutable();
+    }
+
+    /** Idempotent: unarchiving an already-active tenant is a no-op. */
+    public function unarchive(): void
+    {
+        $this->archivedAt = null;
     }
 }

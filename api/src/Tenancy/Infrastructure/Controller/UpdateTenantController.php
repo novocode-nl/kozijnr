@@ -2,9 +2,8 @@
 
 namespace App\Tenancy\Infrastructure\Controller;
 
-use App\Tenancy\Application\RenameTenant;
 use App\Tenancy\Application\TenantSummary;
-use App\Tenancy\Domain\Exception\InvalidTenantNameException;
+use App\Tenancy\Application\UpdateTenant;
 use App\Tenancy\Domain\Exception\TenantAlreadyExistsException;
 use App\Tenancy\Domain\Exception\TenantNotFoundException;
 use Psr\Log\LoggerInterface;
@@ -14,10 +13,10 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Admin tenant edit API: renames an existing tenant's subdomain. Route
- * sits under /api/admin, guarded by AdminRouteGuardListener (unreachable
- * from a tenant subdomain), same as CreateTenantController/
- * ListTenantsController.
+ * Admin tenant edit API: updates an existing tenant's display name and
+ * subdomain. Route sits under /api/admin, guarded by
+ * AdminRouteGuardListener (unreachable from a tenant subdomain), same as
+ * CreateTenantController/ListTenantsController.
  *
  * Authorization is permission-based (`tenant:update`, checked via
  * PermissionVoter), not role-name-based — same reasoning as the sibling
@@ -26,7 +25,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class UpdateTenantController
 {
     public function __construct(
-        private readonly RenameTenant $renameTenant,
+        private readonly UpdateTenant $updateTenant,
         private readonly LoggerInterface $logger,
     ) {
     }
@@ -37,12 +36,13 @@ final class UpdateTenantController
     {
         $payload = json_decode($request->getContent(), true);
         $name = is_array($payload) && isset($payload['name']) ? (string) $payload['name'] : '';
+        $slug = is_array($payload) && isset($payload['slug']) ? (string) $payload['slug'] : '';
 
         try {
-            $tenant = ($this->renameTenant)($subdomain, $name);
+            $tenant = ($this->updateTenant)($subdomain, $name, $slug);
         } catch (TenantNotFoundException $exception) {
             return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_NOT_FOUND);
-        } catch (InvalidTenantNameException|TenantAlreadyExistsException $exception) {
+        } catch (\InvalidArgumentException|TenantAlreadyExistsException $exception) {
             return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
         } catch (\Throwable $exception) {
             // Report cleanly rather than leaking a stack trace, but log the real cause.

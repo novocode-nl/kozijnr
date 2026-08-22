@@ -10,11 +10,11 @@ use App\Tenancy\Domain\TenantRepositoryInterface;
 use Doctrine\DBAL\Connection;
 
 /**
- * Renames an existing tenant's subdomain. Deliberately narrow: the
- * Postgres schema name and every other piece of tenant state are left
- * untouched — only the subdomain (the tenant's public identity) changes.
+ * Updates an existing tenant's display name and subdomain. Deliberately
+ * narrow: the Postgres schema name and every other piece of tenant state
+ * are left untouched.
  */
-final class RenameTenant
+final class UpdateTenant
 {
     public function __construct(
         private readonly Connection $connection,
@@ -22,9 +22,9 @@ final class RenameTenant
     ) {
     }
 
-    public function __invoke(string $currentSubdomain, string $newName): Tenant
+    public function __invoke(string $currentSubdomain, string $newName, string $newSlug): Tenant
     {
-        $newTenantName = new TenantName($newName);
+        $newTenantName = new TenantName($newSlug);
 
         // Defensive reset, same reasoning as ProvisionTenant: never assume
         // the connection is already on `public`.
@@ -44,7 +44,7 @@ final class RenameTenant
             }
         }
 
-        $tenant->rename($newSubdomain);
+        $tenant->updateDetails($newName, $newSubdomain);
         $this->tenantRepository->update($tenant);
 
         return $tenant;
