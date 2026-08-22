@@ -4,6 +4,7 @@ import { apiBaseUrl } from "@/lib/api-base-url"
 import { sendBackendRequest } from "@/lib/backend-request"
 import { TENANT_TOKEN_COOKIE_NAME } from "@/lib/auth/token-cookie"
 import { resolveAppContext } from "@/lib/context/app-context"
+import { REDIRECT_PARAM, buildRedirectTarget } from "@/lib/navigation/safe-redirect"
 
 /**
  * Server-side route guard (Next.js 16 `proxy.ts` convention, formerly
@@ -37,6 +38,13 @@ import { resolveAppContext } from "@/lib/context/app-context"
  * resolved first, and only a session-holding visitor ever reaches Next's
  * route resolution (where app/(app)/not-found.tsx renders the branded 404
  * for a route that truly doesn't exist).
+ *
+ * KOZ-20: a bounce to `/login` carries the originally requested page as
+ * `?redirect=<path>` (lib/navigation/safe-redirect.ts) so the login form
+ * can send the visitor back there on success, instead of always landing on
+ * /. Navigating to `/login` directly (not via this guard) carries no such
+ * param, so that case's behavior is unchanged (see safe-redirect.ts's
+ * `DEFAULT_REDIRECT_PATH`, which KOZ-21 updated from /dashboard to /).
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -58,7 +66,12 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!hasValidSession) {
-    return NextResponse.redirect(new URL("/login", request.url))
+    const loginUrl = new URL("/login", request.url)
+    loginUrl.searchParams.set(
+      REDIRECT_PARAM,
+      buildRedirectTarget(request.nextUrl.pathname, request.nextUrl.search)
+    )
+    return NextResponse.redirect(loginUrl)
   }
 
   return NextResponse.next()
