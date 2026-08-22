@@ -4,6 +4,7 @@ import { apiBaseUrl } from "@/lib/api-base-url"
 import { sendBackendRequest } from "@/lib/backend-request"
 import { TENANT_TOKEN_COOKIE_NAME } from "@/lib/auth/token-cookie"
 import { resolveAppContext } from "@/lib/context/app-context"
+import { REDIRECT_PARAM, buildRedirectTarget } from "@/lib/navigation/safe-redirect"
 
 /**
  * Server-side route guard (Next.js 16 `proxy.ts` convention, formerly
@@ -23,6 +24,12 @@ import { resolveAppContext } from "@/lib/context/app-context"
  * authenticated visitor is sent on to /dashboard. There are no API routes
  * in this frontend — the browser talks to api.<base> directly (see
  * lib/api.ts), so nothing under /api needs carving out here.
+ *
+ * KOZ-20: a bounce to `/login` carries the originally requested page as
+ * `?redirect=<path>` (lib/navigation/safe-redirect.ts) so the login form
+ * can send the visitor back there on success, instead of always landing on
+ * /dashboard. Navigating to `/login` directly (not via this guard) carries
+ * no such param, so that case's behavior is unchanged.
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -40,7 +47,12 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!hasValidSession) {
-    return NextResponse.redirect(new URL("/login", request.url))
+    const loginUrl = new URL("/login", request.url)
+    loginUrl.searchParams.set(
+      REDIRECT_PARAM,
+      buildRedirectTarget(request.nextUrl.pathname, request.nextUrl.search)
+    )
+    return NextResponse.redirect(loginUrl)
   }
 
   return NextResponse.next()
