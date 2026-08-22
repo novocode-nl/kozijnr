@@ -1,6 +1,6 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 import { cn } from "@/lib/utils"
 import { adminLogin } from "@/lib/api"
@@ -12,6 +12,7 @@ import { AppleIcon, GoogleIcon } from "@/components/social-icons"
 import { LoginSidePanel } from "@/components/login-side-panel"
 import { ConfigForm } from "@/components/config-form/config-form"
 import type { FieldConfig } from "@/lib/forms/types"
+import { REDIRECT_PARAM, sanitizeRedirectTarget } from "@/lib/navigation/safe-redirect"
 
 /**
  * Super-admin counterpart to components/login-form.tsx. Same
@@ -40,6 +41,9 @@ import type { FieldConfig } from "@/lib/forms/types"
  * for invalid-credentials errors, header/social/separator kept outside the
  * internal `<form>`). Purely a forms-logic change, the auth flow and
  * layout above are unchanged.
+ *
+ * KOZ-20: same post-login `?redirect=` handling as components/login-form.tsx
+ * — see that file's doc comment.
  */
 const fields: FieldConfig<LoginFormValues>[] = [
   {
@@ -64,6 +68,8 @@ export function AdminLoginForm({
   ...props
 }: React.ComponentProps<"div">) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTarget = sanitizeRedirectTarget(searchParams.get(REDIRECT_PARAM))
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -100,7 +106,7 @@ export function AdminLoginForm({
               schema={loginSchema}
               defaultValues={defaultValues}
               action={adminLogin}
-              onSuccess={() => router.push("/dashboard")}
+              onSuccess={() => router.push(redirectTarget)}
               submitLabel="Inloggen"
               pendingLabel="Bezig met inloggen..."
             />
