@@ -14,8 +14,8 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 
 /**
- * KOZ-22's hard "only ever in dev/test" guard: the command must refuse to
- * run (with a clear error, not a silent no-op) unless it is wired up with
+ * The command's hard "only ever in dev/test" guard: it must refuse to run
+ * (with a clear error, not a silent no-op) unless it is wired up with
  * environment "dev" or "test" — regardless of what the real services would
  * do — so a fixed, publicly known password can never be seeded against a
  * production (or any other non-dev/test) configuration.

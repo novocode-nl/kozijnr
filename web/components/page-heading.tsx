@@ -1,12 +1,10 @@
 import type { ReactNode } from "react"
 
 /**
- * Generic page-heading pattern (KOZ-24): title on the left, an optional
- * actions slot (built by the caller from shadcn's `Button` etc., see
- * app/(app)/tenants/page.tsx for the shape once KOZ-25 adds an action) on
- * the right. Deliberately not tied to any single page/entity — every future
- * overview screen (KOZ-25 and beyond) reuses this instead of hand-rolling
- * its own header markup.
+ * Generic page-heading pattern: title on the left, an optional actions slot
+ * (built by the caller from shadcn's `Button` etc.) on the right.
+ * Deliberately not tied to any single page/entity — every overview screen
+ * reuses this instead of hand-rolling its own header markup.
  */
 interface PageHeadingProps {
   title: string

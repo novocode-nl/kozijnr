@@ -19,15 +19,15 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
- * Seeds the standard dev/test-only accounts (KOZ-22) so every dev/test
- * environment — including per-worktree stacks — always has the same known
- * credentials to log in and test with:
+ * Seeds the standard dev/test-only accounts so every dev/test environment —
+ * including per-worktree stacks — always has the same known credentials to
+ * log in and test with:
  *
  * - super-admin "admin@kozijnr.nl" / "password" (public schema), via
- *   `super-admin:create`'s own use case (KOZ-8).
- * - tenant "tenant1", via `tenant:provision`'s own use case (KOZ-7).
+ *   `super-admin:create`'s own use case.
+ * - tenant "tenant1", via `tenant:provision`'s own use case.
  * - tenant-user "tenant@kozijnr.nl" / "password" inside tenant1's schema,
- *   via `tenant-user:create`'s own use case (KOZ-11).
+ *   via `tenant-user:create`'s own use case.
  *
  * Idempotent: each step is skipped (not failed) if its account/tenant
  * already exists, so this command is safe to run on every environment
