@@ -35,9 +35,9 @@ export function NavUser({ context }: { context: AppContext }) {
   const router = useRouter()
 
   async function handleLogout() {
-    // Invalidate the session before navigating to /login: proxy.ts
-    // redirects /login back to /dashboard whenever the session is still
-    // valid, which would otherwise undo this logout.
+    // Invalidate the session on the API first, so a subsequent visit to /
+    // bounces back to /login instead of the "already valid session -> /"
+    // redirect in proxy.ts firing again.
     await (context === "admin" ? adminLogout() : logout())
     router.push("/login")
   }

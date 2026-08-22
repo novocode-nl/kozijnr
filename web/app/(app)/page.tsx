@@ -1,11 +1,15 @@
 import { getAppContext } from "@/lib/context/app-context"
 
 /**
- * Deliberate placeholder. One `/dashboard` page for both admin and tenant
- * contexts, reusing the Host-based detection to pick the copy, so there's
- * no separate near-identical page to drift out of sync.
+ * Deliberate placeholder. The real home-page content for either context is
+ * out of scope here. This is the single authenticated home for both
+ * contexts, living at `/` — `/dashboard` redirects here (see proxy.ts)
+ * rather than existing as its own route. Reuses the Host-based context
+ * detection (lib/context/app-context.ts) that also drives the sidebar
+ * menu (app/(app)/layout.tsx) to pick the placeholder copy, so there is
+ * only one page component instead of two near-identical ones.
  */
-export default async function DashboardPage() {
+export default async function HomePage() {
   const context = await getAppContext()
 
   const copy =

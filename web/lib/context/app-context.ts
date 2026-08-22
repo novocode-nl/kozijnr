@@ -19,8 +19,15 @@ const ADMIN_SUBDOMAIN_LABEL = "admin"
  * intentionally the only place the context is decided, so callers keep
  * working unchanged if the implementation ever needs to change.
  *
- * Only the first host label is checked (not a full base-domain match) —
- * anything not recognized as the admin subdomain defaults to "tenant".
+ * Only the first host label is checked against the reserved "admin" name
+ * (not a full base-domain match, unlike the backend's
+ * `Subdomain::extractFrom`) — the frontend only needs a binary admin/tenant
+ * split for which menu to show. Anything not recognized as the admin
+ * subdomain defaults to "tenant".
+ *
+ * `/` is the single home path for both contexts — there is no separate
+ * `/admin` route, and `/dashboard` no longer exists as its own route
+ * either, it always redirects to `/` (proxy.ts).
  */
 export function resolveAppContext(host: string | null | undefined): AppContext {
   if (!host) {

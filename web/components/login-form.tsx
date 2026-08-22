@@ -1,6 +1,6 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 import { cn } from "@/lib/utils"
 import { login } from "@/lib/api"
@@ -12,12 +12,24 @@ import { AppleIcon, GoogleIcon } from "@/components/social-icons"
 import { LoginSidePanel } from "@/components/login-side-panel"
 import { ConfigForm } from "@/components/config-form/config-form"
 import type { FieldConfig } from "@/lib/forms/types"
+import { REDIRECT_PARAM, sanitizeRedirectTarget } from "@/lib/navigation/safe-redirect"
 
 /**
- * Built on the generic, config-driven `<ConfigForm>`. A failed login
- * returns a generic `message` (no `fieldErrors` — the backend intentionally
- * doesn't distinguish "unknown email" from "wrong password"), which
- * `<ConfigForm>` surfaces as the shared banner.
+ * Built on the generic, config-driven `<ConfigForm>`. `login` (lib/api.ts)
+ * is passed directly as the `<ConfigForm>` `action` since its `LoginResult`
+ * shape is already structurally an `ActionResult`. A failed login returns a
+ * generic `message` (no `fieldErrors` — the backend intentionally doesn't
+ * distinguish "unknown email" from "wrong password"), which `<ConfigForm>`
+ * surfaces as the shared banner.
+ *
+ * The header/social-buttons/separator sit outside the `<form>`
+ * `<ConfigForm>` renders internally — they're disabled/non-interactive
+ * decoration, not form controls, so this doesn't change submit behavior.
+ *
+ * On success, navigates to whatever page proxy.ts's route guard originally
+ * bounced the visitor away from (carried as `?redirect=`), falling back to
+ * `/` when there is none or it fails validation — see
+ * lib/navigation/safe-redirect.ts for the open-redirect guard.
  */
 const fields: FieldConfig<LoginFormValues>[] = [
   {
@@ -42,6 +54,8 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"div">) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTarget = sanitizeRedirectTarget(searchParams.get(REDIRECT_PARAM))
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -73,7 +87,7 @@ export function LoginForm({
               schema={loginSchema}
               defaultValues={defaultValues}
               action={login}
-              onSuccess={() => router.push("/dashboard")}
+              onSuccess={() => router.push(redirectTarget)}
               submitLabel="Inloggen"
               pendingLabel="Bezig met inloggen..."
             />

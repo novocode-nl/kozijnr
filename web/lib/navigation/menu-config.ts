@@ -20,7 +20,7 @@ export type NavMainItem = {
 const tenantNavMain: NavMainItem[] = [
   {
     title: "Dashboard",
-    url: "/dashboard",
+    url: "/",
     icon: LayoutDashboard,
   },
   {
@@ -32,17 +32,19 @@ const tenantNavMain: NavMainItem[] = [
 
 /**
  * The admin menu: shown on the reserved `admin` subdomain. Placeholder
- * targets ("#") for items whose real pages don't exist yet.
+ * targets ("#") for items whose real pages don't exist yet. The admin
+ * dashboard lives at the same path (`/`) as the tenant dashboard — the
+ * Host subdomain alone decides which menu/content renders.
  */
 const adminNavMain: NavMainItem[] = [
   {
     title: "Admin dashboard",
-    url: "/dashboard",
+    url: "/",
     icon: LayoutDashboard,
   },
   {
     title: "Tenants",
-    url: "#",
+    url: "/tenants",
     icon: Building2,
   },
   {
