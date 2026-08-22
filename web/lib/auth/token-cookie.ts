@@ -11,6 +11,6 @@
  * it either, only forward it verbatim between the browser and the
  * backend. The one place this name is needed is proxy.ts, to check
  * whether the cookie is merely *present* before allowing a request through
- * to /dashboard.
+ * to the authenticated area.
  */
 export const TENANT_TOKEN_COOKIE_NAME = "tenant_api_token"
