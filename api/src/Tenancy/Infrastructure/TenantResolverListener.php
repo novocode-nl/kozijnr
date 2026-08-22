@@ -72,10 +72,12 @@ final class TenantResolverListener implements EventSubscriberInterface
         if ($subdomain === Subdomain::RESERVED_API) {
             // The API's own hostname: browser clients call it cross-origin
             // from a sibling subdomain, so the browser-set Origin header
-            // (untrusted-forgeable but constrained by CorsListener to sibling
-            // origins) tells us which context they belong to. This only
-            // *selects* the context — it grants nothing beyond what
-            // addressing that tenant's subdomain directly would.
+            // tells us which context they belong to. Browser page scripts
+            // can't forge this header, but non-browser callers (curl,
+            // server-to-server) can send anything or omit it, which is
+            // why subdomainFromOrigin() falls back to null in that case.
+            // This only *selects* the context — it grants nothing beyond
+            // what addressing that tenant's subdomain directly would.
             $subdomain = $this->subdomainFromOrigin($request);
 
             if ($subdomain === null || $subdomain === Subdomain::RESERVED_API) {
