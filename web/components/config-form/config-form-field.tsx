@@ -4,7 +4,6 @@ import { Controller, type FieldValues, type Path, type UseFormReturn } from "rea
 
 import {
   Field,
-  FieldContent,
   FieldDescription,
   FieldError,
   FieldLabel,
@@ -45,22 +44,30 @@ export function ConfigFormField<TValues extends FieldValues>({
   const name = field.name as Path<TValues>
   const error = errors[field.name] as { message?: string } | undefined
   const invalid = !!error
+  // KOZ-19 rework: `hint` defaults to rendering under the control (existing
+  // behaviour); `hintPlacement: "belowLabel"` moves it under the top-level
+  // label, before the control, instead.
+  const hintBelowLabel = field.hint && field.hintPlacement === "belowLabel" && !error
+  const hintBelowControl = field.hint && field.hintPlacement !== "belowLabel" && !error
 
-  // Checkbox is the one field type whose label sits *beside* the control
-  // instead of above it (the shadcn `Field` convention for a single
-  // checkbox: `orientation="horizontal"`, control first, then a
-  // `FieldContent` carrying the label/hint/error) — hence the branch here
-  // rather than in `renderControl()`, which assumes a label-above-control
-  // layout shared by every other field type.
+  // KOZ-19 rework: checkbox now follows the same label-above-control
+  // structure as every other field type (top-level label, optional hint,
+  // then the control) instead of the old horizontal control-beside-label
+  // layout — the only difference from the generic branch below is that the
+  // control itself is wrapped in its own label carrying the option text
+  // beside the checkbox (mirroring how `radio` wraps each `RadioGroupItem`).
   if (field.type === "checkbox") {
+    const optionText = field.optionLabel ?? field.label
     return (
-      <Field data-invalid={invalid} orientation="horizontal">
-        {renderControl()}
-        <FieldContent>
-          <FieldLabel htmlFor={field.name}>{field.label}</FieldLabel>
-          {field.hint && !error && <FieldDescription>{field.hint}</FieldDescription>}
-          <FieldError errors={[error]} />
-        </FieldContent>
+      <Field data-invalid={invalid}>
+        <FieldLabel htmlFor={field.name}>{field.label}</FieldLabel>
+        {hintBelowLabel && <FieldDescription>{field.hint}</FieldDescription>}
+        <FieldLabel htmlFor={field.name} className="font-normal">
+          {renderControl()}
+          {optionText}
+        </FieldLabel>
+        {hintBelowControl && <FieldDescription>{field.hint}</FieldDescription>}
+        <FieldError errors={[error]} />
       </Field>
     )
   }
@@ -68,8 +75,9 @@ export function ConfigFormField<TValues extends FieldValues>({
   return (
     <Field data-invalid={invalid}>
       <FieldLabel htmlFor={field.name}>{field.label}</FieldLabel>
+      {hintBelowLabel && <FieldDescription>{field.hint}</FieldDescription>}
       {renderControl()}
-      {field.hint && !error && <FieldDescription>{field.hint}</FieldDescription>}
+      {hintBelowControl && <FieldDescription>{field.hint}</FieldDescription>}
       <FieldError errors={[error]} />
     </Field>
   )

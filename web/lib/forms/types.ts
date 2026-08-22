@@ -43,8 +43,15 @@ interface BaseFieldConfig<TValues> {
   name: keyof TValues & string
   label: string
   placeholder?: string
-  /** Optional helper text shown under the control when the field has no error. */
+  /** Optional helper text shown when the field has no error. */
   hint?: string
+  /**
+   * Where `hint` renders relative to the control. Defaults to
+   * `"belowControl"` (existing behaviour). `"belowLabel"` renders it right
+   * under the top-level label, before the control — KOZ-19's rework, shown
+   * as an example on the `radio` field in the ConfigForm demo.
+   */
+  hintPlacement?: "belowLabel" | "belowControl"
   disabled?: boolean
   /**
    * UI-only visibility condition based on the current (whole-form) values.
@@ -70,6 +77,13 @@ export type TextareaFieldConfig<TValues> = BaseFieldConfig<TValues> & {
 
 export type CheckboxFieldConfig<TValues> = BaseFieldConfig<TValues> & {
   type: "checkbox"
+  /**
+   * Text shown beside the checkbox control itself, e.g. "Ja, ik wil de
+   * nieuwsbrief ontvangen" under a top-level `label` of "Nieuwsbrief".
+   * Falls back to `label` when omitted, so existing single-string configs
+   * keep working unchanged.
+   */
+  optionLabel?: string
 }
 
 export type SelectFieldConfig<TValues> = BaseFieldConfig<TValues> & {

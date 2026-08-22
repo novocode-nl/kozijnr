@@ -95,14 +95,16 @@ const fields: FieldConfig<ConfigFormDemoValues>[] = [
   },
   {
     name: "subscribeToNewsletter",
-    label: "Nieuwsbrief ontvangen",
+    label: "Nieuwsbrief",
+    optionLabel: "Ja, ik wil de nieuwsbrief ontvangen",
     type: "checkbox",
   },
   {
     name: "contactPreference",
     label: "Contactvoorkeur",
     type: "radio",
-    hint: "Hoe mogen we contact met je opnemen?",
+    hint: "Hoe mogen we contact met je opnemen? (KOZ-19: hint onder het label, vóór de opties)",
+    hintPlacement: "belowLabel",
     options: [
       { value: "email", label: "E-mail" },
       { value: "phone", label: "Telefoon" },
