@@ -8,12 +8,12 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Tester\CommandTester;
 
 /**
- * Functional test for `bin/console app:seed-dev-fixtures` (KOZ-22): the
- * dev/test-only fixture command that seeds the standard test accounts
- * (admin@kozijnr.nl in public, tenant1 + tenant@kozijnr.nl in its schema)
- * on top of the existing `super-admin:create` (KOZ-8) and `tenant:provision`
- * (KOZ-7) use cases, so every dev/test environment (including per-worktree
- * ones) can log in with the same known credentials.
+ * Functional test for `bin/console app:seed-dev-fixtures`: the dev/test-only
+ * fixture command that seeds the standard test accounts (admin@kozijnr.nl
+ * in public, tenant1 + tenant@kozijnr.nl in its schema) on top of the
+ * existing `super-admin:create` and `tenant:provision` use cases, so every
+ * dev/test environment (including per-worktree ones) can log in with the
+ * same known credentials.
  *
  * Runs against the real Postgres test database, same as
  * CreateSuperAdminCommandTest / ProvisionTenantCommandTest.

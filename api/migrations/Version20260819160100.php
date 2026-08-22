@@ -8,21 +8,13 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * Creates the `users` table (public schema only, KOZ-8). No tenant schema
- * ever gets this table — that is what makes a public-schema account
- * structurally invisible from within a tenant schema, not merely
- * access-controlled away from it.
+ * Creates the `users` table (public schema only). No tenant schema ever
+ * gets this table — that is what makes a public-schema account
+ * structurally invisible from within a tenant schema.
  *
  * Generic by design: a `roles` column (JSON array) holds each account's
  * roles, rather than a dedicated `super_admins` table with a hardcoded
- * role. Today only ROLE_SUPER_ADMIN accounts exist, created via
- * `bin/console super-admin:create`, but future admin-side roles fit into
- * this same table without a second entity/table.
- *
- * This replaces the earlier `super_admins` table added by this same
- * migration in KOZ-8's first two rounds. Since KOZ-8 has not shipped and
- * carries no production data, this is a clean in-place replacement rather
- * than a rename-and-backfill migration.
+ * role, so future admin-side roles fit into this same table.
  */
 final class Version20260819160100 extends AbstractMigration
 {

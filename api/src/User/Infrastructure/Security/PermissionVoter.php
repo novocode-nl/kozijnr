@@ -8,17 +8,14 @@ use Symfony\Component\Security\Core\Authorization\Voter\Vote;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
 /**
- * Authorizes fine-grained permission attributes (e.g. `tenant:list`,
- * `tenant:create`) against the currently authenticated User's assigned
- * roles (KOZ-9), replacing role-name-string comparisons
- * (#[IsGranted('ROLE_SUPER_ADMIN')]) for anything more specific than
- * "is this a super admin at all".
+ * Authorizes fine-grained permission attributes (e.g. `tenant:list`)
+ * against the currently authenticated User's assigned roles, replacing
+ * role-name-string comparisons for anything more specific than "is this a
+ * super admin at all".
  *
- * Distinguishes a permission attribute from Symfony's built-in ones (role
- * names, IS_AUTHENTICATED_FULLY, PUBLIC_ACCESS, ...) by convention: this
- * bounded context's permission names always contain a `:` (e.g.
- * `tenant:list`), which none of Symfony's reserved attributes do. Any
- * other attribute is left to the other registered voters (abstain).
+ * Distinguishes a permission attribute from Symfony's built-in ones by
+ * convention: this context's permission names always contain a `:`, which
+ * none of Symfony's reserved attributes do.
  */
 final class PermissionVoter extends Voter
 {

@@ -14,15 +14,13 @@ use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
- * Creates a tenant-user account inside one tenant's schema. There is no
- * self-service registration route (out of scope for KOZ-11, same reasoning
- * as `super-admin:create`) — this console command is the only way to
- * bootstrap a tenant-user account today.
+ * Creates a tenant-user account inside one tenant's schema. No
+ * self-service registration route exists — this console command is the
+ * only way to bootstrap a tenant-user account today.
  *
  * Looks the tenant up by subdomain in the public `tenants` table first,
  * then points the connection's search_path at that tenant's schema before
- * calling CreateTenantUser — the same "resolve tenant in public, then
- * switch schema" sequencing TenantResolverListener and ProvisionTenant use.
+ * calling CreateTenantUser.
  */
 #[AsCommand(
     name: 'tenant-user:create',

@@ -7,14 +7,13 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
- * Integration test proving the core promise of KOZ-6: a request's subdomain
- * determines which Postgres schema its queries run against, data in one
- * tenant schema is never visible from another tenant's request, an unknown
- * subdomain 404s instead of falling back to any schema, and the main domain
- * (no subdomain) stays on the public schema.
+ * Integration test proving: a request's subdomain determines which
+ * Postgres schema its queries run against, data in one tenant schema is
+ * never visible from another tenant's request, an unknown subdomain 404s
+ * instead of falling back to any schema, and the main domain stays on the
+ * public schema.
  *
- * Uses the real Postgres test database (see docker-compose.yml / README —
- * "Testing multiple subdomains locally"), with two throwaway tenant schemas
+ * Uses the real Postgres test database, with two throwaway tenant schemas
  * created and torn down around the test.
  */
 final class TenantResolverListenerTest extends WebTestCase

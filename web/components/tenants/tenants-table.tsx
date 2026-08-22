@@ -10,10 +10,10 @@ import {
 import { listTenants, type TenantSummary } from "@/lib/api"
 
 /**
- * Tenant overview table (KOZ-24): a thin, tenant-specific wrapper around
- * the generic `<DataTable>` — this is the only file in the ticket that
- * knows about `TenantSummary`, everything in components/data-table.tsx
- * stays entity-agnostic for later overviews (KOZ-25+) to reuse.
+ * Tenant overview table: a thin, tenant-specific wrapper around the
+ * generic `<DataTable>` — this is the only file that knows about
+ * `TenantSummary`, keeping components/data-table.tsx entity-agnostic for
+ * later overviews to reuse.
  *
  * Data is fetched client-side via lib/api.ts's `listTenants`, same as
  * every other backend call this frontend makes (see that file's doc

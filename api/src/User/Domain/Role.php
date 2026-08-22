@@ -8,16 +8,13 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * A named role (e.g. `ROLE_SUPER_ADMIN`) that grants a set of Permissions.
- * Its own database table (KOZ-9), replacing the plain `roles` string array
- * that used to live directly on User: a role's permissions are data, not
- * something hardcoded in an authorization check, so new permissions can be
- * granted to an existing role via seed data instead of a code change.
+ * A role's permissions are data, not hardcoded in an authorization check,
+ * so new permissions can be granted via seed data instead of a code change.
  *
  * The role *name* itself is still used as the Symfony Security role string
- * (getRoles() on User maps to these names) so existing role-based
- * mechanisms (e.g. the firewall's access_control) keep working unchanged;
- * only fine-grained authorization (e.g. #[IsGranted('tenant:list')]) goes
- * through the permission relation on this class instead.
+ * so existing role-based mechanisms (e.g. the firewall's access_control)
+ * keep working unchanged; only fine-grained authorization (e.g.
+ * #[IsGranted('tenant:list')]) goes through the permission relation instead.
  */
 #[ORM\Entity]
 #[ORM\Table(name: 'roles')]

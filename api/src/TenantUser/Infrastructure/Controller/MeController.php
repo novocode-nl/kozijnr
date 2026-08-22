@@ -9,14 +9,10 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * GET /api/me (KOZ-11): the minimal protected tenant-user resource this
- * ticket needs to prove the bearer token actually works and is
- * tenant-bound — no other tenant-user business endpoint exists yet.
- * Requires a valid `Authorization: Bearer <token>` (the `tenant_users`
- * firewall's access_token authenticator, backed by
- * App\TenantUser\Infrastructure\Security\TenantApiTokenHandler) and, like
- * /api/login, is only reachable on an actually-resolved tenant subdomain
- * (App\TenantUser\Infrastructure\TenantRouteGuardListener).
+ * GET /api/me: minimal protected tenant-user resource proving the bearer
+ * token works and is tenant-bound — no other tenant-user business endpoint
+ * exists yet. Requires a valid `Authorization: Bearer <token>` and, like
+ * /api/login, is only reachable on an actually-resolved tenant subdomain.
  */
 final class MeController
 {

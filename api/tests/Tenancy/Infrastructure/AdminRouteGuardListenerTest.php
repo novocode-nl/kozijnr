@@ -7,18 +7,12 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
- * Proves the KOZ-8 (rework) requirement that admin routes live exclusively
- * on the reserved "admin" subdomain (admin.kozijnr.nl in production,
- * admin.localhost locally) — not on a tenant subdomain, and not on the
- * bare main domain either: "admin.kozijnr.nl is DE plek waar beheerzaken
- * gebeuren", so it is the *only* place `/api/admin/*` is reachable,
- * mirroring how a tenant's own business lives exclusively under its own
- * subdomain rather than also being reachable from the bare domain.
+ * Proves that admin routes live exclusively on the reserved "admin"
+ * subdomain — not a tenant subdomain, and not the bare main domain either.
  *
- * Deliberately reuses KOZ-6's real tenant/admin resolution (a genuine
- * tenant row + schema) rather than mocking it, so this test also proves
- * the guard runs after TenantResolverListener has already determined
- * which kind of request this is.
+ * Deliberately reuses the real tenant/admin resolution (a genuine tenant
+ * row + schema) rather than mocking it, so this also proves the guard runs
+ * after TenantResolverListener has already determined the request kind.
  */
 final class AdminRouteGuardListenerTest extends WebTestCase
 {

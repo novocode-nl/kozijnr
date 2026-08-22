@@ -8,18 +8,14 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
- * End-to-end coverage of the KOZ-8 super-admin flow: login on the reserved
- * admin subdomain (admin.kozijnr.nl in production, admin.localhost here)
- * establishes a session, an authenticated super admin can list and create
- * tenants (which delegates to KOZ-7's real `tenant:provision` machinery),
- * and neither the API nor the session works without being authenticated as
- * a super admin first.
+ * End-to-end coverage of the super-admin flow: login on the reserved admin
+ * subdomain establishes a session, an authenticated super admin can list
+ * and create tenants (delegating to the real `tenant:provision`
+ * machinery), and neither works without authenticating as a super admin
+ * first.
  *
- * Named for the API surface rather than a controller class (KOZ-10): list
- * and create are served by separate controller classes
- * (ListTenantsController / CreateTenantController), so this test — which
- * exercises both routes together as one flow — no longer maps to a single
- * controller class name.
+ * Named for the API surface rather than a controller class: list and
+ * create are served by separate controller classes.
  */
 final class TenantAdminApiTest extends WebTestCase
 {

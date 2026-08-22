@@ -24,11 +24,8 @@ import { resolveCheckboxLabel } from "@/lib/forms/checkbox-label"
 import type { FieldConfig } from "@/lib/forms/types"
 
 /**
- * The shared field-wrapper this ticket's DoD asks for: every field type
- * renders through this one component so label, hint text, and error
- * message look consistent across every config-driven form, instead of each
- * input type re-implementing its own layout (compare `components/ui/field.tsx`,
- * which login-form.tsx / admin-login-form.tsx already use by hand).
+ * Shared field-wrapper: every field type renders through this one component
+ * so label, hint text, and error message stay consistent across forms.
  */
 export function ConfigFormField<TValues extends FieldValues>({
   field,
@@ -45,25 +42,15 @@ export function ConfigFormField<TValues extends FieldValues>({
   const name = field.name as Path<TValues>
   const error = errors[field.name] as { message?: string } | undefined
   const invalid = !!error
-  // KOZ-19 rework: `hint` defaults to rendering under the control (existing
-  // behaviour); `hintPlacement: "belowLabel"` moves it under the top-level
-  // label, before the control, instead.
+  // `hint` renders under the control by default; `hintPlacement: "belowLabel"`
+  // moves it under the top-level label instead.
   const hintBelowLabel = field.hint && field.hintPlacement === "belowLabel" && !error
   const hintBelowControl = field.hint && field.hintPlacement !== "belowLabel" && !error
 
-  // KOZ-19 rework: checkbox now follows the same label-above-control
-  // structure as every other field type (top-level label, optional hint,
-  // then the control) instead of the old horizontal control-beside-label
-  // layout — the only difference from the generic branch below is that the
-  // control itself is wrapped in its own label carrying the option text
-  // beside the checkbox (mirroring how `radio` wraps each `RadioGroupItem`).
-  //
-  // KOZ-19 fix: when no `optionLabel` is configured, `resolveCheckboxLabel`
-  // returns `topLabel: null` so we don't render the top-level `FieldLabel` at
-  // all — otherwise `field.label` would show up twice (once as the top-level
-  // label, once as the option text beside the control). This restores the
-  // single-label behaviour every checkbox had before this rework, matching
-  // what `CheckboxFieldConfig.optionLabel`'s doc comment promises.
+  // Checkbox wraps the control in its own label carrying the option text
+  // (mirroring how `radio` wraps each `RadioGroupItem`). When no
+  // `optionLabel` is configured, `resolveCheckboxLabel` returns
+  // `topLabel: null` to avoid rendering `field.label` twice.
   if (field.type === "checkbox") {
     const { topLabel, optionText } = resolveCheckboxLabel(field)
     return (

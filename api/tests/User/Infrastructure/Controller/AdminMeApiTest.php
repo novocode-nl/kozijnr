@@ -8,18 +8,9 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
- * KOZ-14 rework: GET /api/admin/me is the whoami endpoint the frontend
- * proxy (web/proxy.ts) needs to turn "there is a PHPSESSID cookie" into
- * "there is a *valid* super-admin session" before letting a request
- * through to any admin.<domein> route — mirroring exactly what
- * TenantUser's GET /api/me (MeController) already does for the tenant
- * cookie, just against the session-based `super_admin` firewall instead
- * of the stateless `tenant_users` one.
- *
- * No new access_control entry was needed: `/api/admin/me` already falls
- * under the existing `{ path: ^/api/admin, roles: IS_AUTHENTICATED_FULLY }`
- * rule (config/packages/security.yaml) — only `/api/admin/(login|logout)`
- * is carved out as public.
+ * GET /api/admin/me is the whoami endpoint the frontend proxy needs to
+ * turn "there is a PHPSESSID cookie" into "there is a *valid* super-admin
+ * session" before letting a request through to an admin route.
  */
 final class AdminMeApiTest extends WebTestCase
 {

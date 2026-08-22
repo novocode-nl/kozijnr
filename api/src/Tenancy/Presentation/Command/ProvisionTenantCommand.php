@@ -43,19 +43,10 @@ final class ProvisionTenantCommand extends Command
         try {
             $tenant = ($this->provisionTenant)($name);
         } catch (\Throwable $exception) {
-            // Deliberately broad: ProvisionTenant is expected to raise its
-            // own domain exceptions (invalid name, duplicate
-            // subdomain/schema, pre-existing raw schema), but every failure
-            // route — including a raw Doctrine\DBAL exception from e.g. a
-            // race between two concurrent `tenant:provision` runs for the
-            // same name — must be reported cleanly here rather than
-            // escaping as an uncaught stack trace. ProvisionTenant itself is
-            // responsible for leaving no half-provisioned state behind
-            // (dropping the schema again) before this catch ever runs.
-            //
-            // Log the underlying cause with its stack trace: the user-facing
-            // io->error() below is deliberately terse, so without this an
-            // unexpected failure would otherwise leave no trace to debug it.
+            // Deliberately broad: every failure, including a raw DBAL
+            // exception, must be reported cleanly rather than escaping as
+            // an uncaught stack trace. Logged with its stack trace since the
+            // user-facing io->error() below is deliberately terse.
             $this->logger->error('tenant:provision failed for "{name}": {message}', [
                 'name' => $name,
                 'message' => $exception->getMessage(),

@@ -11,25 +11,17 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Cookie;
 
 /**
- * End-to-end coverage of the KOZ-11 tenant-user login flow: a tenant user
- * can log in with email+password on their own tenant subdomain and get a
- * bearer token back (as an HttpOnly cookie — KOZ-13 rework), invalid
- * combinations are rejected with one generic message, and — the DoD's
- * central claim — a token issued on tenant A's subdomain grants no access
- * at all via tenant B's subdomain.
+ * End-to-end coverage of the tenant-user login flow: a tenant user can log
+ * in with email+password on their own tenant subdomain and get a bearer
+ * token back as an HttpOnly cookie, invalid combinations are rejected with
+ * one generic message, and a token issued on tenant A's subdomain grants
+ * no access at all via tenant B's subdomain.
  *
- * Uses the real tenant provisioning machinery (ProvisionTenant, KOZ-7) to
- * create real tenant schemas, exactly like TenantAdminApiTest does for the
- * super-admin flow.
- *
- * The cookie is scoped to the base domain (it has to reach both api.<base>
- * and the frontend hosts — see TenantApiTokenCookie), so the test client's
- * cookie jar (Symfony\Component\BrowserKit) replays it on every subdomain.
- * Tenant isolation is therefore a purely server-side guarantee: the token
+ * Uses the real tenant provisioning machinery to create real tenant
+ * schemas. Tenant isolation is a purely server-side guarantee: the token
  * lookup runs inside the tenant schema the request resolved to, so a token
- * issued for tenant A is simply unknown when the request resolves to tenant
- * B — proven by
- * testATokenIssuedOnOneTenantSubdomainGrantsNoAccessOnAnotherTenantSubdomain.
+ * issued for tenant A is simply unknown when the request resolves to
+ * tenant B.
  */
 final class TenantLoginApiTest extends WebTestCase
 {

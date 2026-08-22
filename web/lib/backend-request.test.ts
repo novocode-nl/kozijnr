@@ -5,30 +5,19 @@ import { afterEach, describe, expect, it } from "vitest"
 import { sendBackendRequest } from "@/lib/backend-request"
 
 /**
- * KOZ-14 rework (round 4): regression coverage for the blocking finding
- * from automated code review — `hasValidAdminSession` (proxy.ts) had no
- * timeout on its backend round-trip, so a backend that accepted the
- * connection but never responded would hang the caller (and, through it,
- * every admin route) forever.
- *
- * These tests exercise `sendBackendRequest` directly against a raw TCP
- * server under our control, rather than trying to make the real backend
- * hang — that's the practical boundary for what's testable here without
- * standing up a full Next.js proxy test harness (there wasn't one before
- * this ticket; see this file's sibling `vitest.config.ts` for that
- * context). A server that accepts the connection and then writes nothing
- * back is a faithful stand-in for "backend accepted the TCP connection but
- * is stuck" — exactly the scenario the review flagged.
+ * Regression coverage: `hasValidAdminSession` (proxy.ts) had no timeout on
+ * its backend round-trip, so a backend that accepted the connection but
+ * never responded would hang the caller forever. Exercises
+ * `sendBackendRequest` against a raw TCP server under our control as a
+ * stand-in for that stuck-backend scenario.
  */
 describe("sendBackendRequest", () => {
   let server: Server | undefined
   let openSockets: Socket[] = []
 
   afterEach(async () => {
-    // The client destroys its end of the socket on timeout, but this
-    // "hung backend" stub deliberately never closes its own end, so
-    // server.close() alone would wait forever for it. Force-close any
-    // sockets the stub server accepted before closing the server itself.
+    // The stub server never closes its own socket end, so server.close()
+    // alone would wait forever — force-close sockets first.
     for (const socket of openSockets) {
       socket.destroy()
     }
@@ -42,12 +31,10 @@ describe("sendBackendRequest", () => {
 
   it("rejects instead of hanging forever when the backend never responds", async () => {
     server = createServer((socket) => {
-      // Accept the TCP connection but never write anything back — the
-      // "hung backend" scenario from the review finding.
+      // Accept the connection but never write anything back.
       openSockets.push(socket)
       socket.on("error", () => {
-        // Ignore ECONNRESET once the client destroys the socket on
-        // timeout; it's expected and not part of what this test asserts.
+        // Ignore expected ECONNRESET once the client times out.
       })
     })
     const port = await listen(server)
@@ -67,10 +54,7 @@ describe("sendBackendRequest", () => {
 
     const elapsedMs = Date.now() - start
 
-    // Generous upper bound (well above the 100ms timeout) to keep this
-    // robust under CI/container scheduling jitter, while still proving the
-    // call did not hang indefinitely (the old code had no upper bound at
-    // all).
+    // Generous upper bound above the 100ms timeout, to tolerate CI jitter.
     expect(elapsedMs).toBeLessThan(2000)
   })
 

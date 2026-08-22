@@ -25,10 +25,7 @@ final class DoctrineTenantApiTokenRepository implements TenantApiTokenRepository
 
     public function save(TenantApiToken $token): void
     {
-        // $token is already a managed entity (loaded via findByTokenHash),
-        // so flush() alone persists whatever in-place changes were made to
-        // it (e.g. renewExpiry() for KOZ-15 sliding expiry) — no explicit
-        // persist() needed, unlike add().
+        // Already a managed entity, so flush() alone persists in-place changes.
         $this->entityManager->flush();
     }
 

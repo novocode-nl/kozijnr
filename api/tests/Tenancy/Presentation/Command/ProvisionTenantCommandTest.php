@@ -9,9 +9,8 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Tester\CommandTester;
 
 /**
- * Functional test for `bin/console tenant:provision <name>` (KOZ-7), against
- * the real Postgres test database (see docker-compose.yml / README —
- * "Testing multiple subdomains locally"). Proves the command:
+ * Functional test for `bin/console tenant:provision <name>`, against the
+ * real Postgres test database. Proves the command:
  *
  * - creates a new Postgres schema and runs the tenant migration set on it
  * - registers the tenant (subdomain + schema_name) in the public `tenants`

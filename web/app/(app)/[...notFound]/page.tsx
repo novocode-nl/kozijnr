@@ -2,7 +2,7 @@ import { notFound } from "next/navigation"
 
 /**
  * Catch-all for any authenticated-area path that doesn't match a real
- * route (KOZ-21). Without this, Next.js has no matched segment for a
+ * route. Without this, Next.js has no matched segment for a
  * genuinely unknown path and falls back to a root-level 404 outside any
  * layout; having an actual matched route here — that immediately calls
  * notFound() — makes Next resolve to the nearest not-found.tsx up this same

@@ -8,9 +8,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 /**
  * Wraps Symfony's UserPasswordHasherInterface behind this context's own
- * App\TenantUser\Domain\PasswordHasherInterface, so Symfony stays confined
- * to Infrastructure and Application never imports a Symfony class directly
- * (same pattern as App\User\Infrastructure\Security\SymfonyPasswordHasher).
+ * PasswordHasherInterface, so Application never imports a Symfony class directly.
  */
 final class SymfonyPasswordHasher implements PasswordHasherInterface
 {

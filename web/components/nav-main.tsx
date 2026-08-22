@@ -19,11 +19,8 @@ import {
 import type { NavMainItem } from "@/lib/navigation/menu-config"
 
 /**
- * Adapted from the shadcn `sidebar-07` block
- * (components/app-sidebar.tsx, components/nav-main.tsx in the upstream
- * registry) — the primary nav group, driven entirely by the `items` prop
- * so it renders identically for the admin and tenant menu configurations
- * (lib/navigation/menu-config.ts), just with different data.
+ * Primary nav group, driven entirely by the `items` prop so it renders
+ * identically for the admin and tenant menu configurations.
  */
 export function NavMain({ items }: { items: NavMainItem[] }) {
   return (

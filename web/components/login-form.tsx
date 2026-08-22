@@ -15,24 +15,21 @@ import type { FieldConfig } from "@/lib/forms/types"
 import { REDIRECT_PARAM, sanitizeRedirectTarget } from "@/lib/navigation/safe-redirect"
 
 /**
- * KOZ-18: rebuilt on the generic, config-driven `<ConfigForm>` from KOZ-17 —
- * the field config + `loginSchema` below is the single source of truth for
- * shape/validation, and `login` (lib/api.ts) is passed directly as the
- * `<ConfigForm>` `action` since its `LoginResult` shape is already
- * structurally an `ActionResult`. A failed login returns a generic
- * `message` (no `fieldErrors` — the backend intentionally doesn't
+ * Built on the generic, config-driven `<ConfigForm>`. `login` (lib/api.ts)
+ * is passed directly as the `<ConfigForm>` `action` since its `LoginResult`
+ * shape is already structurally an `ActionResult`. A failed login returns a
+ * generic `message` (no `fieldErrors` — the backend intentionally doesn't
  * distinguish "unknown email" from "wrong password"), which `<ConfigForm>`
- * surfaces as the shared banner through the same field-wrapper mechanism
- * used for field-level errors.
+ * surfaces as the shared banner.
  *
- * The header/social-buttons/separator (KOZ-16) sit outside the `<form>`
+ * The header/social-buttons/separator sit outside the `<form>`
  * `<ConfigForm>` renders internally — they're disabled/non-interactive
  * decoration, not form controls, so this doesn't change submit behavior.
  *
- * KOZ-20: on success, navigates to whatever page proxy.ts's route guard
- * originally bounced the visitor away from (carried as `?redirect=`),
- * falling back to `/` (KOZ-21) when there is none or it fails validation —
- * see lib/navigation/safe-redirect.ts for the open-redirect guard.
+ * On success, navigates to whatever page proxy.ts's route guard originally
+ * bounced the visitor away from (carried as `?redirect=`), falling back to
+ * `/` when there is none or it fails validation — see
+ * lib/navigation/safe-redirect.ts for the open-redirect guard.
  */
 const fields: FieldConfig<LoginFormValues>[] = [
   {
@@ -71,12 +68,7 @@ export function LoginForm({
                 Log in op je Kozijnr-account
               </p>
             </div>
-            {/*
-              KOZ-16: social login bovenaan. Beide knoppen zijn disabled —
-              er bestaat nog geen Apple- of Google-login-koppeling in de
-              backend, dit is puur de visuele plek voor latere
-              implementatie (Google expliciet vereist door het ticket).
-            */}
+            {/* Disabled: no Apple/Google login backend yet, placeholder only. */}
             <Field className="grid grid-cols-2 gap-4">
               <Button variant="outline" type="button" disabled>
                 <AppleIcon />
