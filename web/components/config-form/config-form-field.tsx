@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { ComboboxFieldControl } from "@/components/config-form/combobox-field"
+import { resolveCheckboxLabel } from "@/lib/forms/checkbox-label"
 import type { FieldConfig } from "@/lib/forms/types"
 
 /**
@@ -56,11 +57,18 @@ export function ConfigFormField<TValues extends FieldValues>({
   // layout — the only difference from the generic branch below is that the
   // control itself is wrapped in its own label carrying the option text
   // beside the checkbox (mirroring how `radio` wraps each `RadioGroupItem`).
+  //
+  // KOZ-19 fix: when no `optionLabel` is configured, `resolveCheckboxLabel`
+  // returns `topLabel: null` so we don't render the top-level `FieldLabel` at
+  // all — otherwise `field.label` would show up twice (once as the top-level
+  // label, once as the option text beside the control). This restores the
+  // single-label behaviour every checkbox had before this rework, matching
+  // what `CheckboxFieldConfig.optionLabel`'s doc comment promises.
   if (field.type === "checkbox") {
-    const optionText = field.optionLabel ?? field.label
+    const { topLabel, optionText } = resolveCheckboxLabel(field)
     return (
       <Field data-invalid={invalid}>
-        <FieldLabel htmlFor={field.name}>{field.label}</FieldLabel>
+        {topLabel && <FieldLabel htmlFor={field.name}>{topLabel}</FieldLabel>}
         {hintBelowLabel && <FieldDescription>{field.hint}</FieldDescription>}
         <FieldLabel htmlFor={field.name} className="font-normal">
           {renderControl()}
