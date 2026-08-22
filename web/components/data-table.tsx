@@ -12,7 +12,7 @@ import {
   type RowData,
   type SortingState,
 } from "@tanstack/react-table"
-import { ArrowUpDown } from "lucide-react"
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -57,18 +57,31 @@ export type DataTableColumn<TData extends RowData, TValue = unknown> = ColumnDef
  * Builds a sortable column header: a ghost button that toggles ascending/
  * descending sort on click. Shared here so callers don't re-implement the
  * same button + icon per sortable column.
+ *
+ * `sorted` mirrors TanStack's `column.getIsSorted()` ("asc" | "desc" |
+ * `false`) so the icon reflects the column's actual sort state instead of
+ * a static placeholder: an up/down arrow for the active direction, or the
+ * neutral (muted) up-down arrow when this column isn't the active sort.
  */
 export function DataTableSortableHeader({
   label,
+  sorted,
   onSort,
 }: {
   label: string
+  sorted: false | "asc" | "desc"
   onSort: () => void
 }) {
   return (
     <Button variant="ghost" className="-ml-3 h-8" onClick={onSort}>
       {label}
-      <ArrowUpDown />
+      {sorted === "asc" ? (
+        <ArrowUp />
+      ) : sorted === "desc" ? (
+        <ArrowDown />
+      ) : (
+        <ArrowUpDown className="text-muted-foreground" />
+      )}
     </Button>
   )
 }

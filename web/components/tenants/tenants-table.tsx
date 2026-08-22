@@ -32,6 +32,7 @@ const columns = [
     header: ({ column }) => (
       <DataTableSortableHeader
         label="Subdomain"
+        sorted={column.getIsSorted()}
         onSort={() => column.toggleSorting(column.getIsSorted() === "asc")}
       />
     ),
@@ -43,6 +44,7 @@ const columns = [
     header: ({ column }) => (
       <DataTableSortableHeader
         label="Aangemaakt op"
+        sorted={column.getIsSorted()}
         onSort={() => column.toggleSorting(column.getIsSorted() === "asc")}
       />
     ),
