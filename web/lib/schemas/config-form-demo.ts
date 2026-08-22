@@ -22,6 +22,7 @@ export const configFormDemoSchema = z
     interests: z.array(z.string()).min(1, "Kies minimaal één interesse."),
     bio: z.string().max(280, "Maximaal 280 tekens.").optional(),
     subscribeToNewsletter: z.boolean(),
+    contactPreference: z.string().min(1, "Kies een contactvoorkeur."),
   })
   .superRefine((values, ctx) => {
     if (values.accountType === "business" && !values.companyName?.trim()) {

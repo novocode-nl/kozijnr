@@ -18,7 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { ComboboxFieldControl } from "@/components/config-form/combobox-field"
+import { resolveCheckboxLabel } from "@/lib/forms/checkbox-label"
 import type { FieldConfig } from "@/lib/forms/types"
 
 /**
@@ -43,12 +45,47 @@ export function ConfigFormField<TValues extends FieldValues>({
   const name = field.name as Path<TValues>
   const error = errors[field.name] as { message?: string } | undefined
   const invalid = !!error
+  // KOZ-19 rework: `hint` defaults to rendering under the control (existing
+  // behaviour); `hintPlacement: "belowLabel"` moves it under the top-level
+  // label, before the control, instead.
+  const hintBelowLabel = field.hint && field.hintPlacement === "belowLabel" && !error
+  const hintBelowControl = field.hint && field.hintPlacement !== "belowLabel" && !error
+
+  // KOZ-19 rework: checkbox now follows the same label-above-control
+  // structure as every other field type (top-level label, optional hint,
+  // then the control) instead of the old horizontal control-beside-label
+  // layout — the only difference from the generic branch below is that the
+  // control itself is wrapped in its own label carrying the option text
+  // beside the checkbox (mirroring how `radio` wraps each `RadioGroupItem`).
+  //
+  // KOZ-19 fix: when no `optionLabel` is configured, `resolveCheckboxLabel`
+  // returns `topLabel: null` so we don't render the top-level `FieldLabel` at
+  // all — otherwise `field.label` would show up twice (once as the top-level
+  // label, once as the option text beside the control). This restores the
+  // single-label behaviour every checkbox had before this rework, matching
+  // what `CheckboxFieldConfig.optionLabel`'s doc comment promises.
+  if (field.type === "checkbox") {
+    const { topLabel, optionText } = resolveCheckboxLabel(field)
+    return (
+      <Field data-invalid={invalid}>
+        {topLabel && <FieldLabel htmlFor={field.name}>{topLabel}</FieldLabel>}
+        {hintBelowLabel && <FieldDescription>{field.hint}</FieldDescription>}
+        <FieldLabel htmlFor={field.name} className="font-normal">
+          {renderControl()}
+          {optionText}
+        </FieldLabel>
+        {hintBelowControl && <FieldDescription>{field.hint}</FieldDescription>}
+        <FieldError errors={[error]} />
+      </Field>
+    )
+  }
 
   return (
     <Field data-invalid={invalid}>
       <FieldLabel htmlFor={field.name}>{field.label}</FieldLabel>
+      {hintBelowLabel && <FieldDescription>{field.hint}</FieldDescription>}
       {renderControl()}
-      {field.hint && !error && <FieldDescription>{field.hint}</FieldDescription>}
+      {hintBelowControl && <FieldDescription>{field.hint}</FieldDescription>}
       <FieldError errors={[error]} />
     </Field>
   )
@@ -133,6 +170,36 @@ export function ConfigFormField<TValues extends FieldValues>({
                   ))}
                 </SelectContent>
               </Select>
+            )}
+          />
+        )
+
+      case "radio":
+        return (
+          <Controller
+            name={name}
+            control={control}
+            render={({ field: rhf }) => (
+              <RadioGroup
+                aria-invalid={invalid}
+                value={(rhf.value as string) ?? ""}
+                onValueChange={rhf.onChange}
+                disabled={field.disabled}
+              >
+                {field.options.map((option) => {
+                  const optionId = `${field.name}-${option.value}`
+                  return (
+                    <FieldLabel key={option.value} htmlFor={optionId} className="font-normal">
+                      <RadioGroupItem
+                        id={optionId}
+                        value={option.value}
+                        aria-invalid={invalid}
+                      />
+                      {option.label}
+                    </FieldLabel>
+                  )
+                })}
+              </RadioGroup>
             )}
           />
         )
