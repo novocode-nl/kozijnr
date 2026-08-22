@@ -23,9 +23,11 @@ export const REDIRECT_PARAM = "redirect"
 /**
  * Where a plain, un-redirected login sends the user — unchanged default
  * behavior for "navigated to /login directly" (out of scope for KOZ-20) and
- * the fallback whenever the carried value fails validation.
+ * the fallback whenever the carried value fails validation. `/` (KOZ-21) —
+ * the authenticated home within the shared AppShell now that /dashboard no
+ * longer exists as its own route.
  */
-export const DEFAULT_REDIRECT_PATH = "/dashboard"
+export const DEFAULT_REDIRECT_PATH = "/"
 
 /**
  * True only for a same-origin, relative path this app can safely redirect

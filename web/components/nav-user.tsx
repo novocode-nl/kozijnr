@@ -39,9 +39,9 @@ export function NavUser({ context }: { context: AppContext }) {
 
   async function handleLogout() {
     // Invalidate the session on the API first (tenant token cookie or
-    // admin PHPSESSID), so a subsequent /dashboard visit bounces back to
-    // /login instead of the "already valid session -> /dashboard" redirect
-    // in proxy.ts firing again.
+    // admin PHPSESSID), so a subsequent visit to / bounces back to /login
+    // instead of the "already valid session -> /" redirect in proxy.ts
+    // firing again.
     await (context === "admin" ? adminLogout() : logout())
     router.push("/login")
   }

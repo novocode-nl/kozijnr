@@ -21,18 +21,37 @@ import { REDIRECT_PARAM, buildRedirectTarget } from "@/lib/navigation/safe-redir
  *   error or timeout.
  *
  * `/login` is the single login path for both contexts; an already
- * authenticated visitor is sent on to /dashboard. There are no API routes
- * in this frontend — the browser talks to api.<base> directly (see
- * lib/api.ts), so nothing under /api needs carving out here.
+ * authenticated visitor is sent on to /. There are no API routes in this
+ * frontend — the browser talks to api.<base> directly (see lib/api.ts), so
+ * nothing under /api needs carving out here.
+ *
+ * `/dashboard` (KOZ-21): no longer exists as its own route on either
+ * subdomain — it always redirects to / before the login-status check below,
+ * so it behaves the same whether the visitor is logged in or not, and
+ * regardless of admin vs. tenant context.
+ *
+ * 404 handling (KOZ-21): the login-status check below already covers
+ * "unknown route, not logged in" — since every path other than /login
+ * redirects to /login when there's no valid session, a nonexistent route
+ * bounces to /login exactly like a real one would, without ever reaching
+ * Next's routing/notFound() at all. Order matters here: login status is
+ * resolved first, and only a session-holding visitor ever reaches Next's
+ * route resolution (where app/(app)/not-found.tsx renders the branded 404
+ * for a route that truly doesn't exist).
  *
  * KOZ-20: a bounce to `/login` carries the originally requested page as
  * `?redirect=<path>` (lib/navigation/safe-redirect.ts) so the login form
  * can send the visitor back there on success, instead of always landing on
- * /dashboard. Navigating to `/login` directly (not via this guard) carries
- * no such param, so that case's behavior is unchanged.
+ * /. Navigating to `/login` directly (not via this guard) carries no such
+ * param, so that case's behavior is unchanged (see safe-redirect.ts's
+ * `DEFAULT_REDIRECT_PATH`, which KOZ-21 updated from /dashboard to /).
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  if (pathname === "/dashboard") {
+    return NextResponse.redirect(new URL("/", request.url))
+  }
 
   const context = resolveAppContext(request.headers.get("host"))
   const hasValidSession =
@@ -42,7 +61,7 @@ export async function proxy(request: NextRequest) {
 
   if (pathname === "/login") {
     return hasValidSession
-      ? NextResponse.redirect(new URL("/dashboard", request.url))
+      ? NextResponse.redirect(new URL("/", request.url))
       : NextResponse.next()
   }
 

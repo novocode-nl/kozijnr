@@ -45,11 +45,12 @@ const ADMIN_SUBDOMAIN_LABEL = "admin"
  * tenant subdomain, bare `localhost`, an unknown host, ...) defaults to
  * "tenant".
  *
- * KOZ-14 rework: `/dashboard` is now the single path for both contexts
- * (admin.<domein>/dashboard and <tenant>.<domein>/dashboard) — there is no
- * separate `/admin` route anymore, this function is what the shared
- * `/dashboard` page and its layout (app/(app)/layout.tsx) call to pick
- * which menu/content to render.
+ * KOZ-14 rework: `/` is the single home path for both contexts
+ * (admin.<domein>/ and <tenant>.<domein>/) — there is no separate `/admin`
+ * route anymore, this function is what the shared home page and its layout
+ * (app/(app)/layout.tsx) call to pick which menu/content to render.
+ * KOZ-21: `/dashboard` no longer exists as its own route — it always
+ * redirects to `/` (proxy.ts).
  */
 export function resolveAppContext(host: string | null | undefined): AppContext {
   if (!host) {

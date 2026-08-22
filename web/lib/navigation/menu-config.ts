@@ -26,7 +26,7 @@ export type NavMainItem = {
 const tenantNavMain: NavMainItem[] = [
   {
     title: "Dashboard",
-    url: "/dashboard",
+    url: "/",
     icon: LayoutDashboard,
   },
   {
@@ -42,14 +42,16 @@ const tenantNavMain: NavMainItem[] = [
  * real pages don't exist yet — this ticket only ships the shell/menu
  * structure, not page content (KOZ-14 out of scope).
  *
- * KOZ-14 rework: the admin dashboard now lives at the same `/dashboard`
- * path as the tenant dashboard — there is no separate `/admin` route
- * anymore, the Host subdomain alone decides which menu/content renders.
+ * KOZ-14 rework: the admin dashboard lives at the same path as the tenant
+ * dashboard — there is no separate `/admin` route, the Host subdomain
+ * alone decides which menu/content renders. KOZ-21: that shared path is
+ * `/` itself, not `/dashboard` — `/dashboard` no longer exists as its own
+ * route on either context, it always redirects to / (see proxy.ts).
  */
 const adminNavMain: NavMainItem[] = [
   {
     title: "Admin dashboard",
-    url: "/dashboard",
+    url: "/",
     icon: LayoutDashboard,
   },
   {

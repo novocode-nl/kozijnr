@@ -31,7 +31,7 @@ import { REDIRECT_PARAM, sanitizeRedirectTarget } from "@/lib/navigation/safe-re
  *
  * KOZ-20: on success, navigates to whatever page proxy.ts's route guard
  * originally bounced the visitor away from (carried as `?redirect=`),
- * falling back to `/dashboard` when there is none or it fails validation —
+ * falling back to `/` (KOZ-21) when there is none or it fails validation —
  * see lib/navigation/safe-redirect.ts for the open-redirect guard.
  */
 const fields: FieldConfig<LoginFormValues>[] = [
