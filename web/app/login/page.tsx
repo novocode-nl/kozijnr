@@ -5,9 +5,9 @@ import { getAppContext } from "@/lib/context/app-context"
 /**
  * Unified login page (KOZ-14 rework, round 5). A single `/login` path for
  * both the tenant and admin realms — the same pattern already established
- * for `/dashboard` (app/(app)/layout.tsx): the Host header alone
- * (lib/context/app-context.ts) decides which form renders, never the URL
- * path. There is no separate `/admin/login` route anymore — the earlier
+ * for the authenticated home route (app/(app)/layout.tsx): the Host header
+ * alone (lib/context/app-context.ts) decides which form renders, never the
+ * URL path. There is no separate `/admin/login` route anymore — the earlier
  * placeholder page (which only explained a form wasn't built yet) is
  * removed, and proxy.ts's guard redirects both contexts here.
  *

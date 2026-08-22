@@ -100,7 +100,7 @@ export function AdminLoginForm({
               schema={loginSchema}
               defaultValues={defaultValues}
               action={adminLogin}
-              onSuccess={() => router.push("/dashboard")}
+              onSuccess={() => router.push("/")}
               submitLabel="Inloggen"
               pendingLabel="Bezig met inloggen..."
             />

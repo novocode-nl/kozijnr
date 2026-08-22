@@ -87,7 +87,7 @@ export function LoginForm({
               schema={loginSchema}
               defaultValues={defaultValues}
               action={login}
-              onSuccess={() => router.push("/dashboard")}
+              onSuccess={() => router.push("/")}
               submitLabel="Inloggen"
               pendingLabel="Bezig met inloggen..."
             />
