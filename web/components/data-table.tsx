@@ -14,6 +14,7 @@ import {
 } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ArrowUpDown, MoreHorizontal } from "lucide-react"
 
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -108,16 +109,21 @@ export function DataTableRowActions({
   label?: string
 }) {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button variant="ghost" size="icon-sm" aria-label={label}>
-            <MoreHorizontal />
-          </Button>
-        }
-      />
-      <DropdownMenuContent align="end">{children}</DropdownMenuContent>
-    </DropdownMenu>
+    // Stops the click from bubbling up to a `<DataTable onRowClick>` row —
+    // otherwise opening/using the kebab menu on a clickable row would also
+    // trigger that row's navigation.
+    <div onClick={(event) => event.stopPropagation()}>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button variant="ghost" size="icon-sm" aria-label={label}>
+              <MoreHorizontal />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end">{children}</DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   )
 }
 
@@ -130,12 +136,19 @@ interface DataTableProps<TData extends RowData> {
   columns: DataTableColumn<TData, any>[]
   data: TData[]
   emptyMessage?: string
+  /**
+   * When given, the whole row becomes clickable (e.g. navigate to a detail
+   * page). A click inside `<DataTableRowActions>` never reaches this — it
+   * stops its own propagation — so the kebab menu and row-click coexist.
+   */
+  onRowClick?: (row: TData) => void
 }
 
 export function DataTable<TData extends RowData>({
   columns,
   data,
   emptyMessage = "Geen resultaten.",
+  onRowClick,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
 
@@ -166,7 +179,11 @@ export function DataTable<TData extends RowData>({
         <TableBody>
           {table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow
+                key={row.id}
+                onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                className={cn(onRowClick && "cursor-pointer")}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
                     <table.FlexRender cell={cell} />
