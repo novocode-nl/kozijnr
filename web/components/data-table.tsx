@@ -12,9 +12,14 @@ import {
   type RowData,
   type SortingState,
 } from "@tanstack/react-table"
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react"
+import { ArrowDown, ArrowUp, ArrowUpDown, MoreHorizontal } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Table,
   TableBody,
@@ -83,6 +88,36 @@ export function DataTableSortableHeader({
         <ArrowUpDown className="text-muted-foreground/50" />
       )}
     </Button>
+  )
+}
+
+/**
+ * Per-row "kebab" actions menu: a `MoreHorizontal`-icon trigger opening a
+ * `DropdownMenu`. Shared here (rather than hand-rolled per table) so every
+ * overview's actions column looks and behaves the same — only the menu's
+ * contents (which actions, where they navigate) are table-instance-
+ * specific, supplied as `children` (typically `DropdownMenuItem`s) by the
+ * caller. This component has no entity-specific knowledge, matching
+ * `<DataTable>`'s own "entity-agnostic" design.
+ */
+export function DataTableRowActions({
+  children,
+  label = "Acties",
+}: {
+  children: React.ReactNode
+  label?: string
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button variant="ghost" size="icon-sm" aria-label={label}>
+            <MoreHorizontal />
+          </Button>
+        }
+      />
+      <DropdownMenuContent align="end">{children}</DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

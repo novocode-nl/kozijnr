@@ -32,4 +32,9 @@ final class DoctrineTenantRepository implements TenantRepositoryInterface
         $this->entityManager->persist($tenant);
         $this->entityManager->flush();
     }
+
+    public function update(Tenant $tenant): void
+    {
+        $this->entityManager->flush();
+    }
 }

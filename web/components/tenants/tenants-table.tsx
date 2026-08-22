@@ -1,12 +1,15 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 
 import {
   DataTable,
+  DataTableRowActions,
   DataTableSortableHeader,
   dataTableColumnHelper,
 } from "@/components/data-table"
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { listTenants, type TenantSummary } from "@/lib/api"
 
 /**
@@ -49,6 +52,21 @@ const columns = [
       />
     ),
     cell: ({ row }) => dateFormatter.format(new Date(row.original.createdAt)),
+  }),
+  columnHelper.display({
+    id: "actions",
+    header: "",
+    cell: ({ row }) => (
+      <div className="flex justify-end">
+        <DataTableRowActions label={`Acties voor ${row.original.subdomain}`}>
+          <DropdownMenuItem
+            render={<Link href={`/tenants/${encodeURIComponent(row.original.subdomain)}/edit`} />}
+          >
+            Bewerken
+          </DropdownMenuItem>
+        </DataTableRowActions>
+      </div>
+    ),
   }),
 ]
 

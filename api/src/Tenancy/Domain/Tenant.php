@@ -66,4 +66,21 @@ class Tenant
     {
         return $this->createdAt;
     }
+
+    /**
+     * Changes the subdomain this tenant is reachable at. The Postgres
+     * schema name is deliberately left untouched — it's an internal
+     * storage detail, not part of the tenant's public identity, so a
+     * rename never needs to move any data.
+     */
+    public function rename(string $subdomain): void
+    {
+        $subdomain = trim($subdomain);
+
+        if ($subdomain === '') {
+            throw new \InvalidArgumentException('Tenant subdomain cannot be empty.');
+        }
+
+        $this->subdomain = $subdomain;
+    }
 }
