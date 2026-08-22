@@ -5,10 +5,11 @@ import Link from "next/link"
 
 import {
   DataTable,
+  DataTableRowActions,
   DataTableSortableHeader,
   dataTableColumnHelper,
 } from "@/components/data-table"
-import { Button } from "@/components/ui/button"
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { listTenants, type TenantSummary } from "@/lib/api"
 
 /**
@@ -57,13 +58,13 @@ const columns = [
     header: "",
     cell: ({ row }) => (
       <div className="flex justify-end">
-        <Button
-          variant="ghost"
-          size="sm"
-          render={<Link href={`/tenants/${encodeURIComponent(row.original.subdomain)}/edit`} />}
-        >
-          Bewerken
-        </Button>
+        <DataTableRowActions label={`Acties voor ${row.original.subdomain}`}>
+          <DropdownMenuItem
+            render={<Link href={`/tenants/${encodeURIComponent(row.original.subdomain)}/edit`} />}
+          >
+            Bewerken
+          </DropdownMenuItem>
+        </DataTableRowActions>
       </div>
     ),
   }),
