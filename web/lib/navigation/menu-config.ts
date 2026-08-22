@@ -54,7 +54,7 @@ const adminNavMain: NavMainItem[] = [
   },
   {
     title: "Tenants",
-    url: "#",
+    url: "/tenants",
     icon: Building2,
   },
   {
