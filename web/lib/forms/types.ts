@@ -77,6 +77,12 @@ export type SelectFieldConfig<TValues> = BaseFieldConfig<TValues> & {
   options: SelectOption[]
 }
 
+/** KOZ-19: single-select radio-button group, sharing `SelectOption` with `select`. */
+export type RadioFieldConfig<TValues> = BaseFieldConfig<TValues> & {
+  type: "radio"
+  options: SelectOption[]
+}
+
 export type ComboboxFieldConfig<TValues> = BaseFieldConfig<TValues> & {
   type: "combobox"
   options: SelectOption[]
@@ -90,6 +96,7 @@ export type FieldConfig<TValues> =
   | TextareaFieldConfig<TValues>
   | CheckboxFieldConfig<TValues>
   | SelectFieldConfig<TValues>
+  | RadioFieldConfig<TValues>
   | ComboboxFieldConfig<TValues>
 
 export interface ConfigFormProps<

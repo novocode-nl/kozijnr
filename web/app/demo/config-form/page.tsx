@@ -14,9 +14,9 @@ import { submitDemoForm } from "@/app/demo/config-form/demo-action"
 /**
  * Standalone demo/example for `<ConfigForm>` (KOZ-17's DoD requires at
  * least one). Not a real screen — a dedicated page to show the component
- * working end-to-end with text, select, checkbox, a multiple-select
- * combobox, and a `visibleWhen`-conditional field, independent of any
- * login/CRUD screen (those are KOZ-18+).
+ * working end-to-end with text, select, checkbox, radio (KOZ-19), a
+ * multiple-select combobox, and a `visibleWhen`-conditional field,
+ * independent of any login/CRUD screen (those are KOZ-18+).
  *
  * Try:
  * - switching "Accounttype" to "Zakelijk" to reveal the conditional
@@ -98,6 +98,17 @@ const fields: FieldConfig<ConfigFormDemoValues>[] = [
     label: "Nieuwsbrief ontvangen",
     type: "checkbox",
   },
+  {
+    name: "contactPreference",
+    label: "Contactvoorkeur",
+    type: "radio",
+    hint: "Hoe mogen we contact met je opnemen?",
+    options: [
+      { value: "email", label: "E-mail" },
+      { value: "phone", label: "Telefoon" },
+      { value: "none", label: "Geen voorkeur" },
+    ],
+  },
 ]
 
 const defaultValues: ConfigFormDemoValues = {
@@ -109,6 +120,7 @@ const defaultValues: ConfigFormDemoValues = {
   interests: [],
   bio: "",
   subscribeToNewsletter: false,
+  contactPreference: "",
 }
 
 export default function ConfigFormDemoPage() {

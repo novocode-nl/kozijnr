@@ -4,6 +4,7 @@ import { Controller, type FieldValues, type Path, type UseFormReturn } from "rea
 
 import {
   Field,
+  FieldContent,
   FieldDescription,
   FieldError,
   FieldLabel,
@@ -18,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { ComboboxFieldControl } from "@/components/config-form/combobox-field"
 import type { FieldConfig } from "@/lib/forms/types"
 
@@ -43,6 +45,25 @@ export function ConfigFormField<TValues extends FieldValues>({
   const name = field.name as Path<TValues>
   const error = errors[field.name] as { message?: string } | undefined
   const invalid = !!error
+
+  // Checkbox is the one field type whose label sits *beside* the control
+  // instead of above it (the shadcn `Field` convention for a single
+  // checkbox: `orientation="horizontal"`, control first, then a
+  // `FieldContent` carrying the label/hint/error) — hence the branch here
+  // rather than in `renderControl()`, which assumes a label-above-control
+  // layout shared by every other field type.
+  if (field.type === "checkbox") {
+    return (
+      <Field data-invalid={invalid} orientation="horizontal">
+        {renderControl()}
+        <FieldContent>
+          <FieldLabel htmlFor={field.name}>{field.label}</FieldLabel>
+          {field.hint && !error && <FieldDescription>{field.hint}</FieldDescription>}
+          <FieldError errors={[error]} />
+        </FieldContent>
+      </Field>
+    )
+  }
 
   return (
     <Field data-invalid={invalid}>
@@ -133,6 +154,36 @@ export function ConfigFormField<TValues extends FieldValues>({
                   ))}
                 </SelectContent>
               </Select>
+            )}
+          />
+        )
+
+      case "radio":
+        return (
+          <Controller
+            name={name}
+            control={control}
+            render={({ field: rhf }) => (
+              <RadioGroup
+                aria-invalid={invalid}
+                value={(rhf.value as string) ?? ""}
+                onValueChange={rhf.onChange}
+                disabled={field.disabled}
+              >
+                {field.options.map((option) => {
+                  const optionId = `${field.name}-${option.value}`
+                  return (
+                    <FieldLabel key={option.value} htmlFor={optionId} className="font-normal">
+                      <RadioGroupItem
+                        id={optionId}
+                        value={option.value}
+                        aria-invalid={invalid}
+                      />
+                      {option.label}
+                    </FieldLabel>
+                  )
+                })}
+              </RadioGroup>
             )}
           />
         )
