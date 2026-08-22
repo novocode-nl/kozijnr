@@ -11,13 +11,12 @@ use Symfony\Component\Security\Core\User\UserProviderInterface;
 
 /**
  * Security user provider for the `super_admin` firewall. Backed directly
- * by UserRepositoryInterface (this bounded context's own port) rather than
- * Doctrine's generic EntityUserProvider, so this stays an explicit
- * hexagonal adapter and never accidentally resolves any other user type.
+ * by UserRepositoryInterface rather than Doctrine's generic
+ * EntityUserProvider, so this stays an explicit hexagonal adapter.
  *
  * Loads any public-schema User by email regardless of role — the actual
- * ROLE_SUPER_ADMIN requirement for /api/admin/* is enforced by
- * security.yaml's access_control against getRoles(), not here.
+ * ROLE_SUPER_ADMIN requirement is enforced by security.yaml's
+ * access_control against getRoles(), not here.
  */
 final class UserProvider implements UserProviderInterface
 {

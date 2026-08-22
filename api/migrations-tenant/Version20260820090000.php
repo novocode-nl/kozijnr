@@ -8,16 +8,12 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * Adds sliding-expiry to tenant_user_api_tokens (KOZ-15): every issued
- * token now carries an expires_at, set to issue-time + 30 days and pushed
- * out another 30 days on every successful use (see
- * App\TenantUser\Domain\TenantApiToken and
- * App\TenantUser\Infrastructure\Security\TenantApiTokenHandler).
+ * Adds sliding-expiry to tenant_user_api_tokens: every issued token now
+ * carries an expires_at, set to issue-time + 30 days and pushed out
+ * another 30 days on every successful use.
  *
- * Any pre-existing row (there shouldn't be any real ones yet, this table
- * was only just introduced by KOZ-11) is backfilled to created_at + 30
- * days rather than left NULL, so the column can be NOT NULL from the
- * start and every row in the domain model always has a real expiry.
+ * Any pre-existing row is backfilled to created_at + 30 days rather than
+ * left NULL, so the column can be NOT NULL from the start.
  */
 final class Version20260820090000 extends AbstractMigration
 {

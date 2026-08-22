@@ -14,36 +14,25 @@ namespace App\Tenancy\Domain;
 final class Subdomain
 {
     /**
-     * The reserved super-admin subdomain label (admin.kozijnr.nl in
-     * production, admin.localhost locally) — recognized by
-     * TenantResolverListener as the tenant-independent super-admin domain
-     * rather than an unknown tenant, and rejected by TenantName so it can
-     * never be provisioned as an actual tenant.
+     * The reserved super-admin subdomain label. Recognized by
+     * TenantResolverListener as the tenant-independent super-admin domain,
+     * and rejected by TenantName so it can never be provisioned as a tenant.
      */
     public const RESERVED_ADMIN = 'admin';
 
     /**
-     * The reserved "api" subdomain label (api.kozijnr.nl in production,
-     * api.kozijnr.localhost locally behind the nginx proxy): the hostname
-     * the REST API itself is served on. No tenant context, no admin
-     * context, stays on the public schema — unless a browser client on a
-     * sibling subdomain identifies its context via the Origin header (see
-     * TenantResolverListener).
-     * Recognized by TenantResolverListener exactly like RESERVED_ADMIN, and
-     * rejected by TenantName so it can never be provisioned as an actual
-     * tenant either.
+     * The reserved "api" subdomain label the REST API itself is served on.
+     * No tenant context; a browser client on a sibling subdomain identifies
+     * its context via the Origin header instead (see TenantResolverListener).
      */
     public const RESERVED_API = 'api';
 
     /**
      * Returns the subdomain label (e.g. "acme") for a host like
-     * "acme.kozijnr.nl" given base domain "kozijnr.nl".
-     *
-     * Returns null when the host is the base domain itself (main domain,
-     * public schema) or when the host doesn't belong to the base domain at
-     * all (treated as the main domain rather than an error case here — an
-     * unrecognized *subdomain* under the base domain still gets resolved
-     * against the tenants table by the caller, and 404s if unknown).
+     * "acme.kozijnr.nl" given base domain "kozijnr.nl". Returns null when
+     * the host is the base domain itself, or doesn't belong to it at all —
+     * treated as the main domain rather than an error here; an unrecognized
+     * subdomain still gets resolved against the tenants table by the caller.
      */
     public static function extractFrom(string $host, string $baseDomain): ?string
     {

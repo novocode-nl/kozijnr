@@ -14,32 +14,9 @@ import { ConfigForm } from "@/components/config-form/config-form"
 import type { FieldConfig } from "@/lib/forms/types"
 
 /**
- * Super-admin counterpart to components/login-form.tsx. Same
- * `<ConfigForm>` (KOZ-17) + `loginSchema` pattern (both realms
- * authenticate with a plain email/password pair — see
- * config/packages/security.yaml's `super_admin` firewall's `json_login`
- * config, which uses the same `username_path`/`password_path` shape as the
- * tenant realm) — only the `action` differs, posting to
- * POST /api/admin/login (lib/api.ts's `adminLogin`) instead of
- * POST /api/login.
- *
- * Rendered by app/login/page.tsx when the Host resolves to the admin
- * context (lib/context/app-context.ts) — /login is the single path for
- * both forms, this component is never routed to directly.
- *
- * KOZ-16 rework: rebuilt on shadcn's login-04 block, social-buttons-on-top
- * variant, keeping the block's default two-column layout (form left,
- * decorative image side panel right, hidden below md) — disabled
- * Apple/Google buttons (components/social-icons.tsx) above the form,
- * "Wachtwoord vergeten?" link where the block's default "Sign up" link
- * goes.
- *
- * KOZ-18 rework: form implementation replaced by `<ConfigForm>` — see
- * components/login-form.tsx's doc comment for the shared rationale
- * (structurally-compatible `LoginResult`/`ActionResult`, generic banner
- * for invalid-credentials errors, header/social/separator kept outside the
- * internal `<form>`). Purely a forms-logic change, the auth flow and
- * layout above are unchanged.
+ * Super-admin counterpart to components/login-form.tsx — same
+ * `<ConfigForm>` + `loginSchema` pattern, only the `action` differs
+ * (posts to POST /api/admin/login instead of POST /api/login).
  */
 const fields: FieldConfig<LoginFormValues>[] = [
   {
@@ -76,12 +53,7 @@ export function AdminLoginForm({
                 Log in als beheerder
               </p>
             </div>
-            {/*
-              KOZ-16: social login bovenaan. Beide knoppen zijn disabled —
-              er bestaat nog geen Apple- of Google-login-koppeling in de
-              backend, dit is puur de visuele plek voor latere
-              implementatie (Google expliciet vereist door het ticket).
-            */}
+            {/* Disabled: no Apple/Google login backend yet, placeholder only. */}
             <Field className="grid grid-cols-2 gap-4">
               <Button variant="outline" type="button" disabled>
                 <AppleIcon />

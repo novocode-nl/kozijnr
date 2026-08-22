@@ -7,12 +7,10 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Cookie;
 
 /**
- * Unit coverage for the cookie shape itself (KOZ-13 rework: HttpOnly
- * cookie-based tokens instead of localStorage) — the attributes that make
- * it safe to hand a bearer token to the browser via Set-Cookie: HttpOnly
- * (never JS-readable), Domain pinned to the base domain (so it reaches
- * api.<base> and the frontend hosts alike), SameSite=Lax, and secure left "auto"
- * (Symfony resolves it from the request's own scheme at send time).
+ * Unit coverage for the cookie shape itself — the attributes that make it
+ * safe to hand a bearer token to the browser via Set-Cookie: HttpOnly
+ * (never JS-readable), Domain pinned to the base domain, SameSite=Lax, and
+ * secure left "auto" (Symfony resolves it from the request's scheme).
  */
 final class TenantApiTokenCookieTest extends TestCase
 {

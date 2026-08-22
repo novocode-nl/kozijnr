@@ -10,16 +10,7 @@ import {
 import type { AppContext } from "@/lib/context/app-context"
 import { contextLabel } from "@/lib/navigation/menu-config"
 
-/**
- * The shared page shell for both the admin and tenant environments
- * (KOZ-14 DoD: "Admin-omgeving en tenant-omgeving gebruiken dezelfde
- * layoutcomponent met een eigen menu-configuratie"). One component, one
- * `context` prop — every future admin/tenant page renders its content as
- * `children` here rather than reimplementing the sidebar shell itself.
- *
- * Content of individual dashboard pages is explicitly out of scope for
- * this ticket — this only provides the shell they'll render inside.
- */
+/** Shared page shell for both the admin and tenant environments. */
 export function AppShell({
   context,
   children,

@@ -8,31 +8,11 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
- * Keeps every `/api/admin/*` route (admin login + tenant management API)
- * exclusive to the reserved "admin" subdomain, building directly on
- * TenantResolverListener rather than a separate host-regex check:
- * `/api/admin/*` is only reachable when TenantResolverListener has marked
- * the request as being on the admin domain (ADMIN_REQUEST_ATTRIBUTE).
- * Anywhere else — a known tenant subdomain, an unknown subdomain, or the
- * bare main domain — it 404s exactly like any other unknown route would;
- * it does not exist there, at all, not even to reject a login attempt
- * with 401/403. That would leak the fact that the endpoint exists
- * elsewhere.
- *
- * Lives in App\Tenancy (rework, KOZ-8, moved out of a former "SuperAdmin"
- * namespace): this listener is tenant-resolution logic through and
- * through — it builds directly on TenantResolverListener's own attribute
- * and has nothing to do with authenticating/authorizing a request once it
- * arrives (that stays the security firewall's job). Which routes it
- * happens to guard (currently only the admin ones) is incidental, not a
- * reason for a separate context.
- *
- * Originally this only required the *absence* of a resolved tenant, so
- * `/api/admin/*` was reachable from the bare main domain. Functional
- * review flipped this: "admin.kozijnr.nl" is THE place where admin
- * business happens, mirroring how a tenant's own business lives
- * exclusively under its own subdomain rather than also being reachable
- * from the bare domain — so the bare main domain no longer grants admin
+ * Keeps every `/api/admin/*` route exclusive to the reserved "admin"
+ * subdomain, building on TenantResolverListener's ADMIN_REQUEST_ATTRIBUTE
+ * rather than a separate host-regex check. Anywhere else it 404s exactly
+ * like any other unknown route — never a 401/403, which would leak that
+ * the endpoint exists elsewhere. The bare main domain does not grant admin
  * access either, only the admin subdomain does.
  *
  * Runs after TenantResolverListener (priority 100) so the admin/tenant

@@ -1,17 +1,10 @@
 import { type IncomingHttpHeaders, request as httpRequest } from "node:http"
 
 /**
- * Server-to-server request helper for the one place this frontend talks to
- * the backend from its own server side: the route guard in `proxy.ts`
- * (admin session check). Uses `node:http` instead of `fetch` because it
- * needs to set the `Host` header explicitly (Fetch forbids that), and
- * targets the backend's internal container address (`backend:8000`) since
- * the public api.<base> hostname only resolves on the developer's machine,
- * not inside the container network.
- *
- * Applies a bounded timeout: if the backend accepts the TCP connection but
- * never responds, the request rejects instead of hanging — important
- * because the guard sits on every admin route.
+ * Server-to-server request helper for proxy.ts's admin session check. Uses
+ * `node:http` instead of `fetch` because it needs to set the `Host` header
+ * explicitly (Fetch forbids that). Applies a bounded timeout so a backend
+ * that accepts the connection but never responds doesn't hang the guard.
  */
 const DEFAULT_TIMEOUT_MS = 5000
 
@@ -34,18 +27,10 @@ export interface BackendResponse {
 }
 
 /**
- * Sends a single request to the backend and resolves with its status and
- * headers once the response body has fully drained.
- *
- * Rejects (never hangs) on:
- * - a network-level error (connection refused, DNS failure, etc.)
- * - the request exceeding `timeoutMs` without a response — the socket is
- *   destroyed and the promise rejects, so a hung/slow backend fails fast
- *   and predictably instead of blocking the caller forever.
- *
- * Callers that need fail-closed behaviour (e.g. an auth guard) should
- * catch the rejection and treat it the same as an explicit denial — see
- * `proxy.ts`'s `hasValidAdminSession`.
+ * Sends a single request to the backend, resolving once the response body
+ * has fully drained. Rejects (never hangs) on a network error or on
+ * exceeding `timeoutMs` — callers needing fail-closed behaviour should
+ * treat a rejection as an explicit denial.
  */
 export function sendBackendRequest(options: BackendRequestOptions): Promise<BackendResponse> {
   const { host, port, path, method, tenantHost, headers, body, timeoutMs = DEFAULT_TIMEOUT_MS } = options
@@ -70,11 +55,8 @@ export function sendBackendRequest(options: BackendRequestOptions): Promise<Back
       }
     )
 
-    // Fires if no data (including the response headers) is exchanged on
-    // the socket within timeoutMs — this is what catches a backend that
-    // accepted the connection but then never answers. Destroying the
-    // socket triggers the "error" handler below, so there's a single exit
-    // path for both a timeout and a genuine network error.
+    // Destroying on timeout routes through the same "error" handler below,
+    // giving a single exit path for both a timeout and a network error.
     req.setTimeout(timeoutMs, () => {
       req.destroy(new Error(`Backend request to ${path} timed out after ${timeoutMs}ms`))
     })

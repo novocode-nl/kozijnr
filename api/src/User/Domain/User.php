@@ -9,25 +9,17 @@ use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 /**
- * A generic public-schema user account, tenant-independent, that
- * authenticates only against the public schema. Rows of this entity live
- * exclusively in `public` — a tenant schema has no `users` table at all, so
- * an account here is structurally invisible from within a tenant schema,
- * not merely access-controlled away from it.
+ * A generic public-schema user account, tenant-independent. Rows live
+ * exclusively in `public` — a tenant schema has no `users` table at all,
+ * so an account here is structurally invisible from within a tenant
+ * schema, not merely access-controlled away from it.
  *
  * Deliberately generic rather than a dedicated "SuperAdmin" entity: roles
- * are a many-to-many relation to the Role entity (KOZ-9), so future
- * admin-side roles (besides ROLE_SUPER_ADMIN) fit into this same table
- * without a second entity/table. Coarse authorization (e.g. the firewall's
- * access_control, or Symfony's built-in ROLE_ voter) still reads
- * getRoles() (role *names*), but fine-grained authorization (e.g.
- * #[IsGranted('tenant:list')]) reads hasPermission()/getPermissions(),
- * which resolve through each assigned Role's own Permission set rather
- * than comparing role-name strings.
- *
- * Deliberately its own Security `UserInterface` implementation, entirely
- * separate from any future tenant-user model: a super-admin session can only
- * ever resolve to a User here, never to a tenant user, and vice versa.
+ * are a many-to-many relation to the Role entity, so future admin-side
+ * roles fit into this same table. Coarse authorization still reads
+ * getRoles() (role *names*), but fine-grained authorization reads
+ * hasPermission()/getPermissions(), which resolve through each assigned
+ * Role's own Permission set.
  */
 #[ORM\Entity]
 #[ORM\Table(name: 'users')]

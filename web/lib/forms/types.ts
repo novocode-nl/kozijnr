@@ -2,12 +2,9 @@ import type { FieldValues } from "react-hook-form"
 import type { z } from "zod"
 
 /**
- * KOZ-17: generic config-driven form component.
- *
- * These types are the shared vocabulary between a form's config object
- * (field definitions + Zod schema) and the `<ConfigForm>` component that
- * renders/validates/submits it. Nothing here is login- or CRUD-specific —
- * that's the whole point of the ticket.
+ * Shared vocabulary between a form's config object (field definitions +
+ * Zod schema) and the `<ConfigForm>` component that renders/validates/
+ * submits it. Nothing here is login- or CRUD-specific.
  */
 
 /** An option for `select` and `combobox` fields. */
@@ -17,12 +14,9 @@ export type SelectOption = {
 }
 
 /**
- * Result shape an `Action` (the submit handler passed to `<ConfigForm>`)
- * resolves to. Mirrors the `{ success: true } | { success: false, message }`
- * shape already used by `lib/api.ts`'s `login`/`adminLogin` (see
- * `LoginResult`), extended with an optional `fieldErrors` map so an action
- * can attach a failure to a specific field (e.g. "e-mailadres al in
- * gebruik") instead of only surfacing a generic toast/banner message.
+ * Result shape an `Action` resolves to. Mirrors `lib/api.ts`'s
+ * `LoginResult` shape, extended with an optional `fieldErrors` map so an
+ * action can attach a failure to a specific field.
  */
 export type ActionResult<TResult = void> =
   | { success: true; data?: TResult }
@@ -39,7 +33,7 @@ export type FormAction<TSubmit, TResult = void> = (
 ) => Promise<ActionResult<TResult>>
 
 interface BaseFieldConfig<TValues> {
-  /** Key into the form's values object. Flat keys only — no repeatable/array fields (out of scope for KOZ-17). */
+  /** Key into the form's values object. Flat keys only — no repeatable/array fields. */
   name: keyof TValues & string
   label: string
   placeholder?: string
@@ -47,9 +41,7 @@ interface BaseFieldConfig<TValues> {
   hint?: string
   /**
    * Where `hint` renders relative to the control. Defaults to
-   * `"belowControl"` (existing behaviour). `"belowLabel"` renders it right
-   * under the top-level label, before the control — KOZ-19's rework, shown
-   * as an example on the `radio` field in the ConfigForm demo.
+   * `"belowControl"`; `"belowLabel"` renders it under the top-level label.
    */
   hintPlacement?: "belowLabel" | "belowControl"
   disabled?: boolean
@@ -91,7 +83,7 @@ export type SelectFieldConfig<TValues> = BaseFieldConfig<TValues> & {
   options: SelectOption[]
 }
 
-/** KOZ-19: single-select radio-button group, sharing `SelectOption` with `select`. */
+/** Single-select radio-button group, sharing `SelectOption` with `select`. */
 export type RadioFieldConfig<TValues> = BaseFieldConfig<TValues> & {
   type: "radio"
   options: SelectOption[]
@@ -100,7 +92,7 @@ export type RadioFieldConfig<TValues> = BaseFieldConfig<TValues> & {
 export type ComboboxFieldConfig<TValues> = BaseFieldConfig<TValues> & {
   type: "combobox"
   options: SelectOption[]
-  /** Multiple-select variant, required by KOZ-17's DoD. */
+  /** Multiple-select variant. */
   multiple?: boolean
 }
 

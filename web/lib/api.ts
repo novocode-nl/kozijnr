@@ -2,14 +2,9 @@ import { apiBaseUrl } from "@/lib/api-base-url"
 import type { LoginFormValues } from "@/lib/schemas/login"
 
 /**
- * Browser-side service layer over the REST API on api.<base>. Components
- * call these functions; nothing else in the frontend talks to the backend.
- *
- * Every call is cross-origin (admin.<base> / <tenant>.<base> -> api.<base>)
- * but same-site, so `credentials: "include"` carries the HttpOnly
- * session/token cookies the API sets and the API's CorsListener allows the
- * origin through. Which tenant/admin context a call belongs to is derived
- * by the API from the browser-set Origin header.
+ * Browser-side service layer over the REST API on api.<base>. Every call
+ * is cross-origin but same-site, so `credentials: "include"` carries the
+ * HttpOnly session/token cookies the API's CorsListener allows through.
  */
 export const GENERIC_LOGIN_ERROR = "Invalid credentials."
 
@@ -55,12 +50,11 @@ async function postCredentials(path: string, values: LoginFormValues): Promise<L
   return { success: true }
 }
 
-// Logout is best effort: whatever the API answers, the caller navigates to
-// /login next and the route guard takes over.
+// Logout is best effort: the caller navigates to /login regardless.
 async function postBestEffort(path: string): Promise<void> {
   try {
     await fetch(backendUrl(path), { method: "POST", credentials: "include" })
   } catch {
-    // ignore — see above
+    // ignore
   }
 }

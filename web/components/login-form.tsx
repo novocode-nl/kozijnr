@@ -14,19 +14,10 @@ import { ConfigForm } from "@/components/config-form/config-form"
 import type { FieldConfig } from "@/lib/forms/types"
 
 /**
- * KOZ-18: rebuilt on the generic, config-driven `<ConfigForm>` from KOZ-17 —
- * the field config + `loginSchema` below is the single source of truth for
- * shape/validation, and `login` (lib/api.ts) is passed directly as the
- * `<ConfigForm>` `action` since its `LoginResult` shape is already
- * structurally an `ActionResult`. A failed login returns a generic
- * `message` (no `fieldErrors` — the backend intentionally doesn't
- * distinguish "unknown email" from "wrong password"), which `<ConfigForm>`
- * surfaces as the shared banner through the same field-wrapper mechanism
- * used for field-level errors.
- *
- * The header/social-buttons/separator (KOZ-16) sit outside the `<form>`
- * `<ConfigForm>` renders internally — they're disabled/non-interactive
- * decoration, not form controls, so this doesn't change submit behavior.
+ * Built on the generic, config-driven `<ConfigForm>`. A failed login
+ * returns a generic `message` (no `fieldErrors` — the backend intentionally
+ * doesn't distinguish "unknown email" from "wrong password"), which
+ * `<ConfigForm>` surfaces as the shared banner.
  */
 const fields: FieldConfig<LoginFormValues>[] = [
   {
@@ -63,12 +54,7 @@ export function LoginForm({
                 Log in op je Kozijnr-account
               </p>
             </div>
-            {/*
-              KOZ-16: social login bovenaan. Beide knoppen zijn disabled —
-              er bestaat nog geen Apple- of Google-login-koppeling in de
-              backend, dit is puur de visuele plek voor latere
-              implementatie (Google expliciet vereist door het ticket).
-            */}
+            {/* Disabled: no Apple/Google login backend yet, placeholder only. */}
             <Field className="grid grid-cols-2 gap-4">
               <Button variant="outline" type="button" disabled>
                 <AppleIcon />

@@ -8,10 +8,9 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
- * KOZ-13 rework: the `tenant_users` firewall's access_token authenticator
- * (config/packages/security.yaml) now extracts the bearer token from the
- * HttpOnly cookie (TenantApiTokenCookie) instead of Symfony's built-in
- * header extractor.
+ * The `tenant_users` firewall's access_token authenticator extracts the
+ * bearer token from the HttpOnly cookie (TenantApiTokenCookie) instead of
+ * Symfony's built-in header extractor.
  */
 final class CookieAccessTokenExtractorTest extends TestCase
 {

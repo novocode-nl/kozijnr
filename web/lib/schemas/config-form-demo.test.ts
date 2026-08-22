@@ -55,9 +55,6 @@ describe("configFormDemoSchema", () => {
     expect(result.success).toBe(false)
   })
 
-  // KOZ-19: the new `radio` field type's schema-level counterpart —
-  // `contactPreference` is a required single-select value, exactly like
-  // any other required field, not a special case for radio.
   it("rejects a submission with no contact preference chosen", () => {
     const result = configFormDemoSchema.safeParse({ ...baseValues, contactPreference: "" })
 

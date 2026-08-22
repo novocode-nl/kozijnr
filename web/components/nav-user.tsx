@@ -27,21 +27,16 @@ import type { AppContext } from "@/lib/context/app-context"
 import { contextLabel } from "@/lib/navigation/menu-config"
 
 /**
- * Adapted from the shadcn `sidebar-07` block's `NavUser`. Simplified: this
- * ticket (KOZ-14) is layout/shell only, and there is no "current user"
- * profile endpoint wired up yet for either context (tenant or admin), so
- * this shows the context label rather than a real name/avatar/email —
- * swap in real profile data once a `/api/me`-style endpoint exists.
+ * No "current user" profile endpoint exists yet, so this shows the context
+ * label rather than a real name/avatar/email.
  */
 export function NavUser({ context }: { context: AppContext }) {
   const { isMobile } = useSidebar()
   const router = useRouter()
 
   async function handleLogout() {
-    // Invalidate the session on the API first (tenant token cookie or
-    // admin PHPSESSID), so a subsequent /dashboard visit bounces back to
-    // /login instead of the "already valid session -> /dashboard" redirect
-    // in proxy.ts firing again.
+    // Invalidate the session first, so a subsequent /dashboard visit
+    // doesn't get bounced back to /dashboard by proxy.ts's redirect.
     await (context === "admin" ? adminLogout() : logout())
     router.push("/login")
   }
@@ -76,29 +71,13 @@ export function NavUser({ context }: { context: AppContext }) {
             align="end"
             sideOffset={4}
           >
-            {/*
-              This project's dropdown-menu primitive (components/ui/dropdown-menu.tsx,
-              shadcn's base-ui-backed "base-nova" style) implements
-              DropdownMenuLabel via base-ui's Menu.GroupLabel, which throws
-              ("MenuGroupContext is missing") unless it has a Menu.Group
-              ancestor — unlike the Radix-based shadcn reference, a bare
-              DropdownMenuLabel is not enough here. Wrapping everything in a
-              single DropdownMenuGroup satisfies that requirement (KOZ-14
-              rework, round 6 — this crashed the whole menu, including the
-              logout item below, on every open before this fix).
-            */}
+            {/* DropdownMenuLabel needs a Menu.Group ancestor or it throws. */}
             <DropdownMenuGroup>
               <DropdownMenuLabel className="text-xs text-muted-foreground">
                 {contextLabel[context]}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {/*
-                base-ui's Menu.Item (components/ui/dropdown-menu.tsx's
-                DropdownMenuItem) exposes `onClick`, not Radix's `onSelect`
-                — an `onSelect` prop is silently dropped as an unrecognized
-                DOM attribute and never fires (KOZ-14 rework, round 6: this
-                is the actual reason clicking "Uitloggen" did nothing).
-              */}
+              {/* base-ui's Menu.Item uses `onClick`, not Radix's `onSelect`. */}
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut />
                 Uitloggen

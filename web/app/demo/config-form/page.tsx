@@ -11,22 +11,7 @@ import {
 import type { FieldConfig } from "@/lib/forms/types"
 import { submitDemoForm } from "@/app/demo/config-form/demo-action"
 
-/**
- * Standalone demo/example for `<ConfigForm>` (KOZ-17's DoD requires at
- * least one). Not a real screen — a dedicated page to show the component
- * working end-to-end with text, select, checkbox, radio (KOZ-19), a
- * multiple-select combobox, and a `visibleWhen`-conditional field,
- * independent of any login/CRUD screen (those are KOZ-18+).
- *
- * Try:
- * - switching "Accounttype" to "Zakelijk" to reveal the conditional
- *   "Bedrijfsnaam" field (`visibleWhen`), required via the schema's
- *   `.superRefine()`
- * - submitting with e-mail "taken@example.nl" to see a field-level error
- *   returned by the (fake) action, rendered through the same field-wrapper
- *   as a validation error
- * - selecting multiple interests in the combobox
- */
+/** Standalone demo/example page for `<ConfigForm>`, not a real screen. */
 const fields: FieldConfig<ConfigFormDemoValues>[] = [
   {
     name: "fullName",

@@ -5,39 +5,21 @@ namespace App\TenantUser\Infrastructure\Security;
 use Symfony\Component\HttpFoundation\Cookie;
 
 /**
- * Shapes the HttpOnly cookie the tenant-user bearer token now travels in
- * (KOZ-13 rework), replacing the earlier localStorage-based approach to
- * structurally remove the XSS token-exfiltration surface the previous
- * review already flagged as non-blocking.
+ * Shapes the HttpOnly cookie the tenant-user bearer token travels in.
  *
  * Attribute choices:
- * - HttpOnly: never readable from client-side JS — the entire point of
- *   this rework.
- * - Secure left `null` (Symfony's "auto" mode, see Cookie::create's
- *   `$secure` param): Response::prepare() enables it automatically once
- *   the *inbound* request is itself HTTPS, so the exact same code works
- *   over plain-HTTP local dev (the nginx `*.kozijnr.localhost` domains
- *   aren't served over TLS — see README.md "Local domains via nginx") and a real
- *   HTTPS deployment, without a separate flag to keep in sync.
- * - SameSite=Lax: the browser client (admin.<base> / <tenant>.<base>)
- *   calls this API cross-origin on api.<base>, but that is still the same
- *   *site* (same registrable domain), so Lax cookies are sent along with
- *   `credentials: "include"` fetches. Lax is the strictest setting that
- *   still survives a plain top-level navigation (SameSite=Strict would drop
- *   the cookie on e.g. an external link landing on /dashboard), and
- *   SameSite=None would only be needed for an actually cross-site flow,
- *   which this isn't.
- * - Domain = the base domain (kozijnr.localhost / kozijnr.nl): the cookie is
- *   issued by api.<base> but must also reach the frontend on admin.<base>
- *   / <tenant>.<base>, whose server-side route guard (web/proxy.ts) checks
- *   for its presence before rendering a protected page. A host-only cookie
- *   would only ever travel back to api.<base>. Which tenant a token belongs
- *   to is carried by the request's Origin (see TenantResolverListener) and
- *   enforced by the tenant-schema-scoped token lookup, not by cookie scope.
- * - 30-day lifetime: matches TenantApiToken's own sliding-expiry window
- *   (App\TenantUser\Domain\TenantApiToken::EXPIRY_PERIOD) — the cookie
- *   should never meaningfully outlive, or expire before, the token inside
- *   it.
+ * - HttpOnly: never readable from client-side JS.
+ * - Secure left `null` (Symfony's "auto" mode): enabled automatically once
+ *   the inbound request is itself HTTPS, so the same code works over
+ *   plain-HTTP local dev and a real HTTPS deployment.
+ * - SameSite=Lax: the browser calls this API cross-origin but same-site, so
+ *   Lax cookies are sent along with `credentials: "include"` fetches while
+ *   still surviving a plain top-level navigation.
+ * - Domain = the base domain: the cookie is issued by api.<base> but must
+ *   also reach the frontend on admin.<base>/<tenant>.<base>, whose
+ *   server-side route guard checks for its presence. A host-only cookie
+ *   would only ever travel back to api.<base>.
+ * - 30-day lifetime: matches TenantApiToken's own sliding-expiry window.
  */
 final class TenantApiTokenCookie
 {
@@ -62,10 +44,7 @@ final class TenantApiTokenCookie
 
     /**
      * An already-expired cookie with the same name/attributes as issue(),
-     * to be set on the logout response so the browser actually discards it
-     * (App\TenantUser\Infrastructure\Controller\LogoutController) — merely
-     * deleting the token server-side leaves a stale cookie behind
-     * otherwise.
+     * so the browser actually discards it on logout.
      */
     public static function clear(string $domain): Cookie
     {

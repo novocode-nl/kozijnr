@@ -9,17 +9,12 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
- * Keeps tenant-user routes (login, and any route protected by the
- * `tenant_users` firewall) exclusive to an actually-resolved tenant
- * subdomain, mirroring
- * App\Tenancy\Infrastructure\AdminRouteGuardListener's approach for
- * `/api/admin/*`: these routes are only reachable when
- * TenantResolverListener resolved the request to a real tenant
- * (REQUEST_ATTRIBUTE). On the bare main domain or the reserved admin
- * subdomain they 404 like any unknown route — the tenant schema these
- * routes depend on (tenant_users, tenant_user_api_tokens) doesn't exist
- * outside a tenant schema at all, so this also prevents a confusing
- * "table does not exist" failure from ever reaching those code paths.
+ * Keeps tenant-user routes exclusive to an actually-resolved tenant
+ * subdomain, mirroring AdminRouteGuardListener's approach for
+ * `/api/admin/*`. On the bare main domain or the admin subdomain they 404
+ * like any unknown route — this also prevents a confusing "table does not
+ * exist" failure, since the tenant schema these routes depend on doesn't
+ * exist outside a tenant schema at all.
  *
  * Runs after TenantResolverListener (priority 100) so its attribute is
  * already set, but before the security firewall (priority 8).

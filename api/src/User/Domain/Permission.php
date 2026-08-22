@@ -6,9 +6,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * A single fine-grained permission (e.g. `tenant:list`), assignable to one
- * or more Roles. Its own database table (KOZ-9) rather than a hardcoded
- * string constant, so new permissions can be introduced by a future ticket
- * (seed data) without a code deploy touching this class.
+ * or more Roles. Its own database table rather than a hardcoded string
+ * constant, so new permissions can be introduced via seed data alone.
  */
 #[ORM\Entity]
 #[ORM\Table(name: 'permissions')]

@@ -6,23 +6,14 @@ import { TENANT_TOKEN_COOKIE_NAME } from "@/lib/auth/token-cookie"
 import { resolveAppContext } from "@/lib/context/app-context"
 
 /**
- * Server-side route guard (Next.js 16 `proxy.ts` convention, formerly
- * `middleware.ts`; runs on the Node.js runtime, which is what makes the
- * `node:http` call in `hasValidAdminSession` possible).
+ * Server-side route guard (Next.js `proxy.ts` convention; runs on the
+ * Node.js runtime, needed for the `node:http` call in `hasValidAdminSession`).
  *
- * Every route on either subdomain sits behind a login:
- * - tenant context (<tenant>.<base>): the HttpOnly token cookie the API
- *   sets on login merely has to be present — its validity is checked by
- *   the API on every real call anyway.
- * - admin context (admin.<base>): the super-admin session is an opaque
- *   Symfony session cookie this frontend can't introspect, so the API is
- *   asked (GET /api/admin/me) whether it's still valid. Fails closed on any
- *   error or timeout.
- *
- * `/login` is the single login path for both contexts; an already
- * authenticated visitor is sent on to /dashboard. There are no API routes
- * in this frontend — the browser talks to api.<base> directly (see
- * lib/api.ts), so nothing under /api needs carving out here.
+ * Every route on either subdomain sits behind a login: the tenant token
+ * cookie only needs to be present (its validity is checked by the API on
+ * every real call), but the admin session is an opaque Symfony session
+ * cookie this frontend can't introspect, so the API is asked directly and
+ * this fails closed on any error or timeout.
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -48,14 +39,9 @@ export async function proxy(request: NextRequest) {
 
 /**
  * Asks the API whether the session cookie on this request is a valid
- * super-admin session (GET /api/admin/me) the same way the browser would:
- * addressed to api.<base> with the page's origin as `Origin`, so the API's
- * TenantResolverListener resolves the admin context from it. Goes over the
- * internal container network (`backend:8000`), setting the `Host` header to
- * the public api.<base> hostname.
- *
- * No Cookie header at all -> false without a round-trip. Any network
- * failure, non-200 or timeout -> false (fail closed).
+ * super-admin session, over the internal container network, with the
+ * `Host` header set to the public api.<base> hostname so the API resolves
+ * the admin context correctly. Fails closed on any error, non-200, or timeout.
  */
 async function hasValidAdminSession(request: NextRequest): Promise<boolean> {
   const cookieHeader = request.headers.get("cookie")

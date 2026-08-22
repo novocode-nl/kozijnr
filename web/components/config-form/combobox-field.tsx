@@ -17,10 +17,8 @@ import type { ComboboxFieldConfig, SelectOption } from "@/lib/forms/types"
 
 /**
  * Renders a `combobox` field, single- or multiple-select depending on
- * `field.multiple`. Bridges between react-hook-form's plain string /
- * string[] value and the base-ui Combobox primitive, which selects whole
- * option objects (see components/ui/combobox.tsx, generated via the
- * `shadcn` MCP from this project's base-nova registry style).
+ * `field.multiple`. Bridges react-hook-form's plain string/string[] value
+ * with the base-ui Combobox primitive, which selects whole option objects.
  */
 export function ComboboxFieldControl<TValues>({
   id,

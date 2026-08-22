@@ -20,16 +20,10 @@ import { resolveSubmitPayload } from "@/lib/forms/submit-payload"
 import type { ConfigFormProps } from "@/lib/forms/types"
 
 /**
- * KOZ-17: generic, config-driven form component. Renders a Zod-validated
- * form from a list of `FieldConfig`s and hands the validated (optionally
- * `transformSubmit`-shaped) values to a submit `Action`, following the same
- * react-hook-form + zodResolver + shadcn `Field*` conventions already used
- * by `components/login-form.tsx` / `components/admin-login-form.tsx`.
- *
- * Deliberately contains no login- or CRUD-specific logic — see
- * `app/demo/config-form/page.tsx` for a standalone usage example, and
- * `KOZ-18` (out of scope here) for wiring an existing screen onto this
- * component.
+ * Generic, config-driven form component. Renders a Zod-validated form from
+ * a list of `FieldConfig`s and hands the validated (optionally
+ * `transformSubmit`-shaped) values to a submit `Action`. Deliberately
+ * contains no login- or CRUD-specific logic.
  */
 export function ConfigForm<
   TValues extends FieldValues,
@@ -49,12 +43,9 @@ export function ConfigForm<
   const [formError, setFormError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Casts below are the price of a *generic* config-driven form component:
-  // `zodResolver`/`useForm` infer concrete types from a concrete schema
-  // (as in login-form.tsx's non-generic `loginSchema`), but here the schema
-  // type is only known through the `TValues extends FieldValues` type
-  // parameter. The runtime behavior is unaffected — `schema` still
-  // validates the actual `TValues` shape.
+  // Casts below are the price of a *generic* form: the schema type is only
+  // known through the `TValues` type parameter, so `zodResolver`/`useForm`
+  // can't infer it directly. Runtime behavior is unaffected.
   const form = useForm<TValues, unknown, TValues>({
     resolver: zodResolver(schema as never) as unknown as Resolver<TValues, unknown, TValues>,
     defaultValues: defaultValues as DefaultValues<TValues>,

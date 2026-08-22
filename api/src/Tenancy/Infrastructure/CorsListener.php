@@ -9,17 +9,10 @@ use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
- * CORS for browser clients living on sibling subdomains of the base domain
- * (admin.<base>, <tenant>.<base>) that call this API cross-origin on
- * api.<base>. Only origins whose host is the base domain itself or ends in
- * ".<base>" are allowed; everything else gets no CORS headers at all, so
- * the browser blocks it.
- *
- * Runs in every environment: production (admin.kozijnr.nl -> api.kozijnr.nl)
- * works exactly like local dev (admin.kozijnr.localhost ->
- * api.kozijnr.localhost behind the nginx proxy). The matching "which
- * tenant/admin context is this browser in?" question is answered from the
- * same Origin header by TenantResolverListener.
+ * CORS for browser clients on sibling subdomains of the base domain that
+ * call this API cross-origin. Only origins whose host is the base domain
+ * itself or ends in ".<base>" are allowed; everything else gets no CORS
+ * headers, so the browser blocks it.
  */
 final class CorsListener implements EventSubscriberInterface
 {

@@ -1,16 +1,10 @@
 import { z } from "zod"
 
 /**
- * Demo schema for the generic `<ConfigForm>` component (KOZ-17). Single
- * source of truth for the form's shape and validation, per this project's
- * Zod conventions — see `lib/schemas/login.ts`.
- *
- * Exercises every field type the component supports plus the DoD's
- * `.superRefine()` requirement: `companyName` is only required when
- * `accountType` is `"business"`, which also drives a `visibleWhen`
- * condition on the corresponding field in the demo's field config
- * (`app/demo/config-form/page.tsx`) — the schema enforces the rule, the
- * config only controls whether the field is shown.
+ * Demo schema for the generic `<ConfigForm>` component. Exercises every
+ * field type plus `.superRefine()`: `companyName` is only required when
+ * `accountType` is `"business"` — the schema enforces the rule, the field
+ * config's `visibleWhen` only controls whether the field is shown.
  */
 export const configFormDemoSchema = z
   .object({
