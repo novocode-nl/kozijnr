@@ -46,11 +46,23 @@ Stop everything with:
 make down
 ```
 
+`make up` does **not** seed any accounts by itself. To log in with the
+standard dev/test accounts (KOZ-22), run `make seed` as a separate, explicit
+step once the stack is up — see "Standard dev/test accounts" below:
+
+```bash
+make seed
+```
+
+- Admin: http://admin.kozijnr.localhost/login — `admin@kozijnr.nl` / `password`
+- Tenant `tenant1`: http://tenant1.kozijnr.localhost/login — `tenant@kozijnr.nl` / `password`
+
 ## Make targets
 
 | Target | What it does |
 | --- | --- |
 | `make up` | Start the stack in the background (generates `.env`, starts the shared proxy, builds images if needed) |
+| `make seed` | Run pending public migrations and seed the standard dev/test accounts — a separate, explicit step, not run automatically by `make up` |
 | `make down` | Stop and remove the stack's containers |
 | `make build` | Build (or rebuild) all images |
 | `make rebuild` | Rebuild images from scratch and restart the stack |
@@ -331,6 +343,53 @@ curl $R -b cookies.txt -H "$O" -X POST http://api.kozijnr.localhost/api/admin/te
 ```
 
 For a worktree, substitute `koz-<n>.kozijnr.localhost` for `kozijnr.localhost`.
+
+### Standard dev/test accounts (KOZ-22)
+
+Every dev/test environment — the main checkout and every per-worktree
+stack — gets the same two known accounts, so you can always log in without
+provisioning anything by hand:
+
+| Account | Email | Password | Where |
+| --- | --- | --- | --- |
+| Super admin | `admin@kozijnr.nl` | `password` | public schema |
+| Tenant user | `tenant@kozijnr.nl` | `password` | tenant `tenant1` (schema `tenant_tenant1`) |
+
+This is seeded by `bin/console app:seed-dev-fixtures`
+(`App\Shared\Infrastructure\Command\SeedDevFixturesCommand`), via the
+**separate, explicit** `make seed` target (see "Make targets" above) — it is
+**not** run automatically by `make up`, so starting the stack never seeds
+this fixed, publicly known password as a side effect. Run `make seed`
+yourself once the stack is up, including in a fresh `koz-<n>` worktree. It
+reuses the existing use cases rather than reimplementing them: KOZ-8's
+`super-admin:create` (`App\User\Application\CreateSuperAdmin`), KOZ-7's
+`tenant:provision` (`App\Tenancy\Application\ProvisionTenant`) and KOZ-11's
+`tenant-user:create` (`App\TenantUser\Application\CreateTenantUser`).
+
+- **Idempotent**: each step is skipped (not an error) if the account/tenant
+  already exists, so it's safe to run `make seed` again any time, not just
+  the first time.
+- **Allowlisted to dev/test only**: the command hard-refuses (clear error,
+  non-zero exit code — not a silent no-op) unless the Symfony
+  `kernel.environment` (`APP_ENV`) is explicitly `dev` or `test`. This is an
+  allowlist, not a blocklist — any other environment name (`prod`,
+  `staging`, a typo, or any future/unknown name) is refused, not just
+  `prod`. The local Docker stack always runs with `APP_ENV=dev`
+  (`docker-compose.yml`), so `make seed` is always safe there; a
+  production (or any other non-dev/test) deployment uses its own
+  configuration and must never invoke this command.
+
+Run it by hand at any time with:
+
+```bash
+make seed
+```
+
+or, to run just the seed command itself without the migration step:
+
+```bash
+make console args="app:seed-dev-fixtures"
+```
 
 ## Versions
 
