@@ -30,11 +30,6 @@ const tenantNavMain: NavMainItem[] = [
     url: "/",
     icon: LayoutDashboard,
   },
-  {
-    title: "Instellingen",
-    url: "#",
-    icon: Settings,
-  },
 ]
 
 /**
@@ -58,11 +53,6 @@ const adminNavMain: NavMainItem[] = [
     title: "Gebruikers",
     url: "#",
     icon: Users,
-  },
-  {
-    title: "Instellingen",
-    url: "#",
-    icon: Settings,
   },
 ]
 
