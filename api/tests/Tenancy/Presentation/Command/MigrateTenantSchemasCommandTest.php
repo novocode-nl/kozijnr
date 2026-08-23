@@ -96,7 +96,7 @@ final class MigrateTenantSchemasCommandTest extends KernelTestCase
         $connection = $this->connection();
         $connection->executeStatement(sprintf('CREATE SCHEMA %s', $schemaName));
         $connection->executeStatement(
-            'INSERT INTO public.tenants (subdomain, schema_name, created_at) VALUES (:subdomain, :schemaName, NOW())',
+            'INSERT INTO public.tenants (name, subdomain, schema_name, created_at) VALUES (:subdomain, :subdomain, :schemaName, NOW())',
             ['subdomain' => $subdomain, 'schemaName' => $schemaName],
         );
     }
@@ -104,7 +104,7 @@ final class MigrateTenantSchemasCommandTest extends KernelTestCase
     private function registerTenantRowOnly(string $subdomain, string $schemaName): void
     {
         $this->connection()->executeStatement(
-            'INSERT INTO public.tenants (subdomain, schema_name, created_at) VALUES (:subdomain, :schemaName, NOW())',
+            'INSERT INTO public.tenants (name, subdomain, schema_name, created_at) VALUES (:subdomain, :subdomain, :schemaName, NOW())',
             ['subdomain' => $subdomain, 'schemaName' => $schemaName],
         );
     }

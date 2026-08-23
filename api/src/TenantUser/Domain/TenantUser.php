@@ -31,6 +31,9 @@ class TenantUser implements UserInterface, PasswordAuthenticatedUserInterface
 {
     public const DEFAULT_ROLE = 'ROLE_TENANT_USER';
 
+    /** Automatically assigned to the account CreateTenantController creates for a freshly provisioned tenant. */
+    public const ROLE_TENANT_ADMIN = 'ROLE_TENANT_ADMIN';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]

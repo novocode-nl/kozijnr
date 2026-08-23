@@ -13,10 +13,11 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
  * Proves that authorization on the admin tenant API is decided by the
- * authenticated user's *permissions* (tenant:list / tenant:create), not by
- * a ROLE_SUPER_ADMIN role-name comparison. Both users below can
- * authenticate on the `super_admin` firewall but are assigned custom roles
- * carrying only one of the two permissions each.
+ * authenticated user's *permissions* (tenant:list / tenant:create /
+ * tenant:update / tenant:archive / tenant:users:list), not by a
+ * ROLE_SUPER_ADMIN role-name comparison. Users below can authenticate on
+ * the `super_admin` firewall but are assigned custom roles carrying only
+ * the permission(s) under test.
  */
 final class TenantAdminPermissionAuthorizationTest extends WebTestCase
 {
@@ -47,10 +48,7 @@ final class TenantAdminPermissionAuthorizationTest extends WebTestCase
         $this->client->request('GET', '/api/admin/tenants', server: ['HTTP_HOST' => self::ADMIN_HOST]);
         self::assertResponseIsSuccessful();
 
-        $this->client->request('POST', '/api/admin/tenants', server: [
-            'HTTP_HOST' => self::ADMIN_HOST,
-            'CONTENT_TYPE' => 'application/json',
-        ], content: json_encode(['name' => 'acme']));
+        $this->createTenantRequest('Acme', 'acme');
         self::assertResponseStatusCodeSame(403);
     }
 
@@ -62,10 +60,7 @@ final class TenantAdminPermissionAuthorizationTest extends WebTestCase
         $this->client->request('GET', '/api/admin/tenants', server: ['HTTP_HOST' => self::ADMIN_HOST]);
         self::assertResponseStatusCodeSame(403);
 
-        $this->client->request('POST', '/api/admin/tenants', server: [
-            'HTTP_HOST' => self::ADMIN_HOST,
-            'CONTENT_TYPE' => 'application/json',
-        ], content: json_encode(['name' => 'acme']));
+        $this->createTenantRequest('Acme', 'acme');
         self::assertResponseStatusCodeSame(201);
     }
 
@@ -77,14 +72,11 @@ final class TenantAdminPermissionAuthorizationTest extends WebTestCase
         $this->client->request('GET', '/api/admin/tenants', server: ['HTTP_HOST' => self::ADMIN_HOST]);
         self::assertResponseStatusCodeSame(403);
 
-        $this->client->request('POST', '/api/admin/tenants', server: [
-            'HTTP_HOST' => self::ADMIN_HOST,
-            'CONTENT_TYPE' => 'application/json',
-        ], content: json_encode(['name' => 'acme']));
+        $this->createTenantRequest('Acme', 'acme');
         self::assertResponseStatusCodeSame(403);
     }
 
-    public function testAUserWithoutTheUpdatePermissionCannotRenameATenant(): void
+    public function testAUserWithoutTheUpdatePermissionCannotUpdateATenant(): void
     {
         $this->createUserWithPermissions('list-only@kozijnr.nl', 'super-secret-123', ['tenant:list']);
         $this->login('list-only@kozijnr.nl', 'super-secret-123');
@@ -92,25 +84,72 @@ final class TenantAdminPermissionAuthorizationTest extends WebTestCase
         $this->client->request('PATCH', '/api/admin/tenants/acme', server: [
             'HTTP_HOST' => self::ADMIN_HOST,
             'CONTENT_TYPE' => 'application/json',
-        ], content: json_encode(['name' => 'acme-bv']));
+        ], content: json_encode(['name' => 'Acme', 'slug' => 'acme-bv']));
         self::assertResponseStatusCodeSame(403);
     }
 
-    public function testAUserWithTheUpdatePermissionCanRenameATenant(): void
+    public function testAUserWithTheUpdatePermissionCanUpdateATenant(): void
     {
         $this->createUserWithPermissions('update-only@kozijnr.nl', 'super-secret-123', ['tenant:create', 'tenant:update']);
         $this->login('update-only@kozijnr.nl', 'super-secret-123');
 
-        $this->client->request('POST', '/api/admin/tenants', server: [
-            'HTTP_HOST' => self::ADMIN_HOST,
-            'CONTENT_TYPE' => 'application/json',
-        ], content: json_encode(['name' => 'acme']));
+        $this->createTenantRequest('Acme', 'acme');
         self::assertResponseStatusCodeSame(201);
 
         $this->client->request('PATCH', '/api/admin/tenants/acme', server: [
             'HTTP_HOST' => self::ADMIN_HOST,
             'CONTENT_TYPE' => 'application/json',
-        ], content: json_encode(['name' => 'acme-bv']));
+        ], content: json_encode(['name' => 'Acme', 'slug' => 'acme-bv']));
+        self::assertResponseIsSuccessful();
+    }
+
+    public function testAUserWithoutTheArchivePermissionCannotArchiveOrUnarchiveATenant(): void
+    {
+        $this->createUserWithPermissions('no-archive@kozijnr.nl', 'super-secret-123', ['tenant:create']);
+        $this->login('no-archive@kozijnr.nl', 'super-secret-123');
+
+        $this->createTenantRequest('Acme', 'acme');
+
+        $this->client->request('POST', '/api/admin/tenants/acme/archive', server: ['HTTP_HOST' => self::ADMIN_HOST]);
+        self::assertResponseStatusCodeSame(403);
+
+        $this->client->request('POST', '/api/admin/tenants/acme/unarchive', server: ['HTTP_HOST' => self::ADMIN_HOST]);
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testAUserWithTheArchivePermissionCanArchiveAndUnarchiveATenant(): void
+    {
+        $this->createUserWithPermissions('archive-only@kozijnr.nl', 'super-secret-123', ['tenant:create', 'tenant:archive']);
+        $this->login('archive-only@kozijnr.nl', 'super-secret-123');
+
+        $this->createTenantRequest('Acme', 'acme');
+
+        $this->client->request('POST', '/api/admin/tenants/acme/archive', server: ['HTTP_HOST' => self::ADMIN_HOST]);
+        self::assertResponseIsSuccessful();
+
+        $this->client->request('POST', '/api/admin/tenants/acme/unarchive', server: ['HTTP_HOST' => self::ADMIN_HOST]);
+        self::assertResponseIsSuccessful();
+    }
+
+    public function testAUserWithoutTheUsersListPermissionCannotListATenantsUsers(): void
+    {
+        $this->createUserWithPermissions('no-users-list@kozijnr.nl', 'super-secret-123', ['tenant:create']);
+        $this->login('no-users-list@kozijnr.nl', 'super-secret-123');
+
+        $this->createTenantRequest('Acme', 'acme');
+
+        $this->client->request('GET', '/api/admin/tenants/acme/users', server: ['HTTP_HOST' => self::ADMIN_HOST]);
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testAUserWithTheUsersListPermissionCanListATenantsUsers(): void
+    {
+        $this->createUserWithPermissions('users-list@kozijnr.nl', 'super-secret-123', ['tenant:create', 'tenant:users:list']);
+        $this->login('users-list@kozijnr.nl', 'super-secret-123');
+
+        $this->createTenantRequest('Acme', 'acme');
+
+        $this->client->request('GET', '/api/admin/tenants/acme/users', server: ['HTTP_HOST' => self::ADMIN_HOST]);
         self::assertResponseIsSuccessful();
     }
 
@@ -141,6 +180,14 @@ final class TenantAdminPermissionAuthorizationTest extends WebTestCase
         $entityManager->flush();
     }
 
+    private function createTenantRequest(string $name, string $slug): void
+    {
+        $this->client->request('POST', '/api/admin/tenants', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['name' => $name, 'slug' => $slug, 'adminEmail' => "admin@{$slug}.test"]));
+    }
+
     private function login(string $email, string $password): void
     {
         $this->client->request('POST', '/api/admin/login', server: [
@@ -154,6 +201,7 @@ final class TenantAdminPermissionAuthorizationTest extends WebTestCase
         $connection = $this->connection();
         $connection->executeStatement('SET search_path TO public');
         $connection->executeStatement('DROP SCHEMA IF EXISTS tenant_acme CASCADE');
+        $connection->executeStatement('DROP SCHEMA IF EXISTS tenant_acme_bv CASCADE');
         $connection->executeStatement('DELETE FROM public.tenants');
         $connection->executeStatement('DELETE FROM public.user_roles');
         $connection->executeStatement('DELETE FROM public.users');

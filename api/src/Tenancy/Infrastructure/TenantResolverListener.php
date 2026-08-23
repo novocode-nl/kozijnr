@@ -97,6 +97,13 @@ final class TenantResolverListener implements EventSubscriberInterface
             throw new NotFoundHttpException(sprintf('Unknown tenant subdomain "%s".', $subdomain));
         }
 
+        if ($tenant->isArchived()) {
+            // An archived tenant is treated exactly like an unknown one:
+            // structurally unreachable, including for login, without
+            // leaking that the subdomain used to exist.
+            throw new NotFoundHttpException(sprintf('Unknown tenant subdomain "%s".', $subdomain));
+        }
+
         $this->connection->executeStatement(sprintf(
             'SET search_path TO %s, public',
             $this->connection->quoteSingleIdentifier($tenant->getSchemaName()),

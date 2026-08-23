@@ -33,9 +33,16 @@ final class ProvisionTenant
     ) {
     }
 
-    public function __invoke(string $name): Tenant
+    /**
+     * @param string $name Display name for the tenant (free text).
+     * @param string|null $slug Subdomain/schema-derivation slug, validated
+     *   by TenantName. Defaults to `$name` when omitted, so console
+     *   callers that only ever supplied one value (`tenant:provision
+     *   <name>`) keep working unchanged.
+     */
+    public function __invoke(string $name, ?string $slug = null): Tenant
     {
-        $tenantName = new TenantName($name);
+        $tenantName = new TenantName($slug ?? $name);
 
         // Defensive reset, same reasoning as TenantResolverListener: never
         // assume the connection is already on `public`.
@@ -61,7 +68,7 @@ final class ProvisionTenant
         try {
             $this->schemaMigrator->migrateToLatest($schemaName);
 
-            $tenant = new Tenant($subdomain, $schemaName);
+            $tenant = new Tenant($name, $subdomain, $schemaName);
             $this->tenantRepository->add($tenant);
         } catch (\Throwable $exception) {
             $this->schemaManager->drop($schemaName);

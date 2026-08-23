@@ -32,7 +32,7 @@ final class AdminRouteGuardListenerTest extends WebTestCase
         $connection->executeStatement('CREATE SCHEMA tenant_a');
         $connection->executeStatement('DELETE FROM public.tenants');
         $connection->executeStatement(
-            "INSERT INTO public.tenants (subdomain, schema_name, created_at) VALUES ('tenant-a', 'tenant_a', NOW())"
+            "INSERT INTO public.tenants (name, subdomain, schema_name, created_at) VALUES ('Tenant A', 'tenant-a', 'tenant_a', NOW())"
         );
     }
 

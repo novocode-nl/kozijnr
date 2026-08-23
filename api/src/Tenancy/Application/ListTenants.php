@@ -11,12 +11,15 @@ final class ListTenants
     {
     }
 
-    /** @return TenantSummary[] */
-    public function __invoke(): array
+    /**
+     * @return TenantSummary[]
+     */
+    public function __invoke(bool $includeArchived = false): array
     {
-        return array_map(
-            TenantSummary::fromTenant(...),
-            $this->tenantRepository->findAll(),
-        );
+        $tenants = $includeArchived
+            ? $this->tenantRepository->findAllArchived()
+            : $this->tenantRepository->findAllActive();
+
+        return array_map(TenantSummary::fromTenant(...), $tenants);
     }
 }

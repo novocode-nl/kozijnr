@@ -17,6 +17,11 @@ final class DoctrineTenantUserRepository implements TenantUserRepositoryInterfac
         return $this->entityManager->getRepository(TenantUser::class)->findOneBy(['email' => $email]);
     }
 
+    public function findAll(): array
+    {
+        return $this->entityManager->getRepository(TenantUser::class)->findBy([], ['id' => 'ASC']);
+    }
+
     public function add(TenantUser $tenantUser): void
     {
         $this->entityManager->persist($tenantUser);
