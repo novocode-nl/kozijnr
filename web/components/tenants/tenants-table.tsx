@@ -11,7 +11,6 @@ import {
 } from "@/components/data-table"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { listTenants, type TenantSummary } from "@/lib/api"
-import { TenantFormDialog } from "@/components/tenants/tenant-form-dialog"
 import { ArchiveTenantDialog } from "@/components/tenants/archive-tenant-dialog"
 
 /**
@@ -25,10 +24,16 @@ import { ArchiveTenantDialog } from "@/components/tenants/archive-tenant-dialog"
  * comment on why: cross-origin, cookie-credentialed calls straight from
  * the browser to api.<base>).
  *
- * Owns the "show archived" toggle (KOZ-27): the table refetches from
- * `listTenants(includeArchived)` whenever it flips, rather than fetching
- * everything once and filtering client-side, so the active/archived split
- * always matches what the backend considers authoritative.
+ * `showArchived` is set once by the parent (`TenantsPage`'s active/archived
+ * tab) and never flips within this component's lifetime — see that page's
+ * comment on why each tab remounts its own `<TenantsTable>` instance
+ * instead of one instance toggling a boolean.
+ *
+ * Row actions (KOZ-27 rework, functional review): the kebab menu offers
+ * "Bekijken" (navigate to the detail page) instead of "Bewerken" — editing
+ * now lives on the detail page's own "Bewerken" button next to its kebab
+ * menu, not as a row action here. The row itself is still fully clickable
+ * to the same detail page, unchanged from before.
  */
 const dateFormatter = new Intl.DateTimeFormat("nl-NL", {
   dateStyle: "medium",
@@ -46,16 +51,15 @@ interface TenantsTableProps {
 
 /**
  * Renders one active/archived view of the tenant list. The parent
- * (`TenantsPage`) remounts this component (via a `key` on
- * `showArchived`/a refresh token) whenever the view should refetch from
- * scratch — see that file's comment — rather than this component
- * resetting its own state mid-life, which the project's lint rules
- * disallow (no synchronous `setState` in an effect body).
+ * (`TenantsPage`) mounts one `<TenantsTable>` per tab (active/archived) and
+ * remounts it (via a refresh-token `key`) whenever that tab's data should
+ * refetch from scratch — see that page's comment — rather than this
+ * component resetting its own state mid-life, which the project's lint
+ * rules disallow (no synchronous `setState` in an effect body).
  */
 export function TenantsTable({ showArchived }: TenantsTableProps) {
   const router = useRouter()
   const [state, setState] = React.useState<LoadState>({ status: "loading" })
-  const [editingTenant, setEditingTenant] = React.useState<TenantSummary | null>(null)
   const [archivingTenant, setArchivingTenant] = React.useState<TenantSummary | null>(null)
 
   React.useEffect(() => {
@@ -132,7 +136,11 @@ export function TenantsTable({ showArchived }: TenantsTableProps) {
         cell: ({ row }) => (
           <div className="flex justify-end">
             <DataTableRowActions label={`Acties voor ${row.original.subdomain}`}>
-              <DropdownMenuItem onClick={() => setEditingTenant(row.original)}>Bewerken</DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => router.push(`/tenants/${encodeURIComponent(row.original.subdomain)}`)}
+              >
+                Bekijken
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setArchivingTenant(row.original)}>
                 {row.original.archived ? "Dearchiveren" : "Archiveren"}
               </DropdownMenuItem>
@@ -141,7 +149,7 @@ export function TenantsTable({ showArchived }: TenantsTableProps) {
         ),
       }),
     ]
-  }, [])
+  }, [router])
 
   if (state.status === "error") {
     return (
@@ -164,17 +172,6 @@ export function TenantsTable({ showArchived }: TenantsTableProps) {
               : "Geen tenants gevonden."
         }
         onRowClick={(tenant) => router.push(`/tenants/${encodeURIComponent(tenant.subdomain)}`)}
-      />
-      <TenantFormDialog
-        open={editingTenant !== null}
-        onOpenChange={(open) => {
-          if (!open) setEditingTenant(null)
-        }}
-        tenant={editingTenant}
-        onUpdated={(tenant) => {
-          upsertTenant(tenant)
-          setEditingTenant(null)
-        }}
       />
       <ArchiveTenantDialog
         key={archivingTenant?.subdomain ?? "none"}

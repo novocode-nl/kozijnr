@@ -18,6 +18,7 @@ import { TenantFormDialog } from "@/components/tenants/tenant-form-dialog"
 import { ArchiveTenantDialog } from "@/components/tenants/archive-tenant-dialog"
 import { TenantUsersTab } from "@/components/tenants/tenant-users-tab"
 import { getTenant, type TenantSummary } from "@/lib/api"
+import { contextLabel } from "@/lib/navigation/menu-config"
 
 const dateFormatter = new Intl.DateTimeFormat("nl-NL", { dateStyle: "medium", timeStyle: "short" })
 
@@ -33,9 +34,10 @@ type LoadState =
  * tickets add more tabs alongside it without needing to touch the
  * surrounding page structure.
  *
- * Edit/archive are reachable from the same kebab-menu pattern as the
- * overview (`TenantsTable`) — both dialogs are fully controlled and shared
- * between the two entry points.
+ * Rework (KOZ-27 functional review): "Bewerken" is its own button next to
+ * the kebab menu, not a kebab item — the kebab now only holds
+ * archive/dearchive. Both dialogs (`TenantFormDialog`, `ArchiveTenantDialog`)
+ * are fully controlled, same components used elsewhere.
  */
 /**
  * Thin wrapper keying the actual page content on `subdomain`: navigating
@@ -111,22 +113,31 @@ function TenantDetailPageContent({ subdomain }: { subdomain: string }) {
           `${tenant.subdomain} · aangemaakt op ${dateFormatter.format(new Date(tenant.createdAt))}`
           + (tenant.archived ? " · gearchiveerd" : "")
         }
+        breadcrumbs={[
+          { label: contextLabel.admin, href: "/" },
+          { label: "Tenants", href: "/tenants" },
+          { label: tenant.name },
+        ]}
         actions={
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button variant="outline" size="icon-sm" aria-label={`Acties voor ${tenant.subdomain}`}>
-                  <MoreHorizontal />
-                </Button>
-              }
-            />
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setEditOpen(true)}>Bewerken</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setArchiveOpen(true)}>
-                {tenant.archived ? "Dearchiveren" : "Archiveren"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <>
+            <Button variant="outline" onClick={() => setEditOpen(true)}>
+              Bewerken
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button variant="outline" size="icon-sm" aria-label={`Acties voor ${tenant.subdomain}`}>
+                    <MoreHorizontal />
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setArchiveOpen(true)}>
+                  {tenant.archived ? "Dearchiveren" : "Archiveren"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
         }
       />
       <Tabs defaultValue="users">
