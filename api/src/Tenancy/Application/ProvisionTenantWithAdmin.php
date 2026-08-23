@@ -2,6 +2,7 @@
 
 namespace App\Tenancy\Application;
 
+use App\Shared\Domain\Exception\ValidationException;
 use App\TenantUser\Application\CreateTenantUser;
 use App\TenantUser\Domain\TenantUser;
 use Doctrine\DBAL\Connection;
@@ -44,7 +45,10 @@ final class ProvisionTenantWithAdmin
         $email = trim($adminEmail);
 
         if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            throw new \InvalidArgumentException('Tenant-admin email must be a valid email address.');
+            throw ValidationException::create(
+                'Tenant-admin email must be a valid email address.',
+                'form.error.invalidEmail',
+            );
         }
 
         $tenant = ($this->provisionTenant)($name, $slug);

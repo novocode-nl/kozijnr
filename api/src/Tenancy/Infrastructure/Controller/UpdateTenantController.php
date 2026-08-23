@@ -2,6 +2,7 @@
 
 namespace App\Tenancy\Infrastructure\Controller;
 
+use App\Shared\Infrastructure\Http\ExceptionResponsePayload;
 use App\Tenancy\Application\TenantSummary;
 use App\Tenancy\Application\UpdateTenant;
 use App\Tenancy\Domain\Exception\TenantAlreadyExistsException;
@@ -41,9 +42,9 @@ final class UpdateTenantController
         try {
             $tenant = ($this->updateTenant)($subdomain, $name, $slug);
         } catch (TenantNotFoundException $exception) {
-            return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_NOT_FOUND);
+            return new JsonResponse(ExceptionResponsePayload::for($exception), JsonResponse::HTTP_NOT_FOUND);
         } catch (\InvalidArgumentException|TenantAlreadyExistsException $exception) {
-            return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+            return new JsonResponse(ExceptionResponsePayload::for($exception), JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
         } catch (\Throwable $exception) {
             // Report cleanly rather than leaking a stack trace, but log the real cause.
             $this->logger->error('Admin tenant update failed for "{subdomain}": {message}', [
@@ -52,7 +53,10 @@ final class UpdateTenantController
                 'exception' => $exception,
             ]);
 
-            return new JsonResponse(['message' => 'Failed to update tenant.'], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+            return new JsonResponse(
+                ExceptionResponsePayload::withKey('Failed to update tenant.', 'error.generic.tenantUpdateFailed'),
+                JsonResponse::HTTP_INTERNAL_SERVER_ERROR,
+            );
         }
 
         return new JsonResponse(TenantSummary::fromTenant($tenant)->toArray(), JsonResponse::HTTP_OK);

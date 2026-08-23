@@ -75,7 +75,7 @@ final class TenantLoginApiTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(401);
         $payload = json_decode((string) $this->client->getResponse()->getContent(), true);
-        self::assertSame(['message' => 'Invalid credentials.'], $payload);
+        self::assertSame(['message' => 'Invalid credentials.', 'errorKey' => 'auth.error.invalidCredentials'], $payload);
     }
 
     public function testLoggingInWithAWrongPasswordFailsWithTheExactSameGenericMessage(): void
@@ -87,7 +87,7 @@ final class TenantLoginApiTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(401);
         $payload = json_decode((string) $this->client->getResponse()->getContent(), true);
-        self::assertSame(['message' => 'Invalid credentials.'], $payload);
+        self::assertSame(['message' => 'Invalid credentials.', 'errorKey' => 'auth.error.invalidCredentials'], $payload);
     }
 
     public function testThePasswordIsStoredHashedNeverInPlaintext(): void

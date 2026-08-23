@@ -20,6 +20,9 @@ final class AdminLoginController
     {
         // Unreachable when the super_admin firewall's json_login is
         // configured correctly — see class docblock.
-        return new JsonResponse(['message' => 'Not authenticated.'], JsonResponse::HTTP_UNAUTHORIZED);
+        return new JsonResponse(
+            ['message' => 'Not authenticated.', 'errorKey' => 'auth.error.notAuthenticated'],
+            JsonResponse::HTTP_UNAUTHORIZED,
+        );
     }
 }

@@ -1,7 +1,8 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { ChevronsUpDown, LogOut } from "lucide-react"
+import { ChevronsUpDown, Languages, LogOut } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 import {
   Avatar,
@@ -13,7 +14,12 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -25,14 +31,23 @@ import {
 import { adminLogout, logout } from "@/lib/api"
 import type { AppContext } from "@/lib/context/app-context"
 import { contextLabel } from "@/lib/navigation/menu-config"
+import { setClientLocale, type Locale } from "@/lib/i18n/locale"
 
 /**
  * No "current user" profile endpoint exists yet, so this shows the context
  * label rather than a real name/avatar/email.
+ *
+ * KOZ-29: also hosts the language switch, under the user menu rather than
+ * as a separate header widget — a "Taal" submenu with the two supported
+ * locales as radio options. Selecting one calls `i18n.changeLanguage`
+ * (re-renders every `useTranslation()` consumer in this component tree
+ * immediately) and persists the choice in the locale cookie so it survives
+ * a reload/new session — see lib/i18n/locale.ts.
  */
 export function NavUser({ context }: { context: AppContext }) {
   const { isMobile } = useSidebar()
   const router = useRouter()
+  const { t, i18n } = useTranslation()
 
   async function handleLogout() {
     // Invalidate the session on the API first, so a subsequent visit to /
@@ -40,6 +55,11 @@ export function NavUser({ context }: { context: AppContext }) {
     // redirect in proxy.ts firing again.
     await (context === "admin" ? adminLogout() : logout())
     router.push("/login")
+  }
+
+  function handleLocaleChange(locale: string) {
+    i18n.changeLanguage(locale)
+    setClientLocale(locale as Locale)
   }
 
   return (
@@ -78,10 +98,23 @@ export function NavUser({ context }: { context: AppContext }) {
                 {contextLabel[context]}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <Languages />
+                  {t("common.language")}
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuRadioGroup value={i18n.language} onValueChange={handleLocaleChange}>
+                    <DropdownMenuRadioItem value="nl">{t("common.languageNl")}</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="en">{t("common.languageEn")}</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              <DropdownMenuSeparator />
               {/* base-ui's Menu.Item uses `onClick`, not Radix's `onSelect`. */}
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut />
-                Uitloggen
+                {t("common.logout")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>

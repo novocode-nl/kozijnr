@@ -121,6 +121,12 @@ final class TenantAdminApiTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(422);
         self::assertCount(0, $this->connection()->fetchAllAssociative('SELECT * FROM public.tenants'));
+
+        // KOZ-29: the response carries a stable, machine-readable error key
+        // alongside the English fallback message, so the frontend can show
+        // it translated instead of the raw English text.
+        $payload = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertSame('form.error.invalidEmail', $payload['errorKey']);
     }
 
     public function testCreatingATenantWithAnEmptyAdminEmailFails(): void
@@ -134,6 +140,31 @@ final class TenantAdminApiTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(422);
         self::assertCount(0, $this->connection()->fetchAllAssociative('SELECT * FROM public.tenants'));
+    }
+
+    public function testCreatingATenantWithADuplicateSubdomainFailsWithAStableErrorKey(): void
+    {
+        $this->login('admin@kozijnr.nl', 'super-secret-123');
+
+        $this->createTenant('Acme B.V.', 'acme');
+
+        $this->client->request('POST', '/api/admin/tenants', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['name' => 'Acme Again', 'slug' => 'acme', 'adminEmail' => 'other@acme.test']));
+
+        self::assertResponseStatusCodeSame(422);
+
+        // KOZ-29: the same errorKey comes back regardless of what the
+        // client happened to send as Accept-Language — the backend never
+        // translates, it always returns this one stable key, and it's the
+        // frontend's own i18n catalog (NL/EN) that renders it differently
+        // depending on the user's active language. See
+        // web/lib/i18n/resources/{nl,en}.json for the two renderings of
+        // this exact key.
+        $payload = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertSame('form.error.tenantAlreadyExistsSubdomain', $payload['errorKey']);
+        self::assertSame(['subdomain' => 'acme'], $payload['errorKeyParams']);
     }
 
     public function testCreatingATenantNamedAdminFailsBecauseTheSubdomainIsReservedForSuperAdmin(): void

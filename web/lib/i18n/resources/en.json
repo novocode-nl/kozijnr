@@ -1,0 +1,105 @@
+{
+  "common": {
+    "language": "Language",
+    "languageNl": "Dutch",
+    "languageEn": "English",
+    "logout": "Log out",
+    "save": "Save",
+    "busy": "Working...",
+    "cancel": "Cancel",
+    "genericError": "Something went wrong."
+  },
+
+  "context": {
+    "admin": "Kozijnr Admin",
+    "tenant": "Kozijnr"
+  },
+
+  "nav": {
+    "dashboard": "Dashboard",
+    "adminDashboard": "Admin dashboard",
+    "tenants": "Tenants",
+    "users": "Users",
+    "settings": "Settings",
+    "support": "Support"
+  },
+
+  "login": {
+    "welcomeTitle": "Welcome back",
+    "welcomeSubtitle": "Log in to your Kozijnr account",
+    "orContinueWith": "Or continue with",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "name@company.com",
+    "passwordLabel": "Password",
+    "submit": "Log in",
+    "pending": "Logging in...",
+    "forgotPassword": "Forgot your password?"
+  },
+
+  "adminLogin": {
+    "title": "Kozijnr Admin",
+    "subtitle": "Log in as administrator",
+    "emailPlaceholder": "name@kozijnr.nl"
+  },
+
+  "tenants": {
+    "pageTitle": "Tenants",
+    "newTenant": "New tenant",
+    "tabActive": "Active",
+    "tabArchived": "Archived",
+    "archiveTitle": "Archive tenant?",
+    "unarchiveTitle": "Unarchive tenant?",
+    "archiveDescription": "\"{{name}}\" will be archived. Users of this tenant will no longer be able to log in. This can be undone later.",
+    "unarchiveDescription": "\"{{name}}\" will become active again and reappear in the active tenants overview.",
+    "archiveConfirm": "Archive",
+    "unarchiveConfirm": "Unarchive"
+  },
+
+  "tenantForm": {
+    "createTitle": "New tenant",
+    "editTitle": "Edit tenant",
+    "editDescription": "Edit the details of \"{{name}}\".",
+    "createDescription": "Create a new tenant. A tenant administrator account is created for it automatically.",
+    "nameLabel": "Name",
+    "slugLabel": "Subdomain",
+    "slugHint": "Lowercase letters, digits and hyphens, e.g. \"acme\" or \"acme-bv\".",
+    "adminEmailLabel": "Administrator email address",
+    "adminEmailHint": "Used as the login address for the automatically created tenant administrator.",
+    "saveChanges": "Save changes",
+    "savingChanges": "Saving...",
+    "createSubmit": "Create tenant",
+    "creating": "Creating..."
+  },
+
+  "form": {
+    "error": {
+      "emailAlreadyExists": "A user with email address \"{{email}}\" already exists.",
+      "invalidEmail": "Enter a valid email address.",
+      "tenantAlreadyExistsSubdomain": "A tenant with subdomain \"{{subdomain}}\" already exists.",
+      "tenantAlreadyExistsSchema": "A tenant with schema \"{{schema}}\" already exists.",
+      "tenantSchemaAlreadyExists": "This schema already exists but is not registered as a tenant.",
+      "tenantNotFound": "No tenant found with subdomain \"{{subdomain}}\".",
+      "tenantNameInvalid": "Tenant name \"{{name}}\" is invalid: use 1-55 lowercase letters, digits and hyphens.",
+      "tenantNameRequired": "Name is required.",
+      "tenantNameTooLong": "Name must be at most {{max}} characters long.",
+      "tenantSubdomainRequired": "Subdomain is required.",
+      "tenantUserAlreadyExists": "A user with email address \"{{email}}\" already exists within this tenant."
+    }
+  },
+
+  "auth": {
+    "error": {
+      "invalidCredentials": "Invalid credentials.",
+      "notAuthenticated": "Not authenticated."
+    }
+  },
+
+  "error": {
+    "generic": {
+      "tenantCreateFailed": "Could not create the tenant. Please try again.",
+      "tenantUpdateFailed": "Could not update the tenant. Please try again.",
+      "tenantArchiveFailed": "Could not archive the tenant. Please try again.",
+      "tenantUnarchiveFailed": "Could not unarchive the tenant. Please try again."
+    }
+  }
+}

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 
 import {
   SidebarGroup,
@@ -23,15 +24,17 @@ export function NavSecondary({
 }: {
   items: NavSecondaryItem[]
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
+  const { t } = useTranslation()
+
   return (
     <SidebarGroup {...props}>
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title} render={<a href={item.url} />}>
+              <SidebarMenuButton tooltip={t(item.title)} render={<a href={item.url} />}>
                 <item.icon />
-                <span>{item.title}</span>
+                <span>{t(item.title)}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}

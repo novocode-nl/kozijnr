@@ -1,0 +1,105 @@
+{
+  "common": {
+    "language": "Taal",
+    "languageNl": "Nederlands",
+    "languageEn": "Engels",
+    "logout": "Uitloggen",
+    "save": "Opslaan",
+    "busy": "Bezig...",
+    "cancel": "Annuleren",
+    "genericError": "Er is iets misgegaan."
+  },
+
+  "context": {
+    "admin": "Kozijnr Admin",
+    "tenant": "Kozijnr"
+  },
+
+  "nav": {
+    "dashboard": "Dashboard",
+    "adminDashboard": "Admin dashboard",
+    "tenants": "Tenants",
+    "users": "Gebruikers",
+    "settings": "Instellingen",
+    "support": "Support"
+  },
+
+  "login": {
+    "welcomeTitle": "Welkom terug",
+    "welcomeSubtitle": "Log in op je Kozijnr-account",
+    "orContinueWith": "Of ga verder met",
+    "emailLabel": "E-mailadres",
+    "emailPlaceholder": "naam@bedrijf.nl",
+    "passwordLabel": "Wachtwoord",
+    "submit": "Inloggen",
+    "pending": "Bezig met inloggen...",
+    "forgotPassword": "Wachtwoord vergeten?"
+  },
+
+  "adminLogin": {
+    "title": "Kozijnr Admin",
+    "subtitle": "Log in als beheerder",
+    "emailPlaceholder": "naam@kozijnr.nl"
+  },
+
+  "tenants": {
+    "pageTitle": "Tenants",
+    "newTenant": "Nieuwe tenant",
+    "tabActive": "Actief",
+    "tabArchived": "Gearchiveerd",
+    "archiveTitle": "Tenant archiveren?",
+    "unarchiveTitle": "Tenant dearchiveren?",
+    "archiveDescription": "\"{{name}}\" wordt gearchiveerd. Gebruikers van deze tenant kunnen daarna niet meer inloggen. Dit kan later ongedaan gemaakt worden.",
+    "unarchiveDescription": "\"{{name}}\" wordt weer actief en verschijnt terug in het overzicht van actieve tenants.",
+    "archiveConfirm": "Archiveren",
+    "unarchiveConfirm": "Dearchiveren"
+  },
+
+  "tenantForm": {
+    "createTitle": "Nieuwe tenant",
+    "editTitle": "Tenant bewerken",
+    "editDescription": "Wijzig de gegevens van \"{{name}}\".",
+    "createDescription": "Maak een nieuwe tenant aan. Er wordt automatisch een tenant-beheerder voor aangemaakt.",
+    "nameLabel": "Naam",
+    "slugLabel": "Subdomain",
+    "slugHint": "Kleine letters, cijfers en koppeltekens, bijv. \"acme\" of \"acme-bv\".",
+    "adminEmailLabel": "E-mailadres beheerder",
+    "adminEmailHint": "Wordt gebruikt als inlogadres voor de automatisch aangemaakte tenant-beheerder.",
+    "saveChanges": "Wijzigingen opslaan",
+    "savingChanges": "Bezig met opslaan...",
+    "createSubmit": "Tenant aanmaken",
+    "creating": "Bezig met aanmaken..."
+  },
+
+  "form": {
+    "error": {
+      "emailAlreadyExists": "Er bestaat al een gebruiker met e-mailadres \"{{email}}\".",
+      "invalidEmail": "Voer een geldig e-mailadres in.",
+      "tenantAlreadyExistsSubdomain": "Er bestaat al een tenant met subdomain \"{{subdomain}}\".",
+      "tenantAlreadyExistsSchema": "Er bestaat al een tenant met schema \"{{schema}}\".",
+      "tenantSchemaAlreadyExists": "Dit schema bestaat al, maar is niet als tenant geregistreerd.",
+      "tenantNotFound": "Geen tenant gevonden met subdomain \"{{subdomain}}\".",
+      "tenantNameInvalid": "Tenantnaam \"{{name}}\" is ongeldig: gebruik 1-55 kleine letters, cijfers en koppeltekens.",
+      "tenantNameRequired": "Naam is verplicht.",
+      "tenantNameTooLong": "Naam mag maximaal {{max}} tekens bevatten.",
+      "tenantSubdomainRequired": "Subdomain is verplicht.",
+      "tenantUserAlreadyExists": "Er bestaat al een gebruiker met e-mailadres \"{{email}}\" binnen deze tenant."
+    }
+  },
+
+  "auth": {
+    "error": {
+      "invalidCredentials": "Ongeldige inloggegevens.",
+      "notAuthenticated": "Niet ingelogd."
+    }
+  },
+
+  "error": {
+    "generic": {
+      "tenantCreateFailed": "Kon de tenant niet aanmaken. Probeer het opnieuw.",
+      "tenantUpdateFailed": "Kon de tenant niet bijwerken. Probeer het opnieuw.",
+      "tenantArchiveFailed": "Kon de tenant niet archiveren. Probeer het opnieuw.",
+      "tenantUnarchiveFailed": "Kon de tenant niet dearchiveren. Probeer het opnieuw."
+    }
+  }
+}

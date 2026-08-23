@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import {
   useForm,
   useWatch,
@@ -36,10 +37,13 @@ export function ConfigForm<
   action,
   transformSubmit,
   onSuccess,
-  submitLabel = "Opslaan",
-  pendingLabel = "Bezig...",
+  submitLabel,
+  pendingLabel,
   className,
 }: ConfigFormProps<TValues, TSubmit, TResult>) {
+  const { t } = useTranslation()
+  const resolvedSubmitLabel = submitLabel ?? t("common.save")
+  const resolvedPendingLabel = pendingLabel ?? t("common.busy")
   const [formError, setFormError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -101,7 +105,7 @@ export function ConfigForm<
           </div>
         )}
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? pendingLabel : submitLabel}
+          {isSubmitting ? resolvedPendingLabel : resolvedSubmitLabel}
         </Button>
       </FieldGroup>
     </form>

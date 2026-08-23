@@ -10,6 +10,11 @@ import type { LucideIcon } from "lucide-react"
 
 import type { AppContext } from "@/lib/context/app-context"
 
+/**
+ * `title` is a translation key (see lib/i18n/resources/{nl,en}.json), not
+ * display text — `<NavMain>`/`<NavSecondary>` translate it via
+ * `useTranslation()` at render time (KOZ-29).
+ */
 export type NavMainItem = {
   title: string
   url: string
@@ -26,7 +31,7 @@ export type NavSecondaryItem = {
 /** The tenant menu: identical for every tenant, no per-tenant items. */
 const tenantNavMain: NavMainItem[] = [
   {
-    title: "Dashboard",
+    title: "nav.dashboard",
     url: "/",
     icon: LayoutDashboard,
   },
@@ -40,17 +45,17 @@ const tenantNavMain: NavMainItem[] = [
  */
 const adminNavMain: NavMainItem[] = [
   {
-    title: "Admin dashboard",
+    title: "nav.adminDashboard",
     url: "/",
     icon: LayoutDashboard,
   },
   {
-    title: "Tenants",
+    title: "nav.tenants",
     url: "/tenants",
     icon: Building2,
   },
   {
-    title: "Gebruikers",
+    title: "nav.users",
     url: "#",
     icon: Users,
   },
@@ -63,12 +68,12 @@ const adminNavMain: NavMainItem[] = [
  */
 const tenantNavSecondary: NavSecondaryItem[] = [
   {
-    title: "Instellingen",
+    title: "nav.settings",
     url: "#",
     icon: Settings,
   },
   {
-    title: "Support",
+    title: "nav.support",
     url: "#",
     icon: LifeBuoy,
   },
@@ -77,12 +82,12 @@ const tenantNavSecondary: NavSecondaryItem[] = [
 /** The admin secondary menu: same items as tenant today, configured separately. */
 const adminNavSecondary: NavSecondaryItem[] = [
   {
-    title: "Instellingen",
+    title: "nav.settings",
     url: "#",
     icon: Settings,
   },
   {
-    title: "Support",
+    title: "nav.support",
     url: "#",
     icon: LifeBuoy,
   },

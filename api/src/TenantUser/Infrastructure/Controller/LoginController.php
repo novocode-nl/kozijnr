@@ -2,6 +2,7 @@
 
 namespace App\TenantUser\Infrastructure\Controller;
 
+use App\Shared\Infrastructure\Http\ExceptionResponsePayload;
 use App\TenantUser\Application\LoginTenantUser;
 use App\TenantUser\Domain\Exception\InvalidCredentialsException;
 use App\TenantUser\Infrastructure\Security\TenantApiTokenCookie;
@@ -41,8 +42,8 @@ final class LoginController
 
         try {
             $token = ($this->loginTenantUser)($email, $password);
-        } catch (InvalidCredentialsException) {
-            return new JsonResponse(['message' => 'Invalid credentials.'], JsonResponse::HTTP_UNAUTHORIZED);
+        } catch (InvalidCredentialsException $exception) {
+            return new JsonResponse(ExceptionResponsePayload::for($exception), JsonResponse::HTTP_UNAUTHORIZED);
         } catch (\Throwable $exception) {
             $this->logger->error('Tenant login failed unexpectedly for "{email}": {message}', [
                 'email' => $email,
@@ -50,7 +51,10 @@ final class LoginController
                 'exception' => $exception,
             ]);
 
-            return new JsonResponse(['message' => 'Invalid credentials.'], JsonResponse::HTTP_UNAUTHORIZED);
+            return new JsonResponse(
+                ExceptionResponsePayload::for(InvalidCredentialsException::create()),
+                JsonResponse::HTTP_UNAUTHORIZED,
+            );
         }
 
         $response = new JsonResponse(['message' => 'Logged in.'], JsonResponse::HTTP_OK);

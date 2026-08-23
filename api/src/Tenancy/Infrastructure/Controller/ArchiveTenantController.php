@@ -2,6 +2,7 @@
 
 namespace App\Tenancy\Infrastructure\Controller;
 
+use App\Shared\Infrastructure\Http\ExceptionResponsePayload;
 use App\Tenancy\Application\ArchiveTenant;
 use App\Tenancy\Application\TenantSummary;
 use App\Tenancy\Domain\Exception\TenantNotFoundException;
@@ -35,7 +36,7 @@ final class ArchiveTenantController
         try {
             $tenant = ($this->archiveTenant)($subdomain);
         } catch (TenantNotFoundException $exception) {
-            return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_NOT_FOUND);
+            return new JsonResponse(ExceptionResponsePayload::for($exception), JsonResponse::HTTP_NOT_FOUND);
         } catch (\Throwable $exception) {
             $this->logger->error('Admin tenant archive failed for "{subdomain}": {message}', [
                 'subdomain' => $subdomain,
@@ -43,7 +44,10 @@ final class ArchiveTenantController
                 'exception' => $exception,
             ]);
 
-            return new JsonResponse(['message' => 'Failed to archive tenant.'], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+            return new JsonResponse(
+                ExceptionResponsePayload::withKey('Failed to archive tenant.', 'error.generic.tenantArchiveFailed'),
+                JsonResponse::HTTP_INTERNAL_SERVER_ERROR,
+            );
         }
 
         return new JsonResponse(TenantSummary::fromTenant($tenant)->toArray(), JsonResponse::HTTP_OK);
