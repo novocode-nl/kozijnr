@@ -11,8 +11,8 @@ import type { Locale } from "@/lib/i18n/locale"
  * KOZ-29: wraps the app in an i18next instance seeded with `initialLocale`
  * (read server-side from the locale cookie by the root layout — see
  * app/layout.tsx). Resource catalogs are nested by domain (`common`,
- * `form.error`, `auth.error`, ...) — i18next's default dot-notation key
- * resolution walks that nesting, so `t("form.error.tenantNotFound")`
+ * `tenants.error`, `auth.error`, ...) — i18next's default dot-notation key
+ * resolution walks that nesting, so `t("tenants.error.notFound")`
  * resolves the same dotted string the backend sends back as `errorKey`
  * (see lib/i18n/translate.ts, which does the equivalent lookup outside
  * React for lib/api.ts).

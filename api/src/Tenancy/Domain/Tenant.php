@@ -61,19 +61,19 @@ class Tenant
         $schemaName = trim($schemaName);
 
         if ($name === '') {
-            throw ValidationException::create('Tenant name cannot be empty.', 'form.error.tenantNameRequired');
+            throw ValidationException::create('Tenant name cannot be empty.', 'tenants.error.nameRequired');
         }
 
         if (mb_strlen($name) > self::MAX_NAME_LENGTH) {
             throw ValidationException::create(
                 sprintf('Tenant name cannot be longer than %d characters.', self::MAX_NAME_LENGTH),
-                'form.error.tenantNameTooLong',
+                'tenants.error.nameTooLong',
                 ['max' => self::MAX_NAME_LENGTH],
             );
         }
 
         if ($subdomain === '') {
-            throw ValidationException::create('Tenant subdomain cannot be empty.', 'form.error.tenantSubdomainRequired');
+            throw ValidationException::create('Tenant subdomain cannot be empty.', 'tenants.error.subdomainRequired');
         }
 
         if ($schemaName === '') {
@@ -136,19 +136,19 @@ class Tenant
         $subdomain = trim($subdomain);
 
         if ($name === '') {
-            throw ValidationException::create('Tenant name cannot be empty.', 'form.error.tenantNameRequired');
+            throw ValidationException::create('Tenant name cannot be empty.', 'tenants.error.nameRequired');
         }
 
         if (mb_strlen($name) > self::MAX_NAME_LENGTH) {
             throw ValidationException::create(
                 sprintf('Tenant name cannot be longer than %d characters.', self::MAX_NAME_LENGTH),
-                'form.error.tenantNameTooLong',
+                'tenants.error.nameTooLong',
                 ['max' => self::MAX_NAME_LENGTH],
             );
         }
 
         if ($subdomain === '') {
-            throw ValidationException::create('Tenant subdomain cannot be empty.', 'form.error.tenantSubdomainRequired');
+            throw ValidationException::create('Tenant subdomain cannot be empty.', 'tenants.error.subdomainRequired');
         }
 
         $this->name = $name;

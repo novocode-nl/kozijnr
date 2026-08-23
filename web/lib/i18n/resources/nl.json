@@ -52,7 +52,24 @@
     "archiveDescription": "\"{{name}}\" wordt gearchiveerd. Gebruikers van deze tenant kunnen daarna niet meer inloggen. Dit kan later ongedaan gemaakt worden.",
     "unarchiveDescription": "\"{{name}}\" wordt weer actief en verschijnt terug in het overzicht van actieve tenants.",
     "archiveConfirm": "Archiveren",
-    "unarchiveConfirm": "Dearchiveren"
+    "unarchiveConfirm": "Dearchiveren",
+
+    "error": {
+      "subdomainAlreadyExists": "Er bestaat al een tenant met subdomain \"{{subdomain}}\".",
+      "schemaAlreadyExists": "Er bestaat al een tenant met schema \"{{schema}}\".",
+      "schemaConflict": "Dit schema bestaat al, maar is niet als tenant geregistreerd.",
+      "notFound": "Geen tenant gevonden met subdomain \"{{subdomain}}\".",
+      "nameInvalid": "Tenantnaam \"{{name}}\" is ongeldig: gebruik 1-55 kleine letters, cijfers en koppeltekens.",
+      "nameRequired": "Naam is verplicht.",
+      "nameTooLong": "Naam mag maximaal {{max}} tekens bevatten.",
+      "subdomainRequired": "Subdomain is verplicht.",
+      "adminEmailInvalid": "Voer een geldig e-mailadres in voor de tenant-beheerder.",
+      "adminEmailAlreadyExists": "Er bestaat al een gebruiker met e-mailadres \"{{email}}\" binnen deze tenant.",
+      "createFailed": "Kon de tenant niet aanmaken. Probeer het opnieuw.",
+      "updateFailed": "Kon de tenant niet bijwerken. Probeer het opnieuw.",
+      "archiveFailed": "Kon de tenant niet archiveren. Probeer het opnieuw.",
+      "unarchiveFailed": "Kon de tenant niet dearchiveren. Probeer het opnieuw."
+    }
   },
 
   "tenantForm": {
@@ -71,19 +88,9 @@
     "creating": "Bezig met aanmaken..."
   },
 
-  "form": {
+  "users": {
     "error": {
-      "emailAlreadyExists": "Er bestaat al een gebruiker met e-mailadres \"{{email}}\".",
-      "invalidEmail": "Voer een geldig e-mailadres in.",
-      "tenantAlreadyExistsSubdomain": "Er bestaat al een tenant met subdomain \"{{subdomain}}\".",
-      "tenantAlreadyExistsSchema": "Er bestaat al een tenant met schema \"{{schema}}\".",
-      "tenantSchemaAlreadyExists": "Dit schema bestaat al, maar is niet als tenant geregistreerd.",
-      "tenantNotFound": "Geen tenant gevonden met subdomain \"{{subdomain}}\".",
-      "tenantNameInvalid": "Tenantnaam \"{{name}}\" is ongeldig: gebruik 1-55 kleine letters, cijfers en koppeltekens.",
-      "tenantNameRequired": "Naam is verplicht.",
-      "tenantNameTooLong": "Naam mag maximaal {{max}} tekens bevatten.",
-      "tenantSubdomainRequired": "Subdomain is verplicht.",
-      "tenantUserAlreadyExists": "Er bestaat al een gebruiker met e-mailadres \"{{email}}\" binnen deze tenant."
+      "emailAlreadyExists": "Er bestaat al een gebruiker met e-mailadres \"{{email}}\"."
     }
   },
 
@@ -91,15 +98,6 @@
     "error": {
       "invalidCredentials": "Ongeldige inloggegevens.",
       "notAuthenticated": "Niet ingelogd."
-    }
-  },
-
-  "error": {
-    "generic": {
-      "tenantCreateFailed": "Kon de tenant niet aanmaken. Probeer het opnieuw.",
-      "tenantUpdateFailed": "Kon de tenant niet bijwerken. Probeer het opnieuw.",
-      "tenantArchiveFailed": "Kon de tenant niet archiveren. Probeer het opnieuw.",
-      "tenantUnarchiveFailed": "Kon de tenant niet dearchiveren. Probeer het opnieuw."
     }
   }
 }

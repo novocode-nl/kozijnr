@@ -45,7 +45,7 @@ final class ArchiveTenantController
             ]);
 
             return new JsonResponse(
-                ExceptionResponsePayload::withKey('Failed to archive tenant.', 'error.generic.tenantArchiveFailed'),
+                ExceptionResponsePayload::withKey('Failed to archive tenant.', 'tenants.error.archiveFailed'),
                 JsonResponse::HTTP_INTERNAL_SERVER_ERROR,
             );
         }

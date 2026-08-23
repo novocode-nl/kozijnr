@@ -126,7 +126,7 @@ final class TenantAdminApiTest extends WebTestCase
         // alongside the English fallback message, so the frontend can show
         // it translated instead of the raw English text.
         $payload = json_decode((string) $this->client->getResponse()->getContent(), true);
-        self::assertSame('form.error.invalidEmail', $payload['errorKey']);
+        self::assertSame('tenants.error.adminEmailInvalid', $payload['errorKey']);
     }
 
     public function testCreatingATenantWithAnEmptyAdminEmailFails(): void
@@ -163,7 +163,7 @@ final class TenantAdminApiTest extends WebTestCase
         // web/lib/i18n/resources/{nl,en}.json for the two renderings of
         // this exact key.
         $payload = json_decode((string) $this->client->getResponse()->getContent(), true);
-        self::assertSame('form.error.tenantAlreadyExistsSubdomain', $payload['errorKey']);
+        self::assertSame('tenants.error.subdomainAlreadyExists', $payload['errorKey']);
         self::assertSame(['subdomain' => 'acme'], $payload['errorKeyParams']);
     }
 

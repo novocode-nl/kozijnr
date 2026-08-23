@@ -58,7 +58,7 @@ final class CreateTenantController
             ]);
 
             return new JsonResponse(
-                ExceptionResponsePayload::withKey('Failed to create tenant.', 'error.generic.tenantCreateFailed'),
+                ExceptionResponsePayload::withKey('Failed to create tenant.', 'tenants.error.createFailed'),
                 JsonResponse::HTTP_INTERNAL_SERVER_ERROR,
             );
         }

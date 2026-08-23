@@ -45,7 +45,7 @@ final class UnarchiveTenantController
             ]);
 
             return new JsonResponse(
-                ExceptionResponsePayload::withKey('Failed to unarchive tenant.', 'error.generic.tenantUnarchiveFailed'),
+                ExceptionResponsePayload::withKey('Failed to unarchive tenant.', 'tenants.error.unarchiveFailed'),
                 JsonResponse::HTTP_INTERNAL_SERVER_ERROR,
             );
         }

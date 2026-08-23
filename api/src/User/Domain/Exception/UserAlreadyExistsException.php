@@ -18,7 +18,7 @@ final class UserAlreadyExistsException extends \RuntimeException implements HasE
 
     public function getErrorKey(): string
     {
-        return 'form.error.emailAlreadyExists';
+        return 'users.error.emailAlreadyExists';
     }
 
     /** @return array<string, scalar> */

@@ -23,7 +23,7 @@ final class TenantNotFoundException extends \RuntimeException implements HasErro
 
     public function getErrorKey(): string
     {
-        return 'form.error.tenantNotFound';
+        return 'tenants.error.notFound';
     }
 
     /** @return array<string, scalar> */

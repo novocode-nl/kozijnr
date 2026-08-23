@@ -23,7 +23,7 @@ final class SchemaAlreadyExistsException extends \RuntimeException implements Ha
 
     public function getErrorKey(): string
     {
-        return 'form.error.tenantSchemaAlreadyExists';
+        return 'tenants.error.schemaConflict';
     }
 
     /** @return array<string, scalar> */

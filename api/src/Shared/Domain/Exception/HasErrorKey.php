@@ -6,7 +6,7 @@ namespace App\Shared\Domain\Exception;
  * Implemented by Domain exceptions that represent a user-facing error the
  * frontend should show translated. Rather than the backend translating
  * anything itself, the exception exposes a stable, machine-readable error
- * key (e.g. "form.error.tenantAlreadyExistsSubdomain") plus any
+ * key (e.g. "tenants.error.subdomainAlreadyExists") plus any
  * interpolation params — the frontend's own i18n catalog (it already has
  * one, see KOZ-29) looks the key up and renders it in whichever language
  * the user has selected.

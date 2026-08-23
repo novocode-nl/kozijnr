@@ -11,7 +11,7 @@ import type { ActionResult } from "@/lib/forms/types"
  *
  * KOZ-29: the backend never translates anything itself — a failure response
  * carries an English `message` (log-friendly fallback) plus a stable,
- * machine-readable `errorKey` (e.g. "form.error.tenantAlreadyExistsSubdomain",
+ * machine-readable `errorKey` (e.g. "tenants.error.subdomainAlreadyExists",
  * matching a key in lib/i18n/resources/{nl,en}.json) and optional
  * `errorKeyParams` for interpolation. `apiErrorMessage` below is the one
  * place that turns that into UI text, in whichever language the visitor has
@@ -153,16 +153,16 @@ export type CreateTenantPayload = TenantPayload & { adminEmail: string }
 // session is reflected the next time one of these fires, not frozen at
 // first import.
 function tenantCreateFailedMessage(): string {
-  return translate("error.generic.tenantCreateFailed", getClientLocale()) ?? "Failed to create tenant."
+  return translate("tenants.error.createFailed", getClientLocale()) ?? "Failed to create tenant."
 }
 function tenantUpdateFailedMessage(): string {
-  return translate("error.generic.tenantUpdateFailed", getClientLocale()) ?? "Failed to update tenant."
+  return translate("tenants.error.updateFailed", getClientLocale()) ?? "Failed to update tenant."
 }
 function tenantArchiveFailedMessage(): string {
-  return translate("error.generic.tenantArchiveFailed", getClientLocale()) ?? "Failed to archive tenant."
+  return translate("tenants.error.archiveFailed", getClientLocale()) ?? "Failed to archive tenant."
 }
 function tenantUnarchiveFailedMessage(): string {
-  return translate("error.generic.tenantUnarchiveFailed", getClientLocale()) ?? "Failed to unarchive tenant."
+  return translate("tenants.error.unarchiveFailed", getClientLocale()) ?? "Failed to unarchive tenant."
 }
 
 /**

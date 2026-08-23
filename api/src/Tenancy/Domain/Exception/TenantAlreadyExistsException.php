@@ -23,7 +23,7 @@ final class TenantAlreadyExistsException extends \RuntimeException implements Ha
     {
         return new self(
             sprintf('A tenant with subdomain "%s" already exists.', $subdomain),
-            'form.error.tenantAlreadyExistsSubdomain',
+            'tenants.error.subdomainAlreadyExists',
             ['subdomain' => $subdomain],
         );
     }
@@ -32,7 +32,7 @@ final class TenantAlreadyExistsException extends \RuntimeException implements Ha
     {
         return new self(
             sprintf('A tenant with schema "%s" already exists.', $schemaName),
-            'form.error.tenantAlreadyExistsSchema',
+            'tenants.error.schemaAlreadyExists',
             ['schema' => $schemaName],
         );
     }

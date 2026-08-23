@@ -4,17 +4,18 @@ import { translate } from "@/lib/i18n/translate"
 
 /**
  * KOZ-29 DoD: "the same action gives a different message in NL vs EN".
- * The backend never translates — it returns a stable `errorKey` (see
- * App\Shared\Domain\Exception\HasErrorKey on the backend, and
- * lib/api.ts's `apiErrorMessage` on this side) and the frontend renders it
- * per the active language. This proves that rendering step directly: the
- * same key resolves to two different, non-empty strings depending on
- * locale, for every error key the backend actually emits.
+ * The backend never translates — it returns a stable `errorKey`, scoped to
+ * the domain it belongs to (`tenants.error.*`, `users.error.*`,
+ * `auth.error.*` — see App\Shared\Domain\Exception\HasErrorKey on the
+ * backend, and lib/api.ts's `apiErrorMessage` on this side) and the
+ * frontend renders it per the active language. This proves that rendering
+ * step directly: the same key resolves to two different, non-empty strings
+ * depending on locale, for every error key the backend actually emits.
  */
 describe("translate", () => {
   it("renders the same backend errorKey differently in nl vs en", () => {
-    const nl = translate("form.error.tenantAlreadyExistsSubdomain", "nl", { subdomain: "acme" })
-    const en = translate("form.error.tenantAlreadyExistsSubdomain", "en", { subdomain: "acme" })
+    const nl = translate("tenants.error.subdomainAlreadyExists", "nl", { subdomain: "acme" })
+    const en = translate("tenants.error.subdomainAlreadyExists", "en", { subdomain: "acme" })
 
     expect(nl).toBe('Er bestaat al een tenant met subdomain "acme".')
     expect(en).toBe('A tenant with subdomain "acme" already exists.')
@@ -30,19 +31,23 @@ describe("translate", () => {
     expect(nl).not.toBe(en)
   })
 
-  it("has both an nl and an en translation for every backend error key", () => {
+  it("has both an nl and an en translation for every backend error key, under its own domain namespace", () => {
     const backendErrorKeys = [
-      "form.error.emailAlreadyExists",
-      "form.error.invalidEmail",
-      "form.error.tenantAlreadyExistsSubdomain",
-      "form.error.tenantAlreadyExistsSchema",
-      "form.error.tenantSchemaAlreadyExists",
-      "form.error.tenantNotFound",
-      "form.error.tenantNameInvalid",
-      "form.error.tenantNameRequired",
-      "form.error.tenantNameTooLong",
-      "form.error.tenantSubdomainRequired",
-      "form.error.tenantUserAlreadyExists",
+      "tenants.error.subdomainAlreadyExists",
+      "tenants.error.schemaAlreadyExists",
+      "tenants.error.schemaConflict",
+      "tenants.error.notFound",
+      "tenants.error.nameInvalid",
+      "tenants.error.nameRequired",
+      "tenants.error.nameTooLong",
+      "tenants.error.subdomainRequired",
+      "tenants.error.adminEmailInvalid",
+      "tenants.error.adminEmailAlreadyExists",
+      "tenants.error.createFailed",
+      "tenants.error.updateFailed",
+      "tenants.error.archiveFailed",
+      "tenants.error.unarchiveFailed",
+      "users.error.emailAlreadyExists",
       "auth.error.invalidCredentials",
       "auth.error.notAuthenticated",
     ]
@@ -57,7 +62,7 @@ describe("translate", () => {
   })
 
   it("interpolates params and falls back to English for an unknown locale entry", () => {
-    expect(translate("form.error.tenantNameTooLong", "nl", { max: 255 })).toBe(
+    expect(translate("tenants.error.nameTooLong", "nl", { max: 255 })).toBe(
       "Naam mag maximaal 255 tekens bevatten."
     )
     expect(translate("does.not.exist", "nl")).toBeUndefined()

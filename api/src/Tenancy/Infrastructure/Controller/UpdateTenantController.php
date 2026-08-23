@@ -54,7 +54,7 @@ final class UpdateTenantController
             ]);
 
             return new JsonResponse(
-                ExceptionResponsePayload::withKey('Failed to update tenant.', 'error.generic.tenantUpdateFailed'),
+                ExceptionResponsePayload::withKey('Failed to update tenant.', 'tenants.error.updateFailed'),
                 JsonResponse::HTTP_INTERNAL_SERVER_ERROR,
             );
         }

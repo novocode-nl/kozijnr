@@ -22,7 +22,7 @@ final class InvalidTenantNameException extends \InvalidArgumentException impleme
 
     public function getErrorKey(): string
     {
-        return 'form.error.tenantNameInvalid';
+        return 'tenants.error.nameInvalid';
     }
 
     /** @return array<string, scalar> */

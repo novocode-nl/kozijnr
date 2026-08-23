@@ -18,7 +18,7 @@ final class TenantUserAlreadyExistsException extends \RuntimeException implement
 
     public function getErrorKey(): string
     {
-        return 'form.error.tenantUserAlreadyExists';
+        return 'tenants.error.adminEmailAlreadyExists';
     }
 
     /** @return array<string, scalar> */

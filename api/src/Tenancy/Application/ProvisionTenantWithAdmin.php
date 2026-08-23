@@ -47,7 +47,7 @@ final class ProvisionTenantWithAdmin
         if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             throw ValidationException::create(
                 'Tenant-admin email must be a valid email address.',
-                'form.error.invalidEmail',
+                'tenants.error.adminEmailInvalid',
             );
         }
 

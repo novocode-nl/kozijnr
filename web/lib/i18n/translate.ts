@@ -3,7 +3,7 @@ import nl from "@/lib/i18n/resources/nl.json"
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/locale"
 
 /**
- * The resource catalogs, nested by domain (`common`, `form.error`,
+ * The resource catalogs, nested by domain (`common`, `tenants.error`,
  * `auth.error`, ...) — the same shape react-i18next's `useTranslation()`
  * reads via its default dot-notation key resolution (see
  * components/providers/i18n-provider.tsx).
@@ -13,7 +13,7 @@ export const resources: Record<Locale, Record<string, unknown>> = { en, nl }
 /**
  * Flattened dot-path -> string lookup built from `resources`, so
  * `lib/api.ts` can translate a backend `errorKey` (itself a dot path, e.g.
- * "form.error.tenantAlreadyExistsSubdomain") without needing React or an
+ * "tenants.error.subdomainAlreadyExists") without needing React or an
  * i18next instance — it runs from plain event-handler code, not a
  * component.
  */
