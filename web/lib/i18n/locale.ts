@@ -34,11 +34,18 @@ export function getClientLocale(): Locale {
   return isSupportedLocale(value) ? value : DEFAULT_LOCALE
 }
 
-/** Persists the chosen locale for one year, readable by both client and server. */
+/**
+ * Persists the chosen locale for one year, readable by both client and
+ * server. `Secure` is added only over HTTPS (mirroring the backend's
+ * `TenantApiTokenCookie`, whose `secure: null` auto-detects the same way),
+ * so the cookie still works over plain-HTTP local dev.
+ */
 export function setClientLocale(locale: Locale): void {
   if (typeof document === "undefined") {
     return
   }
 
-  document.cookie = `${LOCALE_COOKIE_NAME}=${locale}; path=/; max-age=31536000; samesite=lax`
+  const secure = typeof location !== "undefined" && location.protocol === "https:" ? "; secure" : ""
+
+  document.cookie = `${LOCALE_COOKIE_NAME}=${locale}; path=/; max-age=31536000; samesite=lax${secure}`
 }

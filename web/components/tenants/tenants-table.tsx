@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
+import { useTranslation } from "react-i18next"
 
 import {
   DataTable,
@@ -59,6 +60,7 @@ interface TenantsTableProps {
  */
 export function TenantsTable({ showArchived }: TenantsTableProps) {
   const router = useRouter()
+  const { t } = useTranslation()
   const [state, setState] = React.useState<LoadState>({ status: "loading" })
   const [archivingTenant, setArchivingTenant] = React.useState<TenantSummary | null>(null)
 
@@ -107,14 +109,18 @@ export function TenantsTable({ showArchived }: TenantsTableProps) {
     return [
       columnHelper.accessor("name", {
         header: ({ column }) => (
-          <DataTableSortableHeader label="Naam" sorted={column.getIsSorted()} onSort={() => column.toggleSorting()} />
+          <DataTableSortableHeader
+            label={t("tenants.columnName")}
+            sorted={column.getIsSorted()}
+            onSort={() => column.toggleSorting()}
+          />
         ),
         cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
       }),
       columnHelper.accessor("subdomain", {
         header: ({ column }) => (
           <DataTableSortableHeader
-            label="Subdomain"
+            label={t("tenants.columnSubdomain")}
             sorted={column.getIsSorted()}
             onSort={() => column.toggleSorting()}
           />
@@ -123,7 +129,7 @@ export function TenantsTable({ showArchived }: TenantsTableProps) {
       columnHelper.accessor("createdAt", {
         header: ({ column }) => (
           <DataTableSortableHeader
-            label="Aangemaakt op"
+            label={t("tenants.columnCreatedAt")}
             sorted={column.getIsSorted()}
             onSort={() => column.toggleSorting()}
           />
@@ -135,28 +141,24 @@ export function TenantsTable({ showArchived }: TenantsTableProps) {
         header: "",
         cell: ({ row }) => (
           <div className="flex justify-end">
-            <DataTableRowActions label={`Acties voor ${row.original.subdomain}`}>
+            <DataTableRowActions label={t("tenants.rowActionsLabel", { subdomain: row.original.subdomain })}>
               <DropdownMenuItem
                 onClick={() => router.push(`/tenants/${encodeURIComponent(row.original.subdomain)}`)}
               >
-                Bekijken
+                {t("tenants.actionView")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setArchivingTenant(row.original)}>
-                {row.original.archived ? "Dearchiveren" : "Archiveren"}
+                {row.original.archived ? t("tenants.unarchiveConfirm") : t("tenants.archiveConfirm")}
               </DropdownMenuItem>
             </DataTableRowActions>
           </div>
         ),
       }),
     ]
-  }, [router])
+  }, [router, t])
 
   if (state.status === "error") {
-    return (
-      <p className="text-sm text-destructive">
-        Kon de tenants niet laden. Probeer de pagina te verversen.
-      </p>
-    )
+    return <p className="text-sm text-destructive">{t("tenants.loadError")}</p>
   }
 
   return (
@@ -166,10 +168,10 @@ export function TenantsTable({ showArchived }: TenantsTableProps) {
         data={state.status === "loaded" ? state.tenants : []}
         emptyMessage={
           state.status === "loading"
-            ? "Tenants laden..."
+            ? t("tenants.loadingRows")
             : showArchived
-              ? "Geen gearchiveerde tenants gevonden."
-              : "Geen tenants gevonden."
+              ? t("tenants.emptyArchived")
+              : t("tenants.emptyActive")
         }
         onRowClick={(tenant) => router.push(`/tenants/${encodeURIComponent(tenant.subdomain)}`)}
       />

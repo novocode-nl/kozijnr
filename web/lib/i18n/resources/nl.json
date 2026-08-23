@@ -7,6 +7,7 @@
     "save": "Opslaan",
     "busy": "Bezig...",
     "cancel": "Annuleren",
+    "close": "Sluiten",
     "genericError": "Er is iets misgegaan."
   },
 
@@ -53,6 +54,21 @@
     "unarchiveDescription": "\"{{name}}\" wordt weer actief en verschijnt terug in het overzicht van actieve tenants.",
     "archiveConfirm": "Archiveren",
     "unarchiveConfirm": "Dearchiveren",
+
+    "adminCredentialsTitle": "Tenant-beheerder aangemaakt",
+    "adminCredentialsDescription": "Bewaar dit wachtwoord nu — het wordt hierna niet meer getoond.",
+    "adminCredentialsEmailLabel": "E-mail",
+    "adminCredentialsPasswordLabel": "Wachtwoord",
+
+    "columnName": "Naam",
+    "columnSubdomain": "Subdomain",
+    "columnCreatedAt": "Aangemaakt op",
+    "rowActionsLabel": "Acties voor {{subdomain}}",
+    "actionView": "Bekijken",
+    "loadError": "Kon de tenants niet laden. Probeer de pagina te verversen.",
+    "loadingRows": "Tenants laden...",
+    "emptyActive": "Geen tenants gevonden.",
+    "emptyArchived": "Geen gearchiveerde tenants gevonden.",
 
     "error": {
       "subdomainAlreadyExists": "Er bestaat al een tenant met subdomain \"{{subdomain}}\".",
