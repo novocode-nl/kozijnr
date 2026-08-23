@@ -1,30 +1,24 @@
-import { Fragment, type ReactNode } from "react"
-import Link from "next/link"
+"use client"
 
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+import type { ReactNode } from "react"
 
-/** One crumb in a `<PageHeading>` trail. The last crumb should omit `href`
- *  — it renders as the current, non-interactive page. */
-export interface PageBreadcrumbItem {
-  label: string
-  href?: string
-}
+import { usePageBreadcrumbs, type PageBreadcrumbItem } from "@/lib/context/breadcrumb-context"
+
+export type { PageBreadcrumbItem }
 
 /**
- * Generic page-heading pattern: an optional breadcrumb trail, title on the
- * left, an optional actions slot (built by the caller from shadcn's
- * `Button` etc.) on the right. Deliberately not tied to any single
- * page/entity — every overview and detail screen reuses this instead of
- * hand-rolling its own header markup (KOZ-27 adds the breadcrumb trail,
- * following the shadcn dashboard-block convention of clickable breadcrumbs
- * above the page title).
+ * Generic page-heading pattern: title on the left, an optional actions
+ * slot (built by the caller from shadcn's `Button` etc.) on the right.
+ * Deliberately not tied to any single page/entity — every overview and
+ * detail screen reuses this instead of hand-rolling its own header markup.
+ *
+ * KOZ-27 rework (2nd functional review): `breadcrumbs` no longer render
+ * inline here — they're registered with the shared app-shell header via
+ * `usePageBreadcrumbs`, which renders them next to the sidebar-collapse
+ * trigger following the shadcn sidebar-07 pattern (see
+ * `components/header-breadcrumb.tsx` and `components/app-shell.tsx`).
+ * Callers keep passing `breadcrumbs` unchanged — only where they end up
+ * rendering changed.
  */
 interface PageHeadingProps {
   title: string
@@ -34,39 +28,19 @@ interface PageHeadingProps {
 }
 
 export function PageHeading({ title, description, actions, breadcrumbs }: PageHeadingProps) {
+  usePageBreadcrumbs(breadcrumbs ?? [])
+
   return (
-    <div className="flex flex-col gap-4">
-      {breadcrumbs && breadcrumbs.length > 0 ? (
-        <Breadcrumb>
-          <BreadcrumbList>
-            {breadcrumbs.map((crumb, index) => (
-              <Fragment key={`${crumb.label}-${index}`}>
-                {index > 0 ? <BreadcrumbSeparator /> : null}
-                <BreadcrumbItem>
-                  {crumb.href ? (
-                    <BreadcrumbLink render={<Link href={crumb.href} />}>
-                      {crumb.label}
-                    </BreadcrumbLink>
-                  ) : (
-                    <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-                  )}
-                </BreadcrumbItem>
-              </Fragment>
-            ))}
-          </BreadcrumbList>
-        </Breadcrumb>
-      ) : null}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-          {description ? (
-            <p className="text-sm text-muted-foreground">{description}</p>
-          ) : null}
-        </div>
-        {actions ? (
-          <div className="flex items-center gap-2">{actions}</div>
+    <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        {description ? (
+          <p className="text-sm text-muted-foreground">{description}</p>
         ) : null}
       </div>
+      {actions ? (
+        <div className="flex items-center gap-2">{actions}</div>
+      ) : null}
     </div>
   )
 }

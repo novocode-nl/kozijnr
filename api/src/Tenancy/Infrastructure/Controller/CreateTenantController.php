@@ -17,10 +17,10 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * AdminRouteGuardListener (unreachable from a tenant subdomain).
  *
  * Delegates to ProvisionTenantWithAdmin, which provisions the tenant and
- * automatically creates a tenant-admin account for it. The generated
- * tenant-admin credentials are included in the response — this is the only
- * time the plain-text password is ever available, since only its hash is
- * persisted.
+ * creates a tenant-admin account for it at the caller-supplied `adminEmail`
+ * (KOZ-27 rework), with a generated password. The credentials are included
+ * in the response — this is the only time the plain-text password is ever
+ * available, since only its hash is persisted.
  *
  * Authorization is permission-based (`tenant:create`, checked via
  * PermissionVoter), not role-name-based — security.yaml's access_control
@@ -42,9 +42,10 @@ final class CreateTenantController
         $payload = json_decode($request->getContent(), true);
         $name = is_array($payload) && isset($payload['name']) ? (string) $payload['name'] : '';
         $slug = is_array($payload) && isset($payload['slug']) ? (string) $payload['slug'] : '';
+        $adminEmail = is_array($payload) && isset($payload['adminEmail']) ? (string) $payload['adminEmail'] : '';
 
         try {
-            $result = ($this->provisionTenantWithAdmin)($name, $slug);
+            $result = ($this->provisionTenantWithAdmin)($name, $slug, $adminEmail);
         } catch (\InvalidArgumentException|TenantAlreadyExistsException|SchemaAlreadyExistsException $exception) {
             return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
         } catch (\Throwable $exception) {

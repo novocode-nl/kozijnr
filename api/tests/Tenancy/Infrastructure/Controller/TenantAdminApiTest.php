@@ -95,10 +95,10 @@ final class TenantAdminApiTest extends WebTestCase
     {
         $this->login('admin@kozijnr.nl', 'super-secret-123');
 
-        $created = $this->createTenant('Acme B.V.', 'acme');
+        $created = $this->createTenant('Acme B.V.', 'acme', 'beheerder@acme.test');
 
         self::assertArrayHasKey('tenantAdmin', $created);
-        self::assertNotEmpty($created['tenantAdmin']['email']);
+        self::assertSame('beheerder@acme.test', $created['tenantAdmin']['email']);
         self::assertNotEmpty($created['tenantAdmin']['password']);
 
         $this->client->request('GET', '/api/admin/tenants/acme/users', server: ['HTTP_HOST' => self::ADMIN_HOST]);
@@ -106,8 +106,34 @@ final class TenantAdminApiTest extends WebTestCase
         $users = json_decode((string) $this->client->getResponse()->getContent(), true);
 
         self::assertCount(1, $users);
-        self::assertSame($created['tenantAdmin']['email'], $users[0]['email']);
+        self::assertSame('beheerder@acme.test', $users[0]['email']);
         self::assertContains('ROLE_TENANT_ADMIN', $users[0]['roles']);
+    }
+
+    public function testCreatingATenantWithAnInvalidAdminEmailFails(): void
+    {
+        $this->login('admin@kozijnr.nl', 'super-secret-123');
+
+        $this->client->request('POST', '/api/admin/tenants', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['name' => 'Acme', 'slug' => 'acme', 'adminEmail' => 'not-an-email']));
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertCount(0, $this->connection()->fetchAllAssociative('SELECT * FROM public.tenants'));
+    }
+
+    public function testCreatingATenantWithAnEmptyAdminEmailFails(): void
+    {
+        $this->login('admin@kozijnr.nl', 'super-secret-123');
+
+        $this->client->request('POST', '/api/admin/tenants', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['name' => 'Acme', 'slug' => 'acme', 'adminEmail' => '']));
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertCount(0, $this->connection()->fetchAllAssociative('SELECT * FROM public.tenants'));
     }
 
     public function testCreatingATenantNamedAdminFailsBecauseTheSubdomainIsReservedForSuperAdmin(): void
@@ -280,12 +306,12 @@ final class TenantAdminApiTest extends WebTestCase
     }
 
     /** @return array{name: string, subdomain: string, createdAt: string, archived: bool, archivedAt: ?string, tenantAdmin: array{email: string, password: string}} */
-    private function createTenant(string $name, string $slug): array
+    private function createTenant(string $name, string $slug, ?string $adminEmail = null): array
     {
         $this->client->request('POST', '/api/admin/tenants', server: [
             'HTTP_HOST' => self::ADMIN_HOST,
             'CONTENT_TYPE' => 'application/json',
-        ], content: json_encode(['name' => $name, 'slug' => $slug]));
+        ], content: json_encode(['name' => $name, 'slug' => $slug, 'adminEmail' => $adminEmail ?? "admin@{$slug}.test"]));
 
         self::assertResponseStatusCodeSame(201);
 

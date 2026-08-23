@@ -9,16 +9,21 @@ import {
 } from "@/components/ui/dialog"
 import { ConfigForm } from "@/components/config-form/config-form"
 import { createTenant, updateTenant, type CreatedTenant, type TenantSummary } from "@/lib/api"
-import { tenantFormSchema, type TenantFormValues } from "@/lib/schemas/tenant"
+import {
+  createTenantFormSchema,
+  tenantFormSchema,
+  type CreateTenantFormValues,
+  type TenantFormValues,
+} from "@/lib/schemas/tenant"
 import type { FieldConfig } from "@/lib/forms/types"
 
 /**
- * Shared field config for both the create and edit tenant dialogs (KOZ-27,
- * replacing KOZ-25's page-based create/edit flow). Form values already
- * match `TenantPayload` 1:1, so neither ConfigForm instantiation below
- * needs a `transformSubmit`.
+ * Shared `name`/`slug` field config for both the create and edit tenant
+ * dialogs (KOZ-27, replacing KOZ-25's page-based create/edit flow). Form
+ * values already match `TenantPayload` 1:1, so neither ConfigForm
+ * instantiation below needs a `transformSubmit`.
  */
-const fields: FieldConfig<TenantFormValues>[] = [
+const editFields: FieldConfig<TenantFormValues>[] = [
   {
     name: "name",
     label: "Naam",
@@ -32,6 +37,24 @@ const fields: FieldConfig<TenantFormValues>[] = [
     type: "text",
     placeholder: "acme",
     hint: "Kleine letters, cijfers en koppeltekens, bijv. \"acme\" of \"acme-bv\".",
+    autoComplete: "off",
+  },
+]
+
+/**
+ * Create-only fields: the `name`/`slug` pair plus the tenant-admin's email
+ * (KOZ-27 rework) — the operator now chooses this address instead of it
+ * being auto-generated from the subdomain. Only relevant when there's an
+ * admin account to create in the first place, i.e. create, not edit.
+ */
+const createFields: FieldConfig<CreateTenantFormValues>[] = [
+  ...editFields,
+  {
+    name: "adminEmail",
+    label: "E-mailadres beheerder",
+    type: "email",
+    placeholder: "beheerder@acme.nl",
+    hint: "Wordt gebruikt als inlogadres voor de automatisch aangemaakte tenant-beheerder.",
     autoComplete: "off",
   },
 ]
@@ -69,7 +92,7 @@ export function TenantFormDialog({ open, onOpenChange, tenant, onCreated, onUpda
         {isEdit ? (
           <ConfigForm
             key={tenant.subdomain}
-            fields={fields}
+            fields={editFields}
             schema={tenantFormSchema}
             defaultValues={{ name: tenant.name, slug: tenant.subdomain }}
             action={(payload) => updateTenant(tenant.subdomain, payload)}
@@ -85,9 +108,9 @@ export function TenantFormDialog({ open, onOpenChange, tenant, onCreated, onUpda
         ) : (
           <ConfigForm
             key="create"
-            fields={fields}
-            schema={tenantFormSchema}
-            defaultValues={{ name: "", slug: "" }}
+            fields={createFields}
+            schema={createTenantFormSchema}
+            defaultValues={{ name: "", slug: "", adminEmail: "" }}
             action={createTenant}
             onSuccess={(result) => {
               if (result) {

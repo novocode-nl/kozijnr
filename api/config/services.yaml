@@ -55,10 +55,6 @@ services:
         arguments:
             $baseDomain: '%app.tenancy.base_domain%'
 
-    App\Tenancy\Application\ProvisionTenantWithAdmin:
-        arguments:
-            $baseDomain: '%app.tenancy.base_domain%'
-
     App\Tenancy\Infrastructure\CorsListener:
         arguments:
             $baseDomain: '%app.tenancy.base_domain%'

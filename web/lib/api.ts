@@ -111,6 +111,13 @@ export async function adminLogout(): Promise<void> {
 /** Payload shape both CreateTenantController and UpdateTenantController expect. */
 export type TenantPayload = { name: string; slug: string }
 
+/**
+ * Payload shape CreateTenantController expects: `TenantPayload` plus the
+ * tenant-admin's email (KOZ-27 rework: operator-supplied, no longer
+ * auto-generated from the subdomain).
+ */
+export type CreateTenantPayload = TenantPayload & { adminEmail: string }
+
 const TENANT_CREATE_FAILED_MESSAGE = "Kon de tenant niet aanmaken. Probeer het opnieuw."
 const TENANT_UPDATE_FAILED_MESSAGE = "Kon de tenant niet bijwerken. Probeer het opnieuw."
 const TENANT_ARCHIVE_FAILED_MESSAGE = "Kon de tenant niet archiveren. Probeer het opnieuw."
@@ -126,8 +133,13 @@ const TENANT_UNARCHIVE_FAILED_MESSAGE = "Kon de tenant niet dearchiveren. Probee
  * actually validates against) so `<ConfigForm>` shows it in the right
  * place.
  */
-export async function createTenant(payload: TenantPayload): Promise<ActionResult<CreatedTenant>> {
-  return submitTenantPayload<CreatedTenant>("/api/admin/tenants", "POST", payload, TENANT_CREATE_FAILED_MESSAGE)
+export async function createTenant(payload: CreateTenantPayload): Promise<ActionResult<CreatedTenant>> {
+  return submitTenantPayload<CreatedTenant, CreateTenantPayload>(
+    "/api/admin/tenants",
+    "POST",
+    payload,
+    TENANT_CREATE_FAILED_MESSAGE
+  )
 }
 
 /**
@@ -186,10 +198,10 @@ async function postTenantAction(path: string, networkErrorMessage: string): Prom
   return { success: true, data: await response.json() }
 }
 
-async function submitTenantPayload<TResult>(
+async function submitTenantPayload<TResult, TPayload extends TenantPayload = TenantPayload>(
   path: string,
   method: "POST" | "PATCH",
-  payload: TenantPayload,
+  payload: TPayload,
   networkErrorMessage: string
 ): Promise<ActionResult<TResult>> {
   let response: Response

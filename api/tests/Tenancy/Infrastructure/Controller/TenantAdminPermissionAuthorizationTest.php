@@ -185,7 +185,7 @@ final class TenantAdminPermissionAuthorizationTest extends WebTestCase
         $this->client->request('POST', '/api/admin/tenants', server: [
             'HTTP_HOST' => self::ADMIN_HOST,
             'CONTENT_TYPE' => 'application/json',
-        ], content: json_encode(['name' => $name, 'slug' => $slug]));
+        ], content: json_encode(['name' => $name, 'slug' => $slug, 'adminEmail' => "admin@{$slug}.test"]));
     }
 
     private function login(string $email, string $password): void

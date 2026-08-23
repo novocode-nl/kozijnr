@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { tenantFormSchema } from "@/lib/schemas/tenant"
+import { createTenantFormSchema, tenantFormSchema } from "@/lib/schemas/tenant"
 
 const valid = { name: "Acme B.V.", slug: "acme" }
 
@@ -60,5 +60,25 @@ describe("tenantFormSchema", () => {
     const tooLong = "a".repeat(256)
 
     expect(tenantFormSchema.safeParse({ ...valid, name: tooLong }).success).toBe(false)
+  })
+})
+
+describe("createTenantFormSchema", () => {
+  const validCreate = { ...valid, adminEmail: "beheerder@acme.nl" }
+
+  it("accepts a valid admin email", () => {
+    expect(createTenantFormSchema.safeParse(validCreate).success).toBe(true)
+  })
+
+  it("rejects an empty admin email", () => {
+    expect(createTenantFormSchema.safeParse({ ...validCreate, adminEmail: "" }).success).toBe(false)
+  })
+
+  it("rejects a malformed admin email", () => {
+    expect(createTenantFormSchema.safeParse({ ...validCreate, adminEmail: "not-an-email" }).success).toBe(false)
+  })
+
+  it("still enforces the shared name/slug rules", () => {
+    expect(createTenantFormSchema.safeParse({ ...validCreate, slug: "Not Valid!" }).success).toBe(false)
   })
 })

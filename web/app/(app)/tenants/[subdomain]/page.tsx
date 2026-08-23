@@ -120,7 +120,7 @@ function TenantDetailPageContent({ subdomain }: { subdomain: string }) {
         ]}
         actions={
           <>
-            <Button variant="outline" onClick={() => setEditOpen(true)}>
+            <Button onClick={() => setEditOpen(true)}>
               Bewerken
             </Button>
             <DropdownMenu>
