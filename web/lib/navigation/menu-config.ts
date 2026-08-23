@@ -1,6 +1,7 @@
 import {
   Building2,
   LayoutDashboard,
+  LifeBuoy,
   Settings,
   ShieldCheck,
   Users,
@@ -16,17 +17,18 @@ export type NavMainItem = {
   items?: { title: string; url: string }[]
 }
 
+export type NavSecondaryItem = {
+  title: string
+  url: string
+  icon: LucideIcon
+}
+
 /** The tenant menu: identical for every tenant, no per-tenant items. */
 const tenantNavMain: NavMainItem[] = [
   {
     title: "Dashboard",
     url: "/",
     icon: LayoutDashboard,
-  },
-  {
-    title: "Instellingen",
-    url: "#",
-    icon: Settings,
   },
 ]
 
@@ -52,10 +54,37 @@ const adminNavMain: NavMainItem[] = [
     url: "#",
     icon: Users,
   },
+]
+
+/**
+ * The tenant secondary menu: shown below the primary nav, at the bottom
+ * of the sidebar. Kept separate from `tenantNavMain` so it can diverge
+ * per environment without touching primary-nav rendering.
+ */
+const tenantNavSecondary: NavSecondaryItem[] = [
   {
     title: "Instellingen",
     url: "#",
     icon: Settings,
+  },
+  {
+    title: "Support",
+    url: "#",
+    icon: LifeBuoy,
+  },
+]
+
+/** The admin secondary menu: same items as tenant today, configured separately. */
+const adminNavSecondary: NavSecondaryItem[] = [
+  {
+    title: "Instellingen",
+    url: "#",
+    icon: Settings,
+  },
+  {
+    title: "Support",
+    url: "#",
+    icon: LifeBuoy,
   },
 ]
 
@@ -72,4 +101,14 @@ export const contextIcon: Record<AppContext, LucideIcon> = {
 /** Single source of truth for "which menu belongs to which context". */
 export function getNavMainForContext(context: AppContext): NavMainItem[] {
   return context === "admin" ? adminNavMain : tenantNavMain
+}
+
+/**
+ * Single source of truth for "which secondary menu belongs to which
+ * context" — mirrors `getNavMainForContext` so admin and tenant can each
+ * configure their own secondary nav (shown at the bottom of the sidebar)
+ * independently.
+ */
+export function getNavSecondaryForContext(context: AppContext): NavSecondaryItem[] {
+  return context === "admin" ? adminNavSecondary : tenantNavSecondary
 }
