@@ -1,4 +1,6 @@
 import { apiBaseUrl } from "@/lib/api-base-url"
+import { getClientLocale } from "@/lib/i18n/locale"
+import { translate } from "@/lib/i18n/translate"
 import type { LoginFormValues } from "@/lib/schemas/login"
 import type { ActionResult } from "@/lib/forms/types"
 
@@ -6,8 +8,37 @@ import type { ActionResult } from "@/lib/forms/types"
  * Browser-side service layer over the REST API on api.<base>. Every call
  * is cross-origin but same-site, so `credentials: "include"` carries the
  * HttpOnly session/token cookies the API's CorsListener allows through.
+ *
+ * KOZ-29: the backend never translates anything itself — a failure response
+ * carries an English `message` (log-friendly fallback) plus a stable,
+ * machine-readable `errorKey` (e.g. "tenants.error.subdomainAlreadyExists",
+ * matching a key in lib/i18n/resources/{nl,en}.json) and optional
+ * `errorKeyParams` for interpolation. `apiErrorMessage` below is the one
+ * place that turns that into UI text, in whichever language the visitor has
+ * chosen (lib/i18n/locale.ts) — falling back to the backend's English
+ * `message` if the key isn't in the catalog, so an unmapped backend error
+ * still shows *something* instead of a blank string.
  */
-export const GENERIC_LOGIN_ERROR = "Invalid credentials."
+function apiErrorMessage(body: unknown, fallback: string): string {
+  const errorKey = isRecord(body) && typeof body.errorKey === "string" ? body.errorKey : null
+  const params = isRecord(body) && isRecord(body.errorKeyParams) ? (body.errorKeyParams as Record<string, string | number>) : undefined
+
+  if (errorKey) {
+    const translated = translate(errorKey, getClientLocale(), params)
+    if (translated !== undefined) {
+      return translated
+    }
+  }
+
+  return isRecord(body) && typeof body.message === "string" ? body.message : fallback
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
+}
+
+/** Ultimate fallback if even the English catalog is somehow missing the key. */
+const GENERIC_LOGIN_ERROR = "Invalid credentials."
 
 export type LoginResult = { success: true } | { success: false; message: string }
 
@@ -118,10 +149,21 @@ export type TenantPayload = { name: string; slug: string }
  */
 export type CreateTenantPayload = TenantPayload & { adminEmail: string }
 
-const TENANT_CREATE_FAILED_MESSAGE = "Kon de tenant niet aanmaken. Probeer het opnieuw."
-const TENANT_UPDATE_FAILED_MESSAGE = "Kon de tenant niet bijwerken. Probeer het opnieuw."
-const TENANT_ARCHIVE_FAILED_MESSAGE = "Kon de tenant niet archiveren. Probeer het opnieuw."
-const TENANT_UNARCHIVE_FAILED_MESSAGE = "Kon de tenant niet dearchiveren. Probeer het opnieuw."
+// Translated lazily (not module-level constants) so a language switch mid-
+// session is reflected the next time one of these fires, not frozen at
+// first import.
+function tenantCreateFailedMessage(): string {
+  return translate("tenants.error.createFailed", getClientLocale()) ?? "Failed to create tenant."
+}
+function tenantUpdateFailedMessage(): string {
+  return translate("tenants.error.updateFailed", getClientLocale()) ?? "Failed to update tenant."
+}
+function tenantArchiveFailedMessage(): string {
+  return translate("tenants.error.archiveFailed", getClientLocale()) ?? "Failed to archive tenant."
+}
+function tenantUnarchiveFailedMessage(): string {
+  return translate("tenants.error.unarchiveFailed", getClientLocale()) ?? "Failed to unarchive tenant."
+}
 
 /**
  * Tenant creation: POST /api/admin/tenants, guarded backend-side by the
@@ -138,7 +180,7 @@ export async function createTenant(payload: CreateTenantPayload): Promise<Action
     "/api/admin/tenants",
     "POST",
     payload,
-    TENANT_CREATE_FAILED_MESSAGE
+    tenantCreateFailedMessage()
   )
 }
 
@@ -155,7 +197,7 @@ export async function updateTenant(
     `/api/admin/tenants/${encodeURIComponent(currentSubdomain)}`,
     "PATCH",
     payload,
-    TENANT_UPDATE_FAILED_MESSAGE
+    tenantUpdateFailedMessage()
   )
 }
 
@@ -166,7 +208,7 @@ export async function updateTenant(
  * a confirmation dialog — this function performs the action immediately.
  */
 export async function archiveTenant(subdomain: string): Promise<ActionResult<TenantSummary>> {
-  return postTenantAction(`/api/admin/tenants/${encodeURIComponent(subdomain)}/archive`, TENANT_ARCHIVE_FAILED_MESSAGE)
+  return postTenantAction(`/api/admin/tenants/${encodeURIComponent(subdomain)}/archive`, tenantArchiveFailedMessage())
 }
 
 /**
@@ -177,7 +219,7 @@ export async function archiveTenant(subdomain: string): Promise<ActionResult<Ten
 export async function unarchiveTenant(subdomain: string): Promise<ActionResult<TenantSummary>> {
   return postTenantAction(
     `/api/admin/tenants/${encodeURIComponent(subdomain)}/unarchive`,
-    TENANT_UNARCHIVE_FAILED_MESSAGE
+    tenantUnarchiveFailedMessage()
   )
 }
 
@@ -191,7 +233,7 @@ async function postTenantAction(path: string, networkErrorMessage: string): Prom
 
   if (!response.ok) {
     const body = await response.json().catch(() => null)
-    const message = typeof body?.message === "string" ? body.message : networkErrorMessage
+    const message = apiErrorMessage(body, networkErrorMessage)
     return { success: false, message }
   }
 
@@ -218,7 +260,7 @@ async function submitTenantPayload<TResult, TPayload extends TenantPayload = Ten
 
   if (!response.ok) {
     const body = await response.json().catch(() => null)
-    const message = typeof body?.message === "string" ? body.message : networkErrorMessage
+    const message = apiErrorMessage(body, networkErrorMessage)
     return { success: false, fieldErrors: { slug: message } }
   }
 
@@ -230,6 +272,8 @@ function backendUrl(path: string): string {
 }
 
 async function postCredentials(path: string, values: LoginFormValues): Promise<LoginResult> {
+  const genericMessage = translate("auth.error.invalidCredentials", getClientLocale()) ?? GENERIC_LOGIN_ERROR
+
   let response: Response
   try {
     response = await fetch(backendUrl(path), {
@@ -239,11 +283,12 @@ async function postCredentials(path: string, values: LoginFormValues): Promise<L
       body: JSON.stringify(values),
     })
   } catch {
-    return { success: false, message: GENERIC_LOGIN_ERROR }
+    return { success: false, message: genericMessage }
   }
 
   if (!response.ok) {
-    return { success: false, message: GENERIC_LOGIN_ERROR }
+    const body = await response.json().catch(() => null)
+    return { success: false, message: apiErrorMessage(body, genericMessage) }
   }
 
   return { success: true }

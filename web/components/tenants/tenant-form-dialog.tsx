@@ -1,5 +1,8 @@
 "use client"
 
+import { useMemo } from "react"
+import { useTranslation } from "react-i18next"
+
 import {
   Dialog,
   DialogContent,
@@ -10,54 +13,13 @@ import {
 import { ConfigForm } from "@/components/config-form/config-form"
 import { createTenant, updateTenant, type CreatedTenant, type TenantSummary } from "@/lib/api"
 import {
-  createTenantFormSchema,
-  tenantFormSchema,
+  buildCreateTenantFormSchema,
+  buildTenantFormSchema,
   type CreateTenantFormValues,
   type TenantFormValues,
 } from "@/lib/schemas/tenant"
 import type { FieldConfig } from "@/lib/forms/types"
-
-/**
- * Shared `name`/`slug` field config for both the create and edit tenant
- * dialogs (KOZ-27, replacing KOZ-25's page-based create/edit flow). Form
- * values already match `TenantPayload` 1:1, so neither ConfigForm
- * instantiation below needs a `transformSubmit`.
- */
-const editFields: FieldConfig<TenantFormValues>[] = [
-  {
-    name: "name",
-    label: "Naam",
-    type: "text",
-    placeholder: "Acme B.V.",
-    autoComplete: "off",
-  },
-  {
-    name: "slug",
-    label: "Subdomain",
-    type: "text",
-    placeholder: "acme",
-    hint: "Kleine letters, cijfers en koppeltekens, bijv. \"acme\" of \"acme-bv\".",
-    autoComplete: "off",
-  },
-]
-
-/**
- * Create-only fields: the `name`/`slug` pair plus the tenant-admin's email
- * (KOZ-27 rework) — the operator now chooses this address instead of it
- * being auto-generated from the subdomain. Only relevant when there's an
- * admin account to create in the first place, i.e. create, not edit.
- */
-const createFields: FieldConfig<CreateTenantFormValues>[] = [
-  ...editFields,
-  {
-    name: "adminEmail",
-    label: "E-mailadres beheerder",
-    type: "email",
-    placeholder: "beheerder@acme.nl",
-    hint: "Wordt gebruikt als inlogadres voor de automatisch aangemaakte tenant-beheerder.",
-    autoComplete: "off",
-  },
-]
+import type { Locale } from "@/lib/i18n/locale"
 
 interface TenantFormDialogProps {
   open: boolean
@@ -77,23 +39,69 @@ interface TenantFormDialogProps {
  */
 export function TenantFormDialog({ open, onOpenChange, tenant, onCreated, onUpdated }: TenantFormDialogProps) {
   const isEdit = tenant != null
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language as Locale
+  const tenantSchema = useMemo(() => buildTenantFormSchema(locale), [locale])
+  const createSchema = useMemo(() => buildCreateTenantFormSchema(locale), [locale])
+
+  /**
+   * Shared `name`/`slug` field config for both the create and edit tenant
+   * dialogs (KOZ-27, replacing KOZ-25's page-based create/edit flow). Form
+   * values already match `TenantPayload` 1:1, so neither ConfigForm
+   * instantiation below needs a `transformSubmit`.
+   */
+  const editFields: FieldConfig<TenantFormValues>[] = [
+    {
+      name: "name",
+      label: t("tenantForm.nameLabel"),
+      type: "text",
+      placeholder: "Acme B.V.",
+      autoComplete: "off",
+    },
+    {
+      name: "slug",
+      label: t("tenantForm.slugLabel"),
+      type: "text",
+      placeholder: "acme",
+      hint: t("tenantForm.slugHint"),
+      autoComplete: "off",
+    },
+  ]
+
+  /**
+   * Create-only fields: the `name`/`slug` pair plus the tenant-admin's email
+   * (KOZ-27 rework) — the operator now chooses this address instead of it
+   * being auto-generated from the subdomain. Only relevant when there's an
+   * admin account to create in the first place, i.e. create, not edit.
+   */
+  const createFields: FieldConfig<CreateTenantFormValues>[] = [
+    ...editFields,
+    {
+      name: "adminEmail",
+      label: t("tenantForm.adminEmailLabel"),
+      type: "email",
+      placeholder: "beheerder@acme.nl",
+      hint: t("tenantForm.adminEmailHint"),
+      autoComplete: "off",
+    },
+  ]
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Tenant bewerken" : "Nieuwe tenant"}</DialogTitle>
+          <DialogTitle>{isEdit ? t("tenantForm.editTitle") : t("tenantForm.createTitle")}</DialogTitle>
           <DialogDescription>
             {isEdit
-              ? `Wijzig de gegevens van "${tenant.name}".`
-              : "Maak een nieuwe tenant aan. Er wordt automatisch een tenant-beheerder voor aangemaakt."}
+              ? t("tenantForm.editDescription", { name: tenant.name })
+              : t("tenantForm.createDescription")}
           </DialogDescription>
         </DialogHeader>
         {isEdit ? (
           <ConfigForm
             key={tenant.subdomain}
             fields={editFields}
-            schema={tenantFormSchema}
+            schema={tenantSchema}
             defaultValues={{ name: tenant.name, slug: tenant.subdomain }}
             action={(payload) => updateTenant(tenant.subdomain, payload)}
             onSuccess={(result) => {
@@ -102,14 +110,14 @@ export function TenantFormDialog({ open, onOpenChange, tenant, onCreated, onUpda
                 onUpdated?.(result)
               }
             }}
-            submitLabel="Wijzigingen opslaan"
-            pendingLabel="Bezig met opslaan..."
+            submitLabel={t("tenantForm.saveChanges")}
+            pendingLabel={t("tenantForm.savingChanges")}
           />
         ) : (
           <ConfigForm
             key="create"
             fields={createFields}
-            schema={createTenantFormSchema}
+            schema={createSchema}
             defaultValues={{ name: "", slug: "", adminEmail: "" }}
             action={createTenant}
             onSuccess={(result) => {
@@ -118,8 +126,8 @@ export function TenantFormDialog({ open, onOpenChange, tenant, onCreated, onUpda
                 onCreated?.(result)
               }
             }}
-            submitLabel="Tenant aanmaken"
-            pendingLabel="Bezig met aanmaken..."
+            submitLabel={t("tenantForm.createSubmit")}
+            pendingLabel={t("tenantForm.creating")}
           />
         )}
       </DialogContent>

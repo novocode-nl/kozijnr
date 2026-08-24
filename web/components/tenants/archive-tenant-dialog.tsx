@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 
 import {
   AlertDialog,
@@ -31,6 +32,7 @@ interface ArchiveTenantDialogProps {
  * though it's reversible.
  */
 export function ArchiveTenantDialog({ open, onOpenChange, tenant, onChanged }: ArchiveTenantDialogProps) {
+  const { t } = useTranslation()
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
@@ -53,7 +55,7 @@ export function ArchiveTenantDialog({ open, onOpenChange, tenant, onChanged }: A
     setIsSubmitting(false)
 
     if (!result.success) {
-      setError(result.message ?? "Er is iets misgegaan.")
+      setError(result.message ?? t("common.genericError"))
       return
     }
 
@@ -67,11 +69,11 @@ export function ArchiveTenantDialog({ open, onOpenChange, tenant, onChanged }: A
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{willArchive ? "Tenant archiveren?" : "Tenant dearchiveren?"}</AlertDialogTitle>
+          <AlertDialogTitle>{willArchive ? t("tenants.archiveTitle") : t("tenants.unarchiveTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
             {willArchive
-              ? `"${tenant.name}" wordt gearchiveerd. Gebruikers van deze tenant kunnen daarna niet meer inloggen. Dit kan later ongedaan gemaakt worden.`
-              : `"${tenant.name}" wordt weer actief en verschijnt terug in het overzicht van actieve tenants.`}
+              ? t("tenants.archiveDescription", { name: tenant.name })
+              : t("tenants.unarchiveDescription", { name: tenant.name })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {error && (
@@ -80,13 +82,13 @@ export function ArchiveTenantDialog({ open, onOpenChange, tenant, onChanged }: A
           </div>
         )}
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isSubmitting}>Annuleren</AlertDialogCancel>
+          <AlertDialogCancel disabled={isSubmitting}>{t("common.cancel")}</AlertDialogCancel>
           <AlertDialogAction
             variant={willArchive ? "destructive" : "default"}
             onClick={handleConfirm}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Bezig..." : willArchive ? "Archiveren" : "Dearchiveren"}
+            {isSubmitting ? t("common.busy") : willArchive ? t("tenants.archiveConfirm") : t("tenants.unarchiveConfirm")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

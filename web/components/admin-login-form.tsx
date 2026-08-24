@@ -1,10 +1,13 @@
 "use client"
 
+import { useMemo } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useTranslation } from "react-i18next"
 
 import { cn } from "@/lib/utils"
 import { adminLogin } from "@/lib/api"
-import { loginSchema, type LoginFormValues } from "@/lib/schemas/login"
+import { buildLoginSchema, type LoginFormValues } from "@/lib/schemas/login"
+import type { Locale } from "@/lib/i18n/locale"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Field, FieldDescription, FieldSeparator } from "@/components/ui/field"
@@ -29,22 +32,6 @@ import { REDIRECT_PARAM, sanitizeRedirectTarget } from "@/lib/navigation/safe-re
  * Same post-login `?redirect=` handling as components/login-form.tsx — see
  * that file's doc comment.
  */
-const fields: FieldConfig<LoginFormValues>[] = [
-  {
-    name: "email",
-    label: "E-mailadres",
-    type: "email",
-    placeholder: "naam@kozijnr.nl",
-    autoComplete: "email",
-  },
-  {
-    name: "password",
-    label: "Wachtwoord",
-    type: "password",
-    autoComplete: "current-password",
-  },
-]
-
 const defaultValues: LoginFormValues = { email: "", password: "" }
 
 export function AdminLoginForm({
@@ -54,6 +41,24 @@ export function AdminLoginForm({
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTarget = sanitizeRedirectTarget(searchParams.get(REDIRECT_PARAM))
+  const { t, i18n } = useTranslation()
+  const schema = useMemo(() => buildLoginSchema(i18n.language as Locale), [i18n.language])
+
+  const fields: FieldConfig<LoginFormValues>[] = [
+    {
+      name: "email",
+      label: t("login.emailLabel"),
+      type: "email",
+      placeholder: t("adminLogin.emailPlaceholder"),
+      autoComplete: "email",
+    },
+    {
+      name: "password",
+      label: t("login.passwordLabel"),
+      type: "password",
+      autoComplete: "current-password",
+    },
+  ]
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -61,9 +66,9 @@ export function AdminLoginForm({
         <CardContent className="grid p-0 md:grid-cols-2">
           <div className="flex flex-col gap-6 p-6 md:p-8">
             <div className="flex flex-col items-center gap-2 text-center">
-              <h1 className="text-2xl font-bold">Kozijnr Admin</h1>
+              <h1 className="text-2xl font-bold">{t("adminLogin.title")}</h1>
               <p className="text-balance text-muted-foreground">
-                Log in als beheerder
+                {t("adminLogin.subtitle")}
               </p>
             </div>
             {/* Disabled: no Apple/Google login backend yet, placeholder only. */}
@@ -78,19 +83,19 @@ export function AdminLoginForm({
               </Button>
             </Field>
             <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
-              Of ga verder met
+              {t("login.orContinueWith")}
             </FieldSeparator>
             <ConfigForm
               fields={fields}
-              schema={loginSchema}
+              schema={schema}
               defaultValues={defaultValues}
               action={adminLogin}
               onSuccess={() => router.push(redirectTarget)}
-              submitLabel="Inloggen"
-              pendingLabel="Bezig met inloggen..."
+              submitLabel={t("login.submit")}
+              pendingLabel={t("login.pending")}
             />
             <FieldDescription className="text-center">
-              <a href="#">Wachtwoord vergeten?</a>
+              <a href="#">{t("login.forgotPassword")}</a>
             </FieldDescription>
           </div>
           <LoginSidePanel />

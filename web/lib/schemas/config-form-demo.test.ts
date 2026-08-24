@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { configFormDemoSchema } from "@/lib/schemas/config-form-demo"
+import { buildConfigFormDemoSchema, configFormDemoSchema } from "@/lib/schemas/config-form-demo"
 
 const baseValues = {
   fullName: "Jan Jansen",
@@ -72,6 +72,28 @@ describe("configFormDemoSchema", () => {
       const result = configFormDemoSchema.safeParse({ ...baseValues, contactPreference: value })
 
       expect(result.success).toBe(true)
+    }
+  })
+})
+
+/**
+ * KOZ-29 rework: `configFormDemoSchema` follows the visitor's chosen
+ * language — `buildConfigFormDemoSchema` is the locale-aware factory it's
+ * bound from (see that file's doc comment).
+ */
+describe("buildConfigFormDemoSchema locale awareness", () => {
+  it("renders the required-plan error differently in nl vs en", () => {
+    const nlResult = buildConfigFormDemoSchema("nl").safeParse({ ...baseValues, plan: "" })
+    const enResult = buildConfigFormDemoSchema("en").safeParse({ ...baseValues, plan: "" })
+
+    expect(nlResult.success).toBe(false)
+    expect(enResult.success).toBe(false)
+    if (!nlResult.success && !enResult.success) {
+      const nlMessage = nlResult.error.issues[0]?.message
+      const enMessage = enResult.error.issues[0]?.message
+      expect(nlMessage).toBe("Kies een abonnement.")
+      expect(enMessage).toBe("Choose a plan.")
+      expect(nlMessage).not.toBe(enMessage)
     }
   })
 })

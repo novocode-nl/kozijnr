@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 
 import { PageHeading } from "@/components/page-heading"
 import { TenantsTable } from "@/components/tenants/tenants-table"
@@ -31,6 +32,7 @@ type TenantView = "active" | "archived"
  * default, so there's no separate showArchived toggle to keep in sync.
  */
 export default function TenantsPage() {
+  const { t } = useTranslation()
   const [activeView, setActiveView] = React.useState<TenantView>("active")
   const [createOpen, setCreateOpen] = React.useState(false)
   const [refreshToken, setRefreshToken] = React.useState(0)
@@ -47,14 +49,14 @@ export default function TenantsPage() {
   return (
     <div className="flex flex-1 flex-col gap-6">
       <PageHeading
-        title="Tenants"
-        breadcrumbs={[{ label: contextLabel.admin, href: "/" }, { label: "Tenants" }]}
-        actions={<Button onClick={() => setCreateOpen(true)}>Nieuwe tenant</Button>}
+        title={t("tenants.pageTitle")}
+        breadcrumbs={[{ label: contextLabel.admin, href: "/" }, { label: t("tenants.pageTitle") }]}
+        actions={<Button onClick={() => setCreateOpen(true)}>{t("tenants.newTenant")}</Button>}
       />
       <Tabs value={activeView} onValueChange={(value) => setActiveView(value as TenantView)}>
         <TabsList>
-          <TabsTrigger value="active">Actief</TabsTrigger>
-          <TabsTrigger value="archived">Gearchiveerd</TabsTrigger>
+          <TabsTrigger value="active">{t("tenants.tabActive")}</TabsTrigger>
+          <TabsTrigger value="archived">{t("tenants.tabArchived")}</TabsTrigger>
         </TabsList>
         {/*
           Keyed on refreshToken: remounting is how this page forces

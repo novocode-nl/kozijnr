@@ -2,6 +2,7 @@
 
 namespace App\Tenancy\Infrastructure\Controller;
 
+use App\Shared\Infrastructure\Http\ExceptionResponsePayload;
 use App\Tenancy\Application\TenantSummary;
 use App\Tenancy\Application\UnarchiveTenant;
 use App\Tenancy\Domain\Exception\TenantNotFoundException;
@@ -35,7 +36,7 @@ final class UnarchiveTenantController
         try {
             $tenant = ($this->unarchiveTenant)($subdomain);
         } catch (TenantNotFoundException $exception) {
-            return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_NOT_FOUND);
+            return new JsonResponse(ExceptionResponsePayload::for($exception), JsonResponse::HTTP_NOT_FOUND);
         } catch (\Throwable $exception) {
             $this->logger->error('Admin tenant unarchive failed for "{subdomain}": {message}', [
                 'subdomain' => $subdomain,
@@ -43,7 +44,10 @@ final class UnarchiveTenantController
                 'exception' => $exception,
             ]);
 
-            return new JsonResponse(['message' => 'Failed to unarchive tenant.'], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+            return new JsonResponse(
+                ExceptionResponsePayload::withKey('Failed to unarchive tenant.', 'tenants.error.unarchiveFailed'),
+                JsonResponse::HTTP_INTERNAL_SERVER_ERROR,
+            );
         }
 
         return new JsonResponse(TenantSummary::fromTenant($tenant)->toArray(), JsonResponse::HTTP_OK);

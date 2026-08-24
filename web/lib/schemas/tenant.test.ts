@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest"
 
-import { createTenantFormSchema, tenantFormSchema } from "@/lib/schemas/tenant"
+import {
+  buildCreateTenantFormSchema,
+  buildTenantFormSchema,
+  createTenantFormSchema,
+  tenantFormSchema,
+} from "@/lib/schemas/tenant"
 
 const valid = { name: "Acme B.V.", slug: "acme" }
 
@@ -80,5 +85,59 @@ describe("createTenantFormSchema", () => {
 
   it("still enforces the shared name/slug rules", () => {
     expect(createTenantFormSchema.safeParse({ ...validCreate, slug: "Not Valid!" }).success).toBe(false)
+  })
+})
+
+/**
+ * KOZ-29 rework: `tenantFormSchema`/`createTenantFormSchema` follow the
+ * visitor's chosen language — `buildTenantFormSchema`/
+ * `buildCreateTenantFormSchema` are the locale-aware factories they're
+ * bound from (see that file's doc comment). Proves the same validation
+ * failure renders a different, non-empty message in nl vs en.
+ */
+describe("buildTenantFormSchema locale awareness", () => {
+  it("renders an empty-name error differently in nl vs en", () => {
+    const nlResult = buildTenantFormSchema("nl").safeParse({ ...valid, name: "" })
+    const enResult = buildTenantFormSchema("en").safeParse({ ...valid, name: "" })
+
+    expect(nlResult.success).toBe(false)
+    expect(enResult.success).toBe(false)
+    if (!nlResult.success && !enResult.success) {
+      const nlMessage = nlResult.error.issues[0]?.message
+      const enMessage = enResult.error.issues[0]?.message
+      expect(nlMessage).toBe("Naam is verplicht.")
+      expect(enMessage).toBe("Name is required.")
+      expect(nlMessage).not.toBe(enMessage)
+    }
+  })
+
+  it("renders an invalid-slug pattern error differently in nl vs en", () => {
+    const nlResult = buildTenantFormSchema("nl").safeParse({ ...valid, slug: "Not Valid!" })
+    const enResult = buildTenantFormSchema("en").safeParse({ ...valid, slug: "Not Valid!" })
+
+    expect(nlResult.success).toBe(false)
+    expect(enResult.success).toBe(false)
+    if (!nlResult.success && !enResult.success) {
+      const nlMessage = nlResult.error.issues[0]?.message
+      const enMessage = enResult.error.issues[0]?.message
+      expect(nlMessage).not.toBe(enMessage)
+      expect(nlMessage).toBeTruthy()
+      expect(enMessage).toBeTruthy()
+    }
+  })
+
+  it("renders an invalid admin-email error differently in nl vs en", () => {
+    const nlResult = buildCreateTenantFormSchema("nl").safeParse({ ...valid, adminEmail: "not-an-email" })
+    const enResult = buildCreateTenantFormSchema("en").safeParse({ ...valid, adminEmail: "not-an-email" })
+
+    expect(nlResult.success).toBe(false)
+    expect(enResult.success).toBe(false)
+    if (!nlResult.success && !enResult.success) {
+      const nlMessage = nlResult.error.issues[0]?.message
+      const enMessage = enResult.error.issues[0]?.message
+      expect(nlMessage).toBe("Voer een geldig e-mailadres in voor de tenant-beheerder.")
+      expect(enMessage).toBe("Enter a valid email address for the tenant administrator.")
+      expect(nlMessage).not.toBe(enMessage)
+    }
   })
 })

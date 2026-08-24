@@ -1,5 +1,7 @@
 "use client"
 
+import { useTranslation } from "react-i18next"
+
 import {
   Combobox,
   ComboboxChip,
@@ -69,6 +71,7 @@ function SingleCombobox<TValues>({
   onChange: (value: string) => void
   invalid: boolean
 }) {
+  const { t } = useTranslation()
   const selectedItem = field.options.find((option) => option.value === value) ?? null
 
   return (
@@ -86,7 +89,7 @@ function SingleCombobox<TValues>({
         showClear
       />
       <ComboboxContent>
-        <ComboboxEmpty>Geen resultaten gevonden.</ComboboxEmpty>
+        <ComboboxEmpty>{t("common.noResults")}</ComboboxEmpty>
         <ComboboxList>
           {(item: SelectOption) => (
             <ComboboxItem key={item.value} value={item}>
@@ -112,6 +115,7 @@ function MultipleCombobox<TValues>({
   onChange: (value: string[]) => void
   invalid: boolean
 }) {
+  const { t } = useTranslation()
   const anchor = useComboboxAnchor()
   const selectedItems = field.options.filter((option) => value.includes(option.value))
 
@@ -136,7 +140,7 @@ function MultipleCombobox<TValues>({
         />
       </ComboboxChips>
       <ComboboxContent anchor={anchor}>
-        <ComboboxEmpty>Geen resultaten gevonden.</ComboboxEmpty>
+        <ComboboxEmpty>{t("common.noResults")}</ComboboxEmpty>
         <ComboboxList>
           {(item: SelectOption) => (
             <ComboboxItem key={item.value} value={item}>

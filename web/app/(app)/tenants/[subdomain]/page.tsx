@@ -3,6 +3,7 @@
 import * as React from "react"
 import { useParams, useRouter } from "next/navigation"
 import { MoreHorizontal } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 import { PageHeading } from "@/components/page-heading"
 import { Button } from "@/components/ui/button"
@@ -19,8 +20,7 @@ import { ArchiveTenantDialog } from "@/components/tenants/archive-tenant-dialog"
 import { TenantUsersTab } from "@/components/tenants/tenant-users-tab"
 import { getTenant, type TenantSummary } from "@/lib/api"
 import { contextLabel } from "@/lib/navigation/menu-config"
-
-const dateFormatter = new Intl.DateTimeFormat("nl-NL", { dateStyle: "medium", timeStyle: "short" })
+import { dateTimeFormatter } from "@/lib/i18n/date-formatter"
 
 type LoadState =
   | { status: "loading" }
@@ -57,6 +57,7 @@ export default function TenantDetailPage() {
 
 function TenantDetailPageContent({ subdomain }: { subdomain: string }) {
   const router = useRouter()
+  const { t, i18n } = useTranslation()
 
   const [state, setState] = React.useState<LoadState>({ status: "loading" })
   const [editOpen, setEditOpen] = React.useState(false)
@@ -92,13 +93,13 @@ function TenantDetailPageContent({ subdomain }: { subdomain: string }) {
   }
 
   if (state.status === "not-found") {
-    return <p className="text-sm text-muted-foreground">Deze tenant bestaat niet (meer).</p>
+    return <p className="text-sm text-muted-foreground">{t("tenants.detailNotFound")}</p>
   }
 
   if (state.status === "error") {
     return (
       <p className="text-sm text-destructive">
-        Kon de tenant niet laden. Probeer de pagina te verversen.
+        {t("tenants.detailLoadError")}
       </p>
     )
   }
@@ -110,30 +111,37 @@ function TenantDetailPageContent({ subdomain }: { subdomain: string }) {
       <PageHeading
         title={tenant.name}
         description={
-          `${tenant.subdomain} · aangemaakt op ${dateFormatter.format(new Date(tenant.createdAt))}`
-          + (tenant.archived ? " · gearchiveerd" : "")
+          t("tenants.metaCreatedAt", {
+            subdomain: tenant.subdomain,
+            date: dateTimeFormatter(i18n.language).format(new Date(tenant.createdAt)),
+          })
+          + (tenant.archived ? t("tenants.metaArchivedSuffix") : "")
         }
         breadcrumbs={[
           { label: contextLabel.admin, href: "/" },
-          { label: "Tenants", href: "/tenants" },
+          { label: t("tenants.pageTitle"), href: "/tenants" },
           { label: tenant.name },
         ]}
         actions={
           <>
             <Button onClick={() => setEditOpen(true)}>
-              Bewerken
+              {t("tenants.actionEdit")}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
-                  <Button variant="outline" size="icon-sm" aria-label={`Acties voor ${tenant.subdomain}`}>
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    aria-label={t("tenants.rowActionsLabel", { subdomain: tenant.subdomain })}
+                  >
                     <MoreHorizontal />
                   </Button>
                 }
               />
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => setArchiveOpen(true)}>
-                  {tenant.archived ? "Dearchiveren" : "Archiveren"}
+                  {tenant.archived ? t("tenants.unarchiveConfirm") : t("tenants.archiveConfirm")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -142,7 +150,7 @@ function TenantDetailPageContent({ subdomain }: { subdomain: string }) {
       />
       <Tabs defaultValue="users">
         <TabsList>
-          <TabsTrigger value="users">Gebruikers</TabsTrigger>
+          <TabsTrigger value="users">{t("tenants.usersTab")}</TabsTrigger>
         </TabsList>
         <TabsContent value="users">
           <TenantUsersTab subdomain={tenant.subdomain} />

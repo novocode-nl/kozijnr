@@ -1,10 +1,12 @@
 "use client"
 
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { listTenantUsers, type TenantUserSummary } from "@/lib/api"
+import { roleLabel } from "@/lib/i18n/role-labels"
 
 type LoadState =
   | { status: "loading" }
@@ -23,6 +25,7 @@ type LoadState =
  * resetting its own state mid-life inside the effect below.
  */
 export function TenantUsersTab({ subdomain }: { subdomain: string }) {
+  const { t } = useTranslation()
   const [state, setState] = React.useState<LoadState>({ status: "loading" })
 
   React.useEffect(() => {
@@ -58,13 +61,13 @@ export function TenantUsersTab({ subdomain }: { subdomain: string }) {
   if (state.status === "error") {
     return (
       <p className="text-sm text-destructive">
-        Kon de gebruikers niet laden. Probeer de pagina te verversen.
+        {t("users.loadError")}
       </p>
     )
   }
 
   if (state.users.length === 0) {
-    return <p className="text-sm text-muted-foreground">Deze tenant heeft nog geen gebruikers.</p>
+    return <p className="text-sm text-muted-foreground">{t("users.empty")}</p>
   }
 
   return (
@@ -72,15 +75,17 @@ export function TenantUsersTab({ subdomain }: { subdomain: string }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>E-mail</TableHead>
-            <TableHead>Rollen</TableHead>
+            <TableHead>{t("users.columnEmail")}</TableHead>
+            <TableHead>{t("users.columnRoles")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {state.users.map((user) => (
             <TableRow key={user.email}>
               <TableCell className="font-medium">{user.email}</TableCell>
-              <TableCell className="text-muted-foreground">{user.roles.join(", ")}</TableCell>
+              <TableCell className="text-muted-foreground">
+                {user.roles.map((role) => roleLabel(role, t)).join(", ")}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

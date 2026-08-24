@@ -1,6 +1,7 @@
 "use client"
 
 import { ChevronRight } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 import {
   Collapsible,
@@ -23,6 +24,8 @@ import type { NavMainItem } from "@/lib/navigation/menu-config"
  * identically for the admin and tenant menu configurations.
  */
 export function NavMain({ items }: { items: NavMainItem[] }) {
+  const { t } = useTranslation()
+
   return (
     <SidebarGroup>
       <SidebarMenu>
@@ -32,9 +35,9 @@ export function NavMain({ items }: { items: NavMainItem[] }) {
               <SidebarMenuItem>
                 <CollapsibleTrigger
                   render={
-                    <SidebarMenuButton tooltip={item.title}>
+                    <SidebarMenuButton tooltip={t(item.title)}>
                       <item.icon />
-                      <span>{item.title}</span>
+                      <span>{t(item.title)}</span>
                       <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                   }
@@ -46,7 +49,7 @@ export function NavMain({ items }: { items: NavMainItem[] }) {
                         <SidebarMenuSubButton
                           render={
                             <a href={subItem.url}>
-                              <span>{subItem.title}</span>
+                              <span>{t(subItem.title)}</span>
                             </a>
                           }
                         />
@@ -59,11 +62,11 @@ export function NavMain({ items }: { items: NavMainItem[] }) {
           ) : (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton
-                tooltip={item.title}
+                tooltip={t(item.title)}
                 render={
                   <a href={item.url}>
                     <item.icon />
-                    <span>{item.title}</span>
+                    <span>{t(item.title)}</span>
                   </a>
                 }
               />

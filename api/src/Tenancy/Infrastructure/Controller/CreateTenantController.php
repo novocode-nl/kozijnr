@@ -2,6 +2,7 @@
 
 namespace App\Tenancy\Infrastructure\Controller;
 
+use App\Shared\Infrastructure\Http\ExceptionResponsePayload;
 use App\Tenancy\Application\ProvisionTenantWithAdmin;
 use App\Tenancy\Application\TenantSummary;
 use App\Tenancy\Domain\Exception\SchemaAlreadyExistsException;
@@ -47,7 +48,7 @@ final class CreateTenantController
         try {
             $result = ($this->provisionTenantWithAdmin)($name, $slug, $adminEmail);
         } catch (\InvalidArgumentException|TenantAlreadyExistsException|SchemaAlreadyExistsException $exception) {
-            return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+            return new JsonResponse(ExceptionResponsePayload::for($exception), JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
         } catch (\Throwable $exception) {
             // Report cleanly rather than leaking a stack trace, but log the real cause.
             $this->logger->error('Admin tenant creation failed for "{name}": {message}', [
@@ -56,7 +57,10 @@ final class CreateTenantController
                 'exception' => $exception,
             ]);
 
-            return new JsonResponse(['message' => 'Failed to create tenant.'], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+            return new JsonResponse(
+                ExceptionResponsePayload::withKey('Failed to create tenant.', 'tenants.error.createFailed'),
+                JsonResponse::HTTP_INTERNAL_SERVER_ERROR,
+            );
         }
 
         return new JsonResponse([

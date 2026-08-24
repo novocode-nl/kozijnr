@@ -2,6 +2,7 @@
 
 namespace App\Tenancy\Domain;
 
+use App\Shared\Domain\Exception\ValidationException;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -60,18 +61,24 @@ class Tenant
         $schemaName = trim($schemaName);
 
         if ($name === '') {
-            throw new \InvalidArgumentException('Tenant name cannot be empty.');
+            throw ValidationException::create('Tenant name cannot be empty.', 'tenants.error.nameRequired');
         }
 
         if (mb_strlen($name) > self::MAX_NAME_LENGTH) {
-            throw new \InvalidArgumentException(sprintf('Tenant name cannot be longer than %d characters.', self::MAX_NAME_LENGTH));
+            throw ValidationException::create(
+                sprintf('Tenant name cannot be longer than %d characters.', self::MAX_NAME_LENGTH),
+                'tenants.error.nameTooLong',
+                ['max' => self::MAX_NAME_LENGTH],
+            );
         }
 
         if ($subdomain === '') {
-            throw new \InvalidArgumentException('Tenant subdomain cannot be empty.');
+            throw ValidationException::create('Tenant subdomain cannot be empty.', 'tenants.error.subdomainRequired');
         }
 
         if ($schemaName === '') {
+            // Internal/derived value, never entered directly by a user — no
+            // error key, this is not a user-facing validation message.
             throw new \InvalidArgumentException('Tenant schema name cannot be empty.');
         }
 
@@ -129,15 +136,19 @@ class Tenant
         $subdomain = trim($subdomain);
 
         if ($name === '') {
-            throw new \InvalidArgumentException('Tenant name cannot be empty.');
+            throw ValidationException::create('Tenant name cannot be empty.', 'tenants.error.nameRequired');
         }
 
         if (mb_strlen($name) > self::MAX_NAME_LENGTH) {
-            throw new \InvalidArgumentException(sprintf('Tenant name cannot be longer than %d characters.', self::MAX_NAME_LENGTH));
+            throw ValidationException::create(
+                sprintf('Tenant name cannot be longer than %d characters.', self::MAX_NAME_LENGTH),
+                'tenants.error.nameTooLong',
+                ['max' => self::MAX_NAME_LENGTH],
+            );
         }
 
         if ($subdomain === '') {
-            throw new \InvalidArgumentException('Tenant subdomain cannot be empty.');
+            throw ValidationException::create('Tenant subdomain cannot be empty.', 'tenants.error.subdomainRequired');
         }
 
         $this->name = $name;

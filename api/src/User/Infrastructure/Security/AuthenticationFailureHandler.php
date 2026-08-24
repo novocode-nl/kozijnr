@@ -12,6 +12,9 @@ final class AuthenticationFailureHandler implements AuthenticationFailureHandler
 {
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): Response
     {
-        return new JsonResponse(['message' => 'Invalid credentials.'], JsonResponse::HTTP_UNAUTHORIZED);
+        return new JsonResponse(
+            ['message' => 'Invalid credentials.', 'errorKey' => 'auth.error.invalidCredentials'],
+            JsonResponse::HTTP_UNAUTHORIZED,
+        );
     }
 }

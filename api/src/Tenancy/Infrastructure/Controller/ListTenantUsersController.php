@@ -2,6 +2,7 @@
 
 namespace App\Tenancy\Infrastructure\Controller;
 
+use App\Shared\Infrastructure\Http\ExceptionResponsePayload;
 use App\Tenancy\Domain\Exception\TenantNotFoundException;
 use App\TenantUser\Application\ListTenantUsers;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -31,7 +32,7 @@ final class ListTenantUsersController
         try {
             $summaries = ($this->listTenantUsers)($subdomain);
         } catch (TenantNotFoundException $exception) {
-            return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_NOT_FOUND);
+            return new JsonResponse(ExceptionResponsePayload::for($exception), JsonResponse::HTTP_NOT_FOUND);
         }
 
         return new JsonResponse(array_map(static fn ($summary) => $summary->toArray(), $summaries));
