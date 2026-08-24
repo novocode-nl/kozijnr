@@ -139,10 +139,19 @@
   },
 
   "users": {
+    "pageTitle": "Users",
+    "newUser": "New user",
     "columnEmail": "Email",
     "columnRoles": "Roles",
     "loadError": "Could not load the users. Please refresh the page.",
+    "loadingRows": "Loading users...",
+    "emptyActive": "No users found.",
     "empty": "This tenant has no users yet.",
+
+    "adminCredentialsTitle": "Administrator created",
+    "adminCredentialsDescription": "Save this password now — it will not be shown again.",
+    "adminCredentialsEmailLabel": "Email",
+    "adminCredentialsPasswordLabel": "Password",
 
     "role": {
       "ROLE_SUPER_ADMIN": "Super administrator",
@@ -151,8 +160,19 @@
     },
 
     "error": {
-      "emailAlreadyExists": "A user with email address \"{{email}}\" already exists."
+      "emailAlreadyExists": "A user with email address \"{{email}}\" already exists.",
+      "emailInvalid": "Enter a valid email address.",
+      "createFailed": "Could not create the user. Please try again."
     }
+  },
+
+  "userForm": {
+    "createTitle": "New user",
+    "createDescription": "Create a new admin user. They will be given the Super administrator role and an automatically generated password.",
+    "emailLabel": "Email address",
+    "emailHint": "Used as the login address for the new admin user.",
+    "createSubmit": "Create user",
+    "creating": "Creating..."
   },
 
   "auth": {
