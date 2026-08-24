@@ -99,6 +99,12 @@ export function TenantsTable({ showArchived }: TenantsTableProps) {
     })
   }
 
+  // Memoized alongside `columns` below (same `i18n.language` dependency) so
+  // a re-render doesn't construct a fresh `Intl.DateTimeFormat` per cell —
+  // that constructor is comparatively expensive and the formatter is stable
+  // for as long as the active language is.
+  const dateFormatter = React.useMemo(() => dateTimeFormatter(i18n.language), [i18n.language])
+
   const columns = React.useMemo(() => {
     const columnHelper = dataTableColumnHelper<TenantSummary>()
 
@@ -130,7 +136,7 @@ export function TenantsTable({ showArchived }: TenantsTableProps) {
             onSort={() => column.toggleSorting()}
           />
         ),
-        cell: ({ row }) => dateTimeFormatter(i18n.language).format(new Date(row.original.createdAt)),
+        cell: ({ row }) => dateFormatter.format(new Date(row.original.createdAt)),
       }),
       columnHelper.display({
         id: "actions",
@@ -151,7 +157,7 @@ export function TenantsTable({ showArchived }: TenantsTableProps) {
         ),
       }),
     ]
-  }, [router, t, i18n.language])
+  }, [router, t, dateFormatter])
 
   if (state.status === "error") {
     return <p className="text-sm text-destructive">{t("tenants.loadError")}</p>

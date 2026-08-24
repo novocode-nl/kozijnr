@@ -13,6 +13,7 @@ import {
   type SortingState,
 } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ArrowUpDown, MoreHorizontal } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -135,6 +136,15 @@ interface DataTableProps<TData extends RowData> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   columns: DataTableColumn<TData, any>[]
   data: TData[]
+  /**
+   * Shown in the body when `data` is empty. Defaults to the generic
+   * `common.noResults` translation (see lib/i18n/resources/*.json) so a
+   * caller that doesn't supply one still gets a locale-aware message
+   * instead of a hardcoded string — this component has no entity-specific
+   * knowledge, so it can't offer a more specific default itself. Callers
+   * with entity-specific copy (e.g. `<TenantsTable>`'s "Geen tenants
+   * gevonden.") should keep passing their own translated string.
+   */
   emptyMessage?: string
   /**
    * When given, the whole row becomes clickable (e.g. navigate to a detail
@@ -147,10 +157,12 @@ interface DataTableProps<TData extends RowData> {
 export function DataTable<TData extends RowData>({
   columns,
   data,
-  emptyMessage = "Geen resultaten.",
+  emptyMessage,
   onRowClick,
 }: DataTableProps<TData>) {
+  const { t } = useTranslation()
   const [sorting, setSorting] = React.useState<SortingState>([])
+  const resolvedEmptyMessage = emptyMessage ?? t("common.noResults")
 
   const table = useTable({
     features: dataTableFeatures,
@@ -197,7 +209,7 @@ export function DataTable<TData extends RowData>({
                 colSpan={columns.length}
                 className="h-24 text-center text-muted-foreground"
               >
-                {emptyMessage}
+                {resolvedEmptyMessage}
               </TableCell>
             </TableRow>
           )}
