@@ -13,6 +13,7 @@ import {
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { listTenants, type TenantSummary } from "@/lib/api"
 import { ArchiveTenantDialog } from "@/components/tenants/archive-tenant-dialog"
+import { dateTimeFormatter } from "@/lib/i18n/date-formatter"
 
 /**
  * Tenant overview table: a thin, tenant-specific wrapper around the
@@ -36,11 +37,6 @@ import { ArchiveTenantDialog } from "@/components/tenants/archive-tenant-dialog"
  * menu, not as a row action here. The row itself is still fully clickable
  * to the same detail page, unchanged from before.
  */
-const dateFormatter = new Intl.DateTimeFormat("nl-NL", {
-  dateStyle: "medium",
-  timeStyle: "short",
-})
-
 type LoadState =
   | { status: "loading" }
   | { status: "error" }
@@ -60,7 +56,7 @@ interface TenantsTableProps {
  */
 export function TenantsTable({ showArchived }: TenantsTableProps) {
   const router = useRouter()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [state, setState] = React.useState<LoadState>({ status: "loading" })
   const [archivingTenant, setArchivingTenant] = React.useState<TenantSummary | null>(null)
 
@@ -134,7 +130,7 @@ export function TenantsTable({ showArchived }: TenantsTableProps) {
             onSort={() => column.toggleSorting()}
           />
         ),
-        cell: ({ row }) => dateFormatter.format(new Date(row.original.createdAt)),
+        cell: ({ row }) => dateTimeFormatter(i18n.language).format(new Date(row.original.createdAt)),
       }),
       columnHelper.display({
         id: "actions",
@@ -155,7 +151,7 @@ export function TenantsTable({ showArchived }: TenantsTableProps) {
         ),
       }),
     ]
-  }, [router, t])
+  }, [router, t, i18n.language])
 
   if (state.status === "error") {
     return <p className="text-sm text-destructive">{t("tenants.loadError")}</p>

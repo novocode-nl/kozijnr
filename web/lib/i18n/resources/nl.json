@@ -8,7 +8,33 @@
     "busy": "Bezig...",
     "cancel": "Annuleren",
     "close": "Sluiten",
-    "genericError": "Er is iets misgegaan."
+    "genericError": "Er is iets misgegaan.",
+    "noResults": "Geen resultaten gevonden."
+  },
+
+  "dashboard": {
+    "adminTitle": "Admin",
+    "adminBody": "Dit is een tijdelijke plaatsvervanger voor de echte admin-dashboardinhoud.",
+    "tenantTitle": "Ingelogd",
+    "tenantBody": "Dit is een tijdelijke plaatsvervanger voor de echte tenant-dashboardinhoud."
+  },
+
+  "notFound": {
+    "title": "Pagina niet gevonden",
+    "bodyAdmin": "Deze pagina bestaat niet (meer) in de admin-omgeving.",
+    "bodyTenant": "Deze pagina bestaat niet (meer) in de omgeving.",
+    "backHome": "Terug naar home"
+  },
+
+  "validation": {
+    "emailInvalid": "Vul een geldig e-mailadres in.",
+    "passwordRequired": "Wachtwoord is verplicht.",
+    "nameRequired": "Naam is verplicht.",
+    "planRequired": "Kies een abonnement.",
+    "interestsRequired": "Kies minimaal één interesse.",
+    "bioTooLong": "Maximaal {{max}} tekens.",
+    "contactPreferenceRequired": "Kies een contactvoorkeur.",
+    "companyNameRequired": "Bedrijfsnaam is verplicht voor een zakelijk account."
   },
 
   "context": {
@@ -65,6 +91,12 @@
     "columnCreatedAt": "Aangemaakt op",
     "rowActionsLabel": "Acties voor {{subdomain}}",
     "actionView": "Bekijken",
+    "actionEdit": "Bewerken",
+    "usersTab": "Gebruikers",
+    "metaCreatedAt": "{{subdomain}} · aangemaakt op {{date}}",
+    "metaArchivedSuffix": " · gearchiveerd",
+    "detailNotFound": "Deze tenant bestaat niet (meer).",
+    "detailLoadError": "Kon de tenant niet laden. Probeer de pagina te verversen.",
     "loadError": "Kon de tenants niet laden. Probeer de pagina te verversen.",
     "loadingRows": "Tenants laden...",
     "emptyActive": "Geen tenants gevonden.",
@@ -79,6 +111,8 @@
       "nameRequired": "Naam is verplicht.",
       "nameTooLong": "Naam mag maximaal {{max}} tekens bevatten.",
       "subdomainRequired": "Subdomain is verplicht.",
+      "subdomainTooLong": "Subdomain mag maximaal {{max}} tekens lang zijn.",
+      "subdomainPattern": "Gebruik alleen kleine letters, cijfers en koppeltekens (bijv. \"acme\" of \"acme-bv\").",
       "adminEmailInvalid": "Voer een geldig e-mailadres in voor de tenant-beheerder.",
       "adminEmailAlreadyExists": "Er bestaat al een gebruiker met e-mailadres \"{{email}}\" binnen deze tenant.",
       "createFailed": "Kon de tenant niet aanmaken. Probeer het opnieuw.",
@@ -105,6 +139,17 @@
   },
 
   "users": {
+    "columnEmail": "E-mail",
+    "columnRoles": "Rollen",
+    "loadError": "Kon de gebruikers niet laden. Probeer de pagina te verversen.",
+    "empty": "Deze tenant heeft nog geen gebruikers.",
+
+    "role": {
+      "ROLE_SUPER_ADMIN": "Super-beheerder",
+      "ROLE_TENANT_ADMIN": "Tenant-beheerder",
+      "ROLE_TENANT_USER": "Gebruiker"
+    },
+
     "error": {
       "emailAlreadyExists": "Er bestaat al een gebruiker met e-mailadres \"{{email}}\"."
     }
@@ -115,5 +160,51 @@
       "invalidCredentials": "Ongeldige inloggegevens.",
       "notAuthenticated": "Niet ingelogd."
     }
+  },
+
+  "demo": {
+    "pageTitle": "ConfigForm demo",
+    "pageSubtitle": "Losstaand voorbeeld van het generieke formulier-component (KOZ-17).",
+    "cardTitle": "Account aanmaken",
+    "cardDescription": "Config-object + één Zod-schema, gerenderd/gevalideerd/afgehandeld door 'ConfigForm'.",
+    "submitLabel": "Account aanmaken",
+    "pendingLabel": "Bezig met versturen...",
+    "lastSubmissionTitle": "Laatst verzonden",
+    "lastSubmissionDescription": "Resultaat van de submit-actie.",
+
+    "fullNameLabel": "Naam",
+    "fullNamePlaceholder": "Jan Jansen",
+    "emailLabel": "E-mailadres",
+    "emailPlaceholder": "jan@bedrijf.nl",
+    "emailHint": "Probeer taken@example.nl om een field-level fout van de action te zien.",
+    "emailTakenError": "Dit e-mailadres is al in gebruik.",
+    "accountTypeLabel": "Accounttype",
+    "accountTypePlaceholder": "Kies een accounttype",
+    "accountTypePersonal": "Persoonlijk",
+    "accountTypeBusiness": "Zakelijk",
+    "companyNameLabel": "Bedrijfsnaam",
+    "companyNamePlaceholder": "Acme BV",
+    "companyNameHint": "Alleen verplicht bij een zakelijk account.",
+    "planLabel": "Abonnement",
+    "planPlaceholder": "Kies een abonnement",
+    "planSolo": "Solo",
+    "planTeam": "Team",
+    "planEnterprise": "Enterprise",
+    "interestsLabel": "Interesses",
+    "interestsPlaceholder": "Kies één of meer interesses",
+    "interestDesign": "Design",
+    "interestDevelopment": "Development",
+    "interestSales": "Sales",
+    "interestSupport": "Support",
+    "bioLabel": "Over jou",
+    "bioPlaceholder": "Een korte introductie...",
+    "bioHint": "Maximaal 280 tekens.",
+    "newsletterLabel": "Nieuwsbrief",
+    "newsletterOptionLabel": "Ja, ik wil de nieuwsbrief ontvangen",
+    "contactPreferenceLabel": "Contactvoorkeur",
+    "contactPreferenceHint": "Hoe mogen we contact met je opnemen? (KOZ-19: hint onder het label, vóór de opties)",
+    "contactPreferenceEmail": "E-mail",
+    "contactPreferencePhone": "Telefoon",
+    "contactPreferenceNone": "Geen voorkeur"
   }
 }

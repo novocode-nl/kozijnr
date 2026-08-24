@@ -2,6 +2,8 @@
 
 import type { ActionResult, FormAction } from "@/lib/forms/types"
 import type { ConfigFormDemoValues } from "@/lib/schemas/config-form-demo"
+import { getClientLocale } from "@/lib/i18n/locale"
+import { translateRequired } from "@/lib/i18n/translate"
 
 /** Fake submit action for the `<ConfigForm>` demo — not a real API call. */
 export const submitDemoForm: FormAction<ConfigFormDemoValues, ConfigFormDemoValues> = async (
@@ -12,7 +14,7 @@ export const submitDemoForm: FormAction<ConfigFormDemoValues, ConfigFormDemoValu
   if (values.email.toLowerCase() === "taken@example.nl") {
     const result: ActionResult<ConfigFormDemoValues> = {
       success: false,
-      fieldErrors: { email: "Dit e-mailadres is al in gebruik." },
+      fieldErrors: { email: translateRequired("demo.emailTakenError", getClientLocale()) },
     }
     return result
   }

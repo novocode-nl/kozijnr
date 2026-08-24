@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
 
 import {
@@ -12,12 +13,13 @@ import {
 import { ConfigForm } from "@/components/config-form/config-form"
 import { createTenant, updateTenant, type CreatedTenant, type TenantSummary } from "@/lib/api"
 import {
-  createTenantFormSchema,
-  tenantFormSchema,
+  buildCreateTenantFormSchema,
+  buildTenantFormSchema,
   type CreateTenantFormValues,
   type TenantFormValues,
 } from "@/lib/schemas/tenant"
 import type { FieldConfig } from "@/lib/forms/types"
+import type { Locale } from "@/lib/i18n/locale"
 
 interface TenantFormDialogProps {
   open: boolean
@@ -37,7 +39,10 @@ interface TenantFormDialogProps {
  */
 export function TenantFormDialog({ open, onOpenChange, tenant, onCreated, onUpdated }: TenantFormDialogProps) {
   const isEdit = tenant != null
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language as Locale
+  const tenantSchema = useMemo(() => buildTenantFormSchema(locale), [locale])
+  const createSchema = useMemo(() => buildCreateTenantFormSchema(locale), [locale])
 
   /**
    * Shared `name`/`slug` field config for both the create and edit tenant
@@ -96,7 +101,7 @@ export function TenantFormDialog({ open, onOpenChange, tenant, onCreated, onUpda
           <ConfigForm
             key={tenant.subdomain}
             fields={editFields}
-            schema={tenantFormSchema}
+            schema={tenantSchema}
             defaultValues={{ name: tenant.name, slug: tenant.subdomain }}
             action={(payload) => updateTenant(tenant.subdomain, payload)}
             onSuccess={(result) => {
@@ -112,7 +117,7 @@ export function TenantFormDialog({ open, onOpenChange, tenant, onCreated, onUpda
           <ConfigForm
             key="create"
             fields={createFields}
-            schema={createTenantFormSchema}
+            schema={createSchema}
             defaultValues={{ name: "", slug: "", adminEmail: "" }}
             action={createTenant}
             onSuccess={(result) => {

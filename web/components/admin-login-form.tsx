@@ -1,11 +1,13 @@
 "use client"
 
+import { useMemo } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useTranslation } from "react-i18next"
 
 import { cn } from "@/lib/utils"
 import { adminLogin } from "@/lib/api"
-import { loginSchema, type LoginFormValues } from "@/lib/schemas/login"
+import { buildLoginSchema, type LoginFormValues } from "@/lib/schemas/login"
+import type { Locale } from "@/lib/i18n/locale"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Field, FieldDescription, FieldSeparator } from "@/components/ui/field"
@@ -39,7 +41,8 @@ export function AdminLoginForm({
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTarget = sanitizeRedirectTarget(searchParams.get(REDIRECT_PARAM))
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const schema = useMemo(() => buildLoginSchema(i18n.language as Locale), [i18n.language])
 
   const fields: FieldConfig<LoginFormValues>[] = [
     {
@@ -84,7 +87,7 @@ export function AdminLoginForm({
             </FieldSeparator>
             <ConfigForm
               fields={fields}
-              schema={loginSchema}
+              schema={schema}
               defaultValues={defaultValues}
               action={adminLogin}
               onSuccess={() => router.push(redirectTarget)}

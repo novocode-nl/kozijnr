@@ -8,7 +8,33 @@
     "busy": "Working...",
     "cancel": "Cancel",
     "close": "Close",
-    "genericError": "Something went wrong."
+    "genericError": "Something went wrong.",
+    "noResults": "No results found."
+  },
+
+  "dashboard": {
+    "adminTitle": "Admin",
+    "adminBody": "This is a temporary placeholder for the real admin dashboard content.",
+    "tenantTitle": "Logged in",
+    "tenantBody": "This is a temporary placeholder for the real tenant dashboard content."
+  },
+
+  "notFound": {
+    "title": "Page not found",
+    "bodyAdmin": "This page doesn't exist (anymore) in the admin environment.",
+    "bodyTenant": "This page doesn't exist (anymore) in this environment.",
+    "backHome": "Back to home"
+  },
+
+  "validation": {
+    "emailInvalid": "Enter a valid email address.",
+    "passwordRequired": "Password is required.",
+    "nameRequired": "Name is required.",
+    "planRequired": "Choose a plan.",
+    "interestsRequired": "Choose at least one interest.",
+    "bioTooLong": "Maximum {{max}} characters.",
+    "contactPreferenceRequired": "Choose a contact preference.",
+    "companyNameRequired": "Company name is required for a business account."
   },
 
   "context": {
@@ -65,6 +91,12 @@
     "columnCreatedAt": "Created at",
     "rowActionsLabel": "Actions for {{subdomain}}",
     "actionView": "View",
+    "actionEdit": "Edit",
+    "usersTab": "Users",
+    "metaCreatedAt": "{{subdomain}} · created on {{date}}",
+    "metaArchivedSuffix": " · archived",
+    "detailNotFound": "This tenant doesn't exist (anymore).",
+    "detailLoadError": "Could not load the tenant. Please refresh the page.",
     "loadError": "Could not load tenants. Please refresh the page.",
     "loadingRows": "Loading tenants...",
     "emptyActive": "No tenants found.",
@@ -79,6 +111,8 @@
       "nameRequired": "Name is required.",
       "nameTooLong": "Name must be at most {{max}} characters long.",
       "subdomainRequired": "Subdomain is required.",
+      "subdomainTooLong": "Subdomain must be at most {{max}} characters long.",
+      "subdomainPattern": "Use only lowercase letters, digits and hyphens (e.g. \"acme\" or \"acme-bv\").",
       "adminEmailInvalid": "Enter a valid email address for the tenant administrator.",
       "adminEmailAlreadyExists": "A user with email address \"{{email}}\" already exists within this tenant.",
       "createFailed": "Could not create the tenant. Please try again.",
@@ -105,6 +139,17 @@
   },
 
   "users": {
+    "columnEmail": "Email",
+    "columnRoles": "Roles",
+    "loadError": "Could not load the users. Please refresh the page.",
+    "empty": "This tenant has no users yet.",
+
+    "role": {
+      "ROLE_SUPER_ADMIN": "Super administrator",
+      "ROLE_TENANT_ADMIN": "Tenant administrator",
+      "ROLE_TENANT_USER": "User"
+    },
+
     "error": {
       "emailAlreadyExists": "A user with email address \"{{email}}\" already exists."
     }
@@ -115,5 +160,51 @@
       "invalidCredentials": "Invalid credentials.",
       "notAuthenticated": "Not authenticated."
     }
+  },
+
+  "demo": {
+    "pageTitle": "ConfigForm demo",
+    "pageSubtitle": "Standalone example of the generic form component (KOZ-17).",
+    "cardTitle": "Create account",
+    "cardDescription": "Config object + one Zod schema, rendered/validated/handled by 'ConfigForm'.",
+    "submitLabel": "Create account",
+    "pendingLabel": "Submitting...",
+    "lastSubmissionTitle": "Last submitted",
+    "lastSubmissionDescription": "Result of the submit action.",
+
+    "fullNameLabel": "Name",
+    "fullNamePlaceholder": "Jan Jansen",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "jan@company.com",
+    "emailHint": "Try taken@example.com to see a field-level error from the action.",
+    "emailTakenError": "This email address is already in use.",
+    "accountTypeLabel": "Account type",
+    "accountTypePlaceholder": "Choose an account type",
+    "accountTypePersonal": "Personal",
+    "accountTypeBusiness": "Business",
+    "companyNameLabel": "Company name",
+    "companyNamePlaceholder": "Acme BV",
+    "companyNameHint": "Only required for a business account.",
+    "planLabel": "Plan",
+    "planPlaceholder": "Choose a plan",
+    "planSolo": "Solo",
+    "planTeam": "Team",
+    "planEnterprise": "Enterprise",
+    "interestsLabel": "Interests",
+    "interestsPlaceholder": "Choose one or more interests",
+    "interestDesign": "Design",
+    "interestDevelopment": "Development",
+    "interestSales": "Sales",
+    "interestSupport": "Support",
+    "bioLabel": "About you",
+    "bioPlaceholder": "A short introduction...",
+    "bioHint": "Maximum 280 characters.",
+    "newsletterLabel": "Newsletter",
+    "newsletterOptionLabel": "Yes, I'd like to receive the newsletter",
+    "contactPreferenceLabel": "Contact preference",
+    "contactPreferenceHint": "How may we contact you? (KOZ-19: hint below the label, before the options)",
+    "contactPreferenceEmail": "Email",
+    "contactPreferencePhone": "Phone",
+    "contactPreferenceNone": "No preference"
   }
 }

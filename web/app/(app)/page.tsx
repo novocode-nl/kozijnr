@@ -1,4 +1,6 @@
 import { getAppContext } from "@/lib/context/app-context"
+import { getServerLocale } from "@/lib/i18n/server-locale"
+import { translate } from "@/lib/i18n/translate"
 
 /**
  * Deliberate placeholder. The real home-page content for either context is
@@ -10,17 +12,17 @@ import { getAppContext } from "@/lib/context/app-context"
  * only one page component instead of two near-identical ones.
  */
 export default async function HomePage() {
-  const context = await getAppContext()
+  const [context, locale] = await Promise.all([getAppContext(), getServerLocale()])
 
   const copy =
     context === "admin"
       ? {
-          title: "Admin",
-          body: "Dit is een tijdelijke plaatsvervanger voor de echte admin-dashboardinhoud.",
+          title: translate("dashboard.adminTitle", locale),
+          body: translate("dashboard.adminBody", locale),
         }
       : {
-          title: "Ingelogd",
-          body: "Dit is een tijdelijke plaatsvervanger voor de echte tenant-dashboardinhoud.",
+          title: translate("dashboard.tenantTitle", locale),
+          body: translate("dashboard.tenantBody", locale),
         }
 
   return (

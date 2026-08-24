@@ -61,3 +61,18 @@ export function translate(
     name in params ? String(params[name]) : match
   )
 }
+
+/**
+ * Non-optional counterpart to `translate`, for call sites that always pass
+ * a known-good key (e.g. the Zod schema factories in lib/schemas/) and want
+ * a plain `string` rather than `string | undefined` — falls back to the key
+ * itself (still better than `undefined` reaching, say, a Zod issue message)
+ * if it's ever missing from the catalog.
+ */
+export function translateRequired(
+  key: string,
+  locale: Locale = DEFAULT_LOCALE,
+  params?: Record<string, string | number>
+): string {
+  return translate(key, locale, params) ?? key
+}
