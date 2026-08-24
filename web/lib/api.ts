@@ -70,6 +70,20 @@ export type TenantAdminCredentials = {
 
 export type CreatedTenant = TenantSummary & { tenantAdmin: TenantAdminCredentials }
 
+/**
+ * Payload shape CreateTenantUserController expects: an email address plus
+ * one of the two roles that exist on the backend's TenantUser
+ * (ROLE_TENANT_ADMIN / ROLE_TENANT_USER).
+ */
+export type CreateTenantUserPayload = { email: string; role: string }
+
+/**
+ * Response shape from POST /api/admin/tenants/{subdomain}/users: the
+ * created tenant user plus its generated one-time password (KOZ-31),
+ * mirroring `CreatedTenant`'s `tenantAdmin` shape.
+ */
+export type CreatedTenantUser = TenantUserSummary & { password: string }
+
 export async function login(values: LoginFormValues): Promise<LoginResult> {
   return postCredentials("/api/login", values)
 }
@@ -133,6 +147,45 @@ export async function listTenantUsers(subdomain: string): Promise<TenantUserSumm
   }
 
   return response.json()
+}
+
+// Translated lazily, same reasoning as tenantCreateFailedMessage() etc. below.
+function tenantUserCreateFailedMessage(): string {
+  return translate("tenants.error.createFailed", getClientLocale()) ?? "Failed to create tenant user."
+}
+
+/**
+ * "Gebruiker toevoegen" action on the tenant users tab (KOZ-31): POST
+ * /api/admin/tenants/{subdomain}/users, guarded backend-side by the
+ * `tenant:users:create` permission (see CreateTenantUserController). The
+ * backend reports failures (invalid email, invalid role, duplicate email
+ * within the tenant) as a single `{ message, errorKey }`, not a field-keyed
+ * map — attached to `email` here (the field every one of those failures is
+ * actually about) so `<ConfigForm>` shows it in the right place.
+ */
+export async function createTenantUser(
+  subdomain: string,
+  payload: CreateTenantUserPayload
+): Promise<ActionResult<CreatedTenantUser>> {
+  let response: Response
+  try {
+    response = await fetch(backendUrl(`/api/admin/tenants/${encodeURIComponent(subdomain)}/users`), {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+  } catch {
+    return { success: false, message: tenantUserCreateFailedMessage() }
+  }
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null)
+    const message = apiErrorMessage(body, tenantUserCreateFailedMessage())
+    return { success: false, fieldErrors: { email: message } }
+  }
+
+  return { success: true, data: await response.json() }
 }
 
 export async function adminLogout(): Promise<void> {
