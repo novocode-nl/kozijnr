@@ -2,10 +2,8 @@
 
 namespace App\TenantUser\Application;
 
-use App\Shared\Domain\Exception\ValidationException;
 use App\Tenancy\Domain\Exception\TenantNotFoundException;
 use App\Tenancy\Domain\TenantRepositoryInterface;
-use App\TenantUser\Domain\TenantUser;
 use Doctrine\DBAL\Connection;
 
 /**
@@ -18,43 +16,25 @@ use Doctrine\DBAL\Connection;
  * back to `public` — same approach ListTenantUsers and
  * ProvisionTenantWithAdmin already use for the same schema switch.
  *
- * The caller picks a role from the two that exist on TenantUser
- * (ROLE_TENANT_ADMIN / the default ROLE_TENANT_USER) — this ticket adds no
- * new roles, only the ability to choose between the two that already
- * exist. A generated password is returned once, alongside the created
- * user, the same one-time-credentials pattern
- * ProvisionTenantWithAdmin/CreateTenantController already use.
+ * KOZ-31 rework: the validation + actual write is delegated to
+ * CreateTenantUserForCurrentTenant, shared with the tenant-own
+ * self-service flow — this class's only remaining job is resolving
+ * "subdomain" -> "the right schema" before delegating, which the
+ * self-service flow doesn't need at all (its schema is already right, from
+ * the logged-in tenant-user's own session/Host header, never a
+ * client-supplied subdomain).
  */
 final class CreateTenantUserForTenant
 {
-    /** @var list<string> */
-    private const ALLOWED_ROLES = [TenantUser::ROLE_TENANT_ADMIN, TenantUser::DEFAULT_ROLE];
-
     public function __construct(
         private readonly Connection $connection,
         private readonly TenantRepositoryInterface $tenantRepository,
-        private readonly CreateTenantUser $createTenantUser,
+        private readonly CreateTenantUserForCurrentTenant $createTenantUserForCurrentTenant,
     ) {
     }
 
     public function __invoke(string $subdomain, string $email, string $role): CreatedTenantUserForTenant
     {
-        $email = trim($email);
-
-        if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            throw ValidationException::create(
-                'Tenant-user email must be a valid email address.',
-                'tenants.error.userEmailInvalid',
-            );
-        }
-
-        if (!in_array($role, self::ALLOWED_ROLES, true)) {
-            throw ValidationException::create(
-                sprintf('Invalid tenant-user role "%s".', $role),
-                'tenants.error.userRoleInvalid',
-            );
-        }
-
         $this->connection->executeStatement('SET search_path TO public');
 
         $tenant = $this->tenantRepository->findBySubdomain($subdomain);
@@ -62,19 +42,15 @@ final class CreateTenantUserForTenant
             throw TenantNotFoundException::forSubdomain($subdomain);
         }
 
-        $password = bin2hex(random_bytes(12));
-
         $this->connection->executeStatement(sprintf(
             'SET search_path TO %s, public',
             $this->connection->quoteSingleIdentifier($tenant->getSchemaName()),
         ));
 
         try {
-            $tenantUser = ($this->createTenantUser)($email, $password, [$role]);
+            return ($this->createTenantUserForCurrentTenant)($email, $role);
         } finally {
             $this->connection->executeStatement('SET search_path TO public');
         }
-
-        return new CreatedTenantUserForTenant($tenantUser->getEmail(), $tenantUser->getRoles(), $password);
     }
 }

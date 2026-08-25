@@ -141,6 +141,7 @@
   },
 
   "users": {
+    "pageTitle": "Users",
     "columnEmail": "Email",
     "columnRoles": "Roles",
     "loadError": "Could not load the users. Please refresh the page.",

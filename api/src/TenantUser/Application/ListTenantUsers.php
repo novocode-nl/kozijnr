@@ -4,7 +4,6 @@ namespace App\TenantUser\Application;
 
 use App\Tenancy\Domain\Exception\TenantNotFoundException;
 use App\Tenancy\Domain\TenantRepositoryInterface;
-use App\TenantUser\Domain\TenantUserRepositoryInterface;
 use Doctrine\DBAL\Connection;
 
 /**
@@ -13,13 +12,18 @@ use Doctrine\DBAL\Connection;
  * in the public schema, switches search_path into its tenant schema for
  * the duration of the read, then always resets back to `public` —
  * mirroring CreateTenantUserCommand's approach to the same schema switch.
+ *
+ * KOZ-31 rework: the actual read is delegated to
+ * ListTenantUsersForCurrentTenant, shared with the tenant-own self-service
+ * "Gebruikers" page — this class's only remaining job is resolving
+ * "subdomain" -> "the right schema" before delegating.
  */
 final class ListTenantUsers
 {
     public function __construct(
         private readonly Connection $connection,
         private readonly TenantRepositoryInterface $tenantRepository,
-        private readonly TenantUserRepositoryInterface $tenantUserRepository,
+        private readonly ListTenantUsersForCurrentTenant $listTenantUsersForCurrentTenant,
     ) {
     }
 
@@ -39,7 +43,7 @@ final class ListTenantUsers
         ));
 
         try {
-            return array_map(TenantUserSummary::fromTenantUser(...), $this->tenantUserRepository->findAll());
+            return ($this->listTenantUsersForCurrentTenant)();
         } finally {
             $this->connection->executeStatement('SET search_path TO public');
         }

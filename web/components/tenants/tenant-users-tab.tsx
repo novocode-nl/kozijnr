@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { TenantUserFormDialog } from "@/components/tenants/tenant-user-form-dialog"
 import { TenantUserCredentialsDialog } from "@/components/tenants/tenant-user-credentials-dialog"
-import { listTenantUsers, type CreatedTenantUser, type TenantUserSummary } from "@/lib/api"
+import { createTenantUser, listTenantUsers, type CreatedTenantUser, type TenantUserSummary } from "@/lib/api"
 import { roleLabel } from "@/lib/i18n/role-labels"
 
 type LoadState =
@@ -76,7 +76,7 @@ export function TenantUsersTab({ subdomain }: { subdomain: string }) {
       <TenantUserFormDialog
         open={addOpen}
         onOpenChange={setAddOpen}
-        subdomain={subdomain}
+        action={(payload) => createTenantUser(subdomain, payload)}
         onCreated={handleCreated}
       />
       <TenantUserCredentialsDialog

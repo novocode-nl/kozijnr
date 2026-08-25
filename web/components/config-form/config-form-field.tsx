@@ -147,7 +147,25 @@ export function ConfigFormField<TValues extends FieldValues>({
                 disabled={field.disabled}
               >
                 <SelectTrigger id={field.name} aria-invalid={invalid} className="w-full">
-                  <SelectValue placeholder={field.placeholder} />
+                  {/*
+                    base-ui's <Select.Value> only resolves a selected
+                    item's *label* from an `items`/`itemToStringLabel` prop
+                    on <Select.Root> (see resolveSelectedLabel in
+                    @base-ui/react's internals) — it does NOT infer it from
+                    the mounted <SelectItem> children the way Radix's
+                    SelectValue used to. Since <Select> here is never given
+                    an `items` prop, it fell back to the raw selected
+                    value string (e.g. "ROLE_TENANT_ADMIN" instead of its
+                    translated label). Passing a render function looks the
+                    label up from `field.options` directly, the single
+                    source of truth already used to render the
+                    <SelectItem>s below.
+                  */}
+                  <SelectValue placeholder={field.placeholder}>
+                    {(value: string | null) =>
+                      field.options.find((option) => option.value === value)?.label ?? field.placeholder
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {field.options.map((option) => (

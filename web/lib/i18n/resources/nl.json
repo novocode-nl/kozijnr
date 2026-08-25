@@ -141,6 +141,7 @@
   },
 
   "users": {
+    "pageTitle": "Gebruikers",
     "columnEmail": "E-mail",
     "columnRoles": "Rollen",
     "loadError": "Kon de gebruikers niet laden. Probeer de pagina te verversen.",
