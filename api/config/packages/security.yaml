@@ -106,6 +106,7 @@ security:
         - { path: ^/api/admin, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api/login$, roles: PUBLIC_ACCESS }
         - { path: ^/api/me$, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/me/profile-photo$, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api/logout$, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api/users$, roles: IS_AUTHENTICATED_FULLY }
 

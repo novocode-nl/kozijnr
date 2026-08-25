@@ -47,6 +47,7 @@
     "adminDashboard": "Admin dashboard",
     "tenants": "Tenants",
     "users": "Users",
+    "profile": "My profile",
     "settings": "Settings",
     "support": "Support"
   },
@@ -197,6 +198,30 @@
     "error": {
       "invalidCredentials": "Invalid credentials.",
       "notAuthenticated": "Not authenticated."
+    }
+  },
+
+  "profile": {
+    "pageTitle": "My profile",
+    "detailsSectionTitle": "Details",
+    "photoSectionTitle": "Profile photo",
+    "photoAlt": "Profile photo",
+    "emailLabel": "Email address",
+    "roleLabel": "Role",
+    "uploadButton": "Upload photo",
+    "changeButton": "Change photo",
+    "uploading": "Uploading...",
+    "photoHint": "JPEG, PNG or WEBP, max. 5 MB.",
+    "loadError": "Could not load your profile. Please refresh the page."
+  },
+
+  "profilePhoto": {
+    "error": {
+      "unsupportedMimeType": "Only JPEG, PNG or WEBP images are allowed.",
+      "empty": "The file is empty.",
+      "tooLarge": "The image is too large (max. 5 MB).",
+      "missingFile": "Choose a file to upload first.",
+      "uploadFailed": "Could not upload the profile photo. Please try again."
     }
   },
 
