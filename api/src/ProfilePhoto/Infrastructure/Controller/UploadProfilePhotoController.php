@@ -45,11 +45,25 @@ final class UploadProfilePhotoController
             );
         }
 
+        // finfo inspects the actual file contents; the client-sent
+        // Content-Type header (getClientMimeType()) is attacker-controlled
+        // and must never be trusted as a fallback. When finfo can't
+        // classify the content, reject outright rather than falling back
+        // to what the client claims.
+        $mimeType = $file->getMimeType();
+
+        if ($mimeType === null) {
+            return new JsonResponse(
+                ExceptionResponsePayload::withKey('Could not determine the profile photo mime type.', 'profilePhoto.error.unsupportedMimeType'),
+                JsonResponse::HTTP_UNPROCESSABLE_ENTITY,
+            );
+        }
+
         try {
             $photo = ($this->uploadProfilePhoto)(
                 $user->getId(),
                 $file->getClientOriginalName(),
-                $file->getMimeType() ?? $file->getClientMimeType(),
+                $mimeType,
                 (string) file_get_contents($file->getPathname()),
             );
         } catch (ValidationException $exception) {

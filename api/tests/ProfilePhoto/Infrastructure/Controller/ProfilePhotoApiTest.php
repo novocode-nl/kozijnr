@@ -110,6 +110,37 @@ final class ProfilePhotoApiTest extends WebTestCase
         self::assertSame('profilePhoto.error.unsupportedMimeType', $body['errorKey']);
     }
 
+    /**
+     * KOZ-32 rework: regression test for the blocking review finding — a
+     * file between the application's 5MB limit and PHP's configured
+     * upload_max_filesize/post_max_size (6M/8M, see docker/backend/uploads.ini)
+     * must reach UploadProfilePhoto's own size check and come back as
+     * profilePhoto.error.tooLarge, not be silently rejected by PHP itself
+     * (UPLOAD_ERR_INI_SIZE) as the generic profilePhoto.error.missingFile.
+     */
+    public function testUploadingAFileOverTheApplicationLimitButUnderThePhpIniLimitIsRejectedAsTooLarge(): void
+    {
+        $this->login();
+
+        $pngHeader = base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+        );
+        // 5.5MB: over UploadProfilePhoto::MAX_SIZE_IN_BYTES (5MB) but under
+        // php.ini's upload_max_filesize (6M) / post_max_size (8M), so PHP
+        // itself must accept the upload and hand it to the application.
+        $oversizedContents = $pngHeader . str_repeat('0', (int) (5.5 * 1024 * 1024) - strlen($pngHeader));
+        self::assertGreaterThan(5 * 1024 * 1024, strlen($oversizedContents));
+        self::assertLessThan(6 * 1024 * 1024, strlen($oversizedContents));
+
+        $uploadedFile = $this->makeUploadedFile($oversizedContents, 'oversized.png', 'image/png');
+
+        $this->client->request('POST', self::UPLOAD_URL, server: ['HTTP_HOST' => self::ADMIN_HOST], files: ['photo' => $uploadedFile]);
+
+        self::assertResponseStatusCodeSame(422);
+        $body = json_decode($this->client->getResponse()->getContent(), true);
+        self::assertSame('profilePhoto.error.tooLarge', $body['errorKey']);
+    }
+
     public function testUploadingWithoutAFileIsRejected(): void
     {
         $this->login();

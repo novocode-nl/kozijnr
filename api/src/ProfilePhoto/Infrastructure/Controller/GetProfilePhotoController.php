@@ -4,6 +4,7 @@ namespace App\ProfilePhoto\Infrastructure\Controller;
 
 use App\ProfilePhoto\Application\GetProfilePhoto;
 use App\User\Domain\User;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
@@ -33,7 +34,14 @@ final class GetProfilePhotoController
 
         return new Response($content->contents, Response::HTTP_OK, [
             'Content-Type' => $content->mimeType,
-            'Content-Disposition' => sprintf('inline; filename="%s"', $content->originalFilename),
+            // The original filename is client-supplied and unsanitized —
+            // build the header via Symfony's HeaderUtils instead of manual
+            // string interpolation so a filename containing a double quote
+            // can't inject extra header attributes.
+            'Content-Disposition' => HeaderUtils::makeDisposition(
+                HeaderUtils::DISPOSITION_INLINE,
+                $content->originalFilename,
+            ),
         ]);
     }
 }
