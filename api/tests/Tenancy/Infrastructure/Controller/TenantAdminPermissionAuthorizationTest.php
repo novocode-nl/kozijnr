@@ -153,6 +153,34 @@ final class TenantAdminPermissionAuthorizationTest extends WebTestCase
         self::assertResponseIsSuccessful();
     }
 
+    public function testAUserWithoutTheUsersCreatePermissionCannotCreateATenantUser(): void
+    {
+        $this->createUserWithPermissions('no-users-create@kozijnr.nl', 'super-secret-123', ['tenant:create']);
+        $this->login('no-users-create@kozijnr.nl', 'super-secret-123');
+
+        $this->createTenantRequest('Acme', 'acme');
+
+        $this->client->request('POST', '/api/admin/tenants/acme/users', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['email' => 'iemand@acme.test', 'role' => 'ROLE_TENANT_USER']));
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testAUserWithTheUsersCreatePermissionCanCreateATenantUser(): void
+    {
+        $this->createUserWithPermissions('users-create@kozijnr.nl', 'super-secret-123', ['tenant:create', 'tenant:users:create']);
+        $this->login('users-create@kozijnr.nl', 'super-secret-123');
+
+        $this->createTenantRequest('Acme', 'acme');
+
+        $this->client->request('POST', '/api/admin/tenants/acme/users', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['email' => 'iemand@acme.test', 'role' => 'ROLE_TENANT_USER']));
+        self::assertResponseStatusCodeSame(201);
+    }
+
     /**
      * @param list<string> $permissionNames Must already exist (seeded by
      *                                       migration), e.g. 'tenant:list'.

@@ -110,6 +110,141 @@ final class TenantAdminApiTest extends WebTestCase
         self::assertContains('ROLE_TENANT_ADMIN', $users[0]['roles']);
     }
 
+    public function testASuperAdminCanCreateAnAdditionalTenantUserWithAChosenRole(): void
+    {
+        $this->login('admin@kozijnr.nl', 'super-secret-123');
+
+        $this->createTenant('Acme B.V.', 'acme');
+
+        $this->client->request('POST', '/api/admin/tenants/acme/users', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['email' => 'collega@acme.test', 'role' => 'ROLE_TENANT_USER']));
+
+        self::assertResponseStatusCodeSame(201);
+        $created = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertSame('collega@acme.test', $created['email']);
+        self::assertSame(['ROLE_TENANT_USER'], $created['roles']);
+        self::assertNotEmpty($created['password']);
+
+        $this->client->request('GET', '/api/admin/tenants/acme/users', server: ['HTTP_HOST' => self::ADMIN_HOST]);
+        $users = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertCount(2, $users);
+        $emails = array_column($users, 'email');
+        self::assertContains('collega@acme.test', $emails);
+    }
+
+    public function testASuperAdminCanCreateAnAdditionalTenantAdmin(): void
+    {
+        $this->login('admin@kozijnr.nl', 'super-secret-123');
+
+        $this->createTenant('Acme B.V.', 'acme');
+
+        $this->client->request('POST', '/api/admin/tenants/acme/users', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['email' => 'tweede-beheerder@acme.test', 'role' => 'ROLE_TENANT_ADMIN']));
+
+        self::assertResponseStatusCodeSame(201);
+        $created = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertSame(['ROLE_TENANT_ADMIN'], $created['roles']);
+    }
+
+    public function testCreatingATenantUserWithoutARoleDefaultsToTheTenantUserRole(): void
+    {
+        $this->login('admin@kozijnr.nl', 'super-secret-123');
+        $this->createTenant('Acme B.V.', 'acme');
+
+        $this->client->request('POST', '/api/admin/tenants/acme/users', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['email' => 'zonder-rol@acme.test']));
+
+        self::assertResponseStatusCodeSame(201);
+        $created = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertSame(['ROLE_TENANT_USER'], $created['roles']);
+    }
+
+    public function testCreatingATenantUserWithADuplicateEmailFailsWithAStableErrorKeyAndDoesNotCrash(): void
+    {
+        $this->login('admin@kozijnr.nl', 'super-secret-123');
+        $this->createTenant('Acme B.V.', 'acme', 'beheerder@acme.test');
+
+        $this->client->request('POST', '/api/admin/tenants/acme/users', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['email' => 'beheerder@acme.test', 'role' => 'ROLE_TENANT_USER']));
+
+        self::assertResponseStatusCodeSame(422);
+        $payload = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertSame('tenants.error.adminEmailAlreadyExists', $payload['errorKey']);
+    }
+
+    public function testCreatingATenantUserWithAnInvalidEmailFails(): void
+    {
+        $this->login('admin@kozijnr.nl', 'super-secret-123');
+        $this->createTenant('Acme B.V.', 'acme');
+
+        $this->client->request('POST', '/api/admin/tenants/acme/users', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['email' => 'not-an-email', 'role' => 'ROLE_TENANT_USER']));
+
+        self::assertResponseStatusCodeSame(422);
+        $payload = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertSame('tenants.error.userEmailInvalid', $payload['errorKey']);
+    }
+
+    public function testCreatingATenantUserWithAnInvalidRoleFails(): void
+    {
+        $this->login('admin@kozijnr.nl', 'super-secret-123');
+        $this->createTenant('Acme B.V.', 'acme');
+
+        $this->client->request('POST', '/api/admin/tenants/acme/users', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['email' => 'iemand@acme.test', 'role' => 'ROLE_SUPER_ADMIN']));
+
+        self::assertResponseStatusCodeSame(422);
+        $payload = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertSame('tenants.error.userRoleInvalid', $payload['errorKey']);
+    }
+
+    public function testCreatingATenantUserForAnUnknownTenantReturnsNotFound(): void
+    {
+        $this->login('admin@kozijnr.nl', 'super-secret-123');
+
+        $this->client->request('POST', '/api/admin/tenants/does-not-exist/users', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['email' => 'iemand@example.test', 'role' => 'ROLE_TENANT_USER']));
+
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testCreatingATenantUserOnlyEverWritesIntoItsOwnTenantSchema(): void
+    {
+        $this->login('admin@kozijnr.nl', 'super-secret-123');
+        $this->createTenant('Acme B.V.', 'acme');
+        $this->createTenant('Beta B.V.', 'beta');
+
+        $this->client->request('POST', '/api/admin/tenants/acme/users', server: [
+            'HTTP_HOST' => self::ADMIN_HOST,
+            'CONTENT_TYPE' => 'application/json',
+        ], content: json_encode(['email' => 'alleen-acme@acme.test', 'role' => 'ROLE_TENANT_USER']));
+        self::assertResponseStatusCodeSame(201);
+
+        $this->client->request('GET', '/api/admin/tenants/beta/users', server: ['HTTP_HOST' => self::ADMIN_HOST]);
+        $betaUsers = json_decode((string) $this->client->getResponse()->getContent(), true);
+        $betaEmails = array_column($betaUsers, 'email');
+        self::assertNotContains('alleen-acme@acme.test', $betaEmails);
+
+        $this->client->request('GET', '/api/admin/tenants/acme/users', server: ['HTTP_HOST' => self::ADMIN_HOST]);
+        $acmeUsers = json_decode((string) $this->client->getResponse()->getContent(), true);
+        $acmeEmails = array_column($acmeUsers, 'email');
+        self::assertContains('alleen-acme@acme.test', $acmeEmails);
+    }
+
     public function testCreatingATenantWithAnInvalidAdminEmailFails(): void
     {
         $this->login('admin@kozijnr.nl', 'super-secret-123');

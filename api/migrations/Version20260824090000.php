@@ -8,44 +8,35 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
 /**
- * KOZ-32: `profile_photos` holds only metadata for an uploaded profile
- * photo (owner, mime-type, storage key, size, original filename) — the
- * binary content itself lives wherever the active FileStorageInterface
- * adapter puts it (local disk in dev, an S3-compatible bucket in
- * production), addressed only by `storage_key`.
- *
- * Public schema (alongside `users`): today's only owner is the
- * super-admin realm's App\User\Domain\User. One row per owner
- * (uniq_profile_photos_owner_id) — a new upload replaces the previous
- * photo rather than keeping history, see
- * App\ProfilePhoto\Application\UploadProfilePhoto.
+ * Seeds the `tenant:users:create` permission (KOZ-31: "Gebruiker
+ * toevoegen" action on a tenant's "Gebruikers" tab) and grants it to
+ * ROLE_SUPER_ADMIN, alongside the existing tenant:users:list permission
+ * from Version20260822110000. Kept distinct from tenant:users:list so
+ * listing and creating tenant users can be granted independently.
  */
 final class Version20260824090000 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'Create the profile_photos table (KOZ-32 file storage: metadata only, never the binary content).';
+        return 'Seed the tenant:users:create permission and grant it to ROLE_SUPER_ADMIN.';
     }
 
     public function up(Schema $schema): void
     {
-        $this->addSql(<<<'SQL'
-            CREATE TABLE profile_photos (
-                id SERIAL NOT NULL,
-                owner_id INT NOT NULL,
-                storage_key VARCHAR(255) NOT NULL,
-                mime_type VARCHAR(127) NOT NULL,
-                size_in_bytes INT NOT NULL,
-                original_filename VARCHAR(255) NOT NULL,
-                uploaded_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,
-                PRIMARY KEY(id)
-            )
-            SQL);
-        $this->addSql('CREATE UNIQUE INDEX uniq_profile_photos_owner_id ON profile_photos (owner_id)');
+        $this->addSql("INSERT INTO permissions (name) VALUES ('tenant:users:create')");
+        $this->addSql(
+            "INSERT INTO role_permissions (role_id, permission_id) "
+            . "SELECT r.id, p.id FROM roles r, permissions p "
+            . "WHERE r.name = 'ROLE_SUPER_ADMIN' AND p.name = 'tenant:users:create'"
+        );
     }
 
     public function down(Schema $schema): void
     {
-        $this->addSql('DROP TABLE profile_photos');
+        $this->addSql(
+            "DELETE FROM role_permissions WHERE permission_id = "
+            . "(SELECT id FROM permissions WHERE name = 'tenant:users:create')"
+        );
+        $this->addSql("DELETE FROM permissions WHERE name = 'tenant:users:create'");
     }
 }

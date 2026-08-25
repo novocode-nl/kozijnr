@@ -22,4 +22,9 @@ final class DoctrineUserRepository implements UserRepositoryInterface
         $this->entityManager->persist($user);
         $this->entityManager->flush();
     }
+
+    public function findAll(): array
+    {
+        return $this->entityManager->getRepository(User::class)->findBy([], ['email' => 'ASC']);
+    }
 }

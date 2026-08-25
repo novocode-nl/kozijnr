@@ -28,12 +28,25 @@ export type NavSecondaryItem = {
   icon: LucideIcon
 }
 
-/** The tenant menu: identical for every tenant, no per-tenant items. */
+/**
+ * The tenant menu: identical for every tenant, no per-tenant items.
+ *
+ * KOZ-31 rework: "Gebruikers" links to the tenant-own self-service
+ * "Gebruiker toevoegen" page — reachable by any logged-in tenant user (the
+ * page itself hides the add-action for anyone without ROLE_TENANT_ADMIN,
+ * and the backend enforces the same gate independently, see
+ * CreateOwnTenantUserController).
+ */
 const tenantNavMain: NavMainItem[] = [
   {
     title: "nav.dashboard",
     url: "/",
     icon: LayoutDashboard,
+  },
+  {
+    title: "nav.users",
+    url: "/users",
+    icon: Users,
   },
 ]
 
@@ -56,7 +69,7 @@ const adminNavMain: NavMainItem[] = [
   },
   {
     title: "nav.users",
-    url: "#",
+    url: "/users",
     icon: Users,
   },
 ]
