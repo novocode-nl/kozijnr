@@ -2,7 +2,8 @@
 
 namespace App\Tenancy\Application;
 
-use App\Shared\Domain\Exception\ValidationException;
+use App\Shared\Domain\EmailAddress;
+use App\Shared\Domain\Security\GeneratedPassword;
 use App\TenantUser\Application\CreateTenantUser;
 use App\TenantUser\Domain\TenantUser;
 use Doctrine\DBAL\Connection;
@@ -42,18 +43,15 @@ final class ProvisionTenantWithAdmin
 
     public function __invoke(string $name, string $slug, string $adminEmail): ProvisionedTenantWithAdmin
     {
-        $email = trim($adminEmail);
-
-        if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            throw ValidationException::create(
-                'Tenant-admin email must be a valid email address.',
-                'tenants.error.adminEmailInvalid',
-            );
-        }
+        $email = EmailAddress::validated(
+            $adminEmail,
+            'Tenant-admin email must be a valid email address.',
+            'tenants.error.adminEmailInvalid',
+        );
 
         $tenant = ($this->provisionTenant)($name, $slug);
 
-        $password = bin2hex(random_bytes(12));
+        $password = GeneratedPassword::generate();
 
         $this->connection->executeStatement(sprintf(
             'SET search_path TO %s, public',

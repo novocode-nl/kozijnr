@@ -2,7 +2,9 @@
 
 namespace App\TenantUser\Application;
 
+use App\Shared\Domain\EmailAddress;
 use App\Shared\Domain\Exception\ValidationException;
+use App\Shared\Domain\Security\GeneratedPassword;
 use App\TenantUser\Domain\TenantUser;
 
 /**
@@ -40,14 +42,11 @@ final class CreateTenantUserForCurrentTenant
 
     public function __invoke(string $email, string $role): CreatedTenantUserForTenant
     {
-        $email = trim($email);
-
-        if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            throw ValidationException::create(
-                'Tenant-user email must be a valid email address.',
-                'tenants.error.userEmailInvalid',
-            );
-        }
+        $email = EmailAddress::validated(
+            $email,
+            'Tenant-user email must be a valid email address.',
+            'tenants.error.userEmailInvalid',
+        );
 
         if (!in_array($role, self::ALLOWED_ROLES, true)) {
             throw ValidationException::create(
@@ -56,7 +55,7 @@ final class CreateTenantUserForCurrentTenant
             );
         }
 
-        $password = bin2hex(random_bytes(12));
+        $password = GeneratedPassword::generate();
         $tenantUser = ($this->createTenantUser)($email, $password, [$role]);
 
         return new CreatedTenantUserForTenant($tenantUser->getEmail(), $tenantUser->getRoles(), $password);
