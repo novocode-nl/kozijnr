@@ -2,8 +2,7 @@
 
 namespace App\ProfilePhoto\Infrastructure\Controller;
 
-use App\ProfilePhoto\Application\GetProfilePhoto;
-use App\ProfilePhoto\Infrastructure\Http\ProfilePhotoContentDisposition;
+use App\ProfilePhoto\Infrastructure\Http\ProfilePhotoEndpoint;
 use App\TenantUser\Domain\TenantUser;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,11 +15,15 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * 404 when none has been uploaded yet. Authorization is structural: the
  * owner id always comes from the authenticated tenant user's own id, never
  * from client input, so there is no way to request another user's photo.
+ *
+ * Deliberately a bare (non-JSON) 401 — this endpoint returns raw image
+ * bytes, not JSON, so its unauthenticated response stays bodyless too,
+ * unlike the upload counterpart's JSON payload.
  */
 final class GetTenantProfilePhotoController
 {
     public function __construct(
-        private readonly GetProfilePhoto $getProfilePhoto,
+        private readonly ProfilePhotoEndpoint $endpoint,
         private readonly Security $security,
     ) {
     }
@@ -34,15 +37,6 @@ final class GetTenantProfilePhotoController
             return new Response('', Response::HTTP_UNAUTHORIZED);
         }
 
-        $content = ($this->getProfilePhoto)($user->getId());
-
-        if ($content === null) {
-            return new Response('', Response::HTTP_NOT_FOUND);
-        }
-
-        return new Response($content->contents, Response::HTTP_OK, [
-            'Content-Type' => $content->mimeType,
-            'Content-Disposition' => ProfilePhotoContentDisposition::forOriginalFilename($content->originalFilename),
-        ]);
+        return $this->endpoint->handleGet($user->getId());
     }
 }
