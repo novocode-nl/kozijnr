@@ -21,7 +21,18 @@ use Symfony\Component\HttpKernel\KernelEvents;
  */
 final class TenantRouteGuardListener implements EventSubscriberInterface
 {
-    private const GUARDED_PATH_PREFIXES = ['/api/login', '/api/me', '/api/logout', '/api/users'];
+    private const GUARDED_PATH_PREFIXES = [
+        '/api/login',
+        '/api/me',
+        '/api/logout',
+        '/api/users',
+        // KOZ-34: tenant settings (default locale + login image) and the
+        // public login-image lookup are tenant-subdomain-only, same as
+        // every other tenant-user route.
+        '/api/settings',
+        '/api/login-image',
+        '/api/tenant-locale',
+    ];
 
     public static function getSubscribedEvents(): array
     {

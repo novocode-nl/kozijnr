@@ -18,6 +18,19 @@ class Tenant
 {
     private const MAX_NAME_LENGTH = 255;
 
+    /**
+     * KOZ-34: mirrors the frontend's SUPPORTED_LOCALES
+     * (web/lib/i18n/locale.ts) — the set of languages KOZ-29's i18n
+     * infrastructure actually ships translations for. Kept here rather
+     * than in a shared constant because this is currently the only
+     * backend-side concept of "locale" at all.
+     *
+     * @var list<string>
+     */
+    public const SUPPORTED_LOCALES = ['nl', 'en'];
+
+    public const DEFAULT_LOCALE = 'nl';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
@@ -49,16 +62,39 @@ class Tenant
     #[ORM\Column(name: 'archived_at', type: 'datetime_immutable', nullable: true)]
     private ?\DateTimeImmutable $archivedAt = null;
 
+    /**
+     * KOZ-34: the language the tenant's login screen and the first
+     * post-login screen render in — public schema (alongside the rest of
+     * `Tenant`) because it must be readable purely from the subdomain,
+     * before any tenant-schema context or authenticated session exists
+     * (see App\Tenancy\Infrastructure\TenantResolverListener).
+     */
+    #[ORM\Column(name: 'default_locale', type: 'string', length: 5)]
+    private string $defaultLocale;
+
+    /**
+     * KOZ-34: opaque storage key (same convention as
+     * App\ProfilePhoto\Domain\ProfilePhoto::$storageKey) for the tenant's
+     * login-screen image, resolved via FileStorageInterface — never a raw
+     * filesystem path. `null` means no login image has been uploaded yet.
+     */
+    #[ORM\Column(name: 'login_image_storage_key', type: 'string', length: 255, nullable: true)]
+    private ?string $loginImageStorageKey;
+
     public function __construct(
         string $name,
         string $subdomain,
         string $schemaName,
         ?\DateTimeImmutable $createdAt = null,
         ?\DateTimeImmutable $archivedAt = null,
+        string $defaultLocale = self::DEFAULT_LOCALE,
+        ?string $loginImageStorageKey = null,
     ) {
         $name = trim($name);
         $subdomain = trim($subdomain);
         $schemaName = trim($schemaName);
+
+        self::assertSupportedLocale($defaultLocale);
 
         if ($name === '') {
             throw ValidationException::create('Tenant name cannot be empty.', 'tenants.error.nameRequired');
@@ -87,6 +123,8 @@ class Tenant
         $this->schemaName = $schemaName;
         $this->createdAt = $createdAt ?? new \DateTimeImmutable();
         $this->archivedAt = $archivedAt;
+        $this->defaultLocale = $defaultLocale;
+        $this->loginImageStorageKey = $loginImageStorageKey;
     }
 
     public function getId(): ?int
@@ -169,5 +207,46 @@ class Tenant
     public function unarchive(): void
     {
         $this->archivedAt = null;
+    }
+
+    public function getDefaultLocale(): string
+    {
+        return $this->defaultLocale;
+    }
+
+    /** KOZ-34: tenant-admin-driven change of the tenant's default locale. */
+    public function updateDefaultLocale(string $locale): void
+    {
+        self::assertSupportedLocale($locale);
+
+        $this->defaultLocale = $locale;
+    }
+
+    public function getLoginImageStorageKey(): ?string
+    {
+        return $this->loginImageStorageKey;
+    }
+
+    /**
+     * KOZ-34: set (or, with `null`, clear) which stored file is the
+     * tenant's login-screen image. The caller (UploadTenantLoginImage) is
+     * responsible for writing/deleting the actual file via
+     * FileStorageInterface — this only records which key currently
+     * applies.
+     */
+    public function setLoginImageStorageKey(?string $storageKey): void
+    {
+        $this->loginImageStorageKey = $storageKey;
+    }
+
+    private static function assertSupportedLocale(string $locale): void
+    {
+        if (!in_array($locale, self::SUPPORTED_LOCALES, true)) {
+            throw ValidationException::create(
+                sprintf('Unsupported tenant default locale "%s".', $locale),
+                'tenants.error.invalidLocale',
+                ['locale' => $locale],
+            );
+        }
     }
 }

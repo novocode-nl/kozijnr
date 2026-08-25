@@ -4,6 +4,7 @@ import { apiBaseUrl } from "@/lib/api-base-url"
 import { sendBackendRequest } from "@/lib/backend-request"
 import { TENANT_TOKEN_COOKIE_NAME } from "@/lib/auth/token-cookie"
 import { resolveAppContext } from "@/lib/context/app-context"
+import { LOCALE_COOKIE_NAME, isSupportedLocale } from "@/lib/i18n/locale"
 import { REDIRECT_PARAM, buildRedirectTarget } from "@/lib/navigation/safe-redirect"
 
 /**
@@ -48,9 +49,11 @@ export async function proxy(request: NextRequest) {
       : request.cookies.has(TENANT_TOKEN_COOKIE_NAME)
 
   if (pathname === "/login") {
-    return hasValidSession
-      ? NextResponse.redirect(new URL("/", request.url))
-      : NextResponse.next()
+    if (hasValidSession) {
+      return NextResponse.redirect(new URL("/", request.url))
+    }
+
+    return context === "tenant" ? await withTenantDefaultLocaleCookie(request) : NextResponse.next()
   }
 
   if (!hasValidSession) {
@@ -100,6 +103,70 @@ async function hasValidAdminSession(request: NextRequest): Promise<boolean> {
   } catch {
     return false
   }
+}
+
+/**
+ * KOZ-34: sets the `kozijnr_locale` cookie (lib/i18n/locale.ts) to the
+ * current tenant's default locale, server-side, before the login page's
+ * root layout ever renders — so the login screen shows in the tenant's
+ * configured language by default (DoD) with no flash of the visitor's
+ * previous/browser locale, the same anti-flash reasoning the root layout
+ * already applies to reading that cookie in the first place (see
+ * app/layout.tsx's doc comment).
+ *
+ * Every unauthenticated visit to a tenant's /login overwrites the cookie
+ * unconditionally (never merged with an existing value) — the ticket's
+ * scope is explicit that there is no per-visitor override that persists:
+ * every new login (and every fresh look at the login screen) starts from
+ * the tenant's default locale again. The login screen has no language
+ * switcher of its own (KOZ-29 only ever added one to the logged-in
+ * `AppShell`, in components/nav-user.tsx), so this is the only place that
+ * decides the login screen's language.
+ *
+ * Fails open on any error/timeout/malformed response: the existing cookie
+ * (or the root layout's own DEFAULT_LOCALE fallback) is left in place
+ * rather than blocking navigation to /login on a backend hiccup.
+ */
+async function withTenantDefaultLocaleCookie(request: NextRequest): Promise<NextResponse> {
+  const response = NextResponse.next()
+
+  // Unlike hasValidAdminSession (which calls the API's own api.<base>
+  // hostname and relies on the Origin header + TenantResolverListener's
+  // RESERVED_API fallback to resolve the *admin* subdomain), this goes to
+  // the API with the tenant's own Host header directly — TenantResolverListener
+  // resolves a tenant straight from Host for any non-reserved subdomain, no
+  // Origin dance needed.
+  const incomingHost = request.headers.get("host") ?? "localhost"
+  const backendInternalHost = process.env.BACKEND_INTERNAL_HOST ?? "backend"
+  const backendInternalPort = Number(process.env.BACKEND_INTERNAL_PORT ?? 8000)
+
+  try {
+    const { status, body } = await sendBackendRequest({
+      host: backendInternalHost,
+      port: backendInternalPort,
+      path: "/api/tenant-locale",
+      method: "GET",
+      tenantHost: incomingHost,
+    })
+
+    if (status !== 200) {
+      return response
+    }
+
+    const parsed: unknown = JSON.parse(body)
+    const defaultLocale =
+      parsed !== null && typeof parsed === "object" && "defaultLocale" in parsed
+        ? (parsed as { defaultLocale: unknown }).defaultLocale
+        : undefined
+
+    if (typeof defaultLocale === "string" && isSupportedLocale(defaultLocale)) {
+      response.cookies.set(LOCALE_COOKIE_NAME, defaultLocale, { path: "/", sameSite: "lax" })
+    }
+  } catch {
+    // Fail open — see doc comment above.
+  }
+
+  return response
 }
 
 export const config = {

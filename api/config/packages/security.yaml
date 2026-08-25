@@ -109,6 +109,14 @@ security:
         - { path: ^/api/me/profile-photo$, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api/logout$, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api/users$, roles: IS_AUTHENTICATED_FULLY }
+        # KOZ-34: the login-image lookup must work with no session at all
+        # (it's shown on the login screen itself, before a visitor has
+        # logged in) — the fine-grained ROLE_TENANT_ADMIN check on the
+        # write-side /api/settings* routes happens per-action via
+        # #[IsGranted] on those controllers, same pattern as /api/users.
+        - { path: ^/api/login-image$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/tenant-locale$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/settings, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:

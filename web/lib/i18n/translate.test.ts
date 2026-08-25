@@ -49,9 +49,15 @@ describe("translate", () => {
       "tenants.error.updateFailed",
       "tenants.error.archiveFailed",
       "tenants.error.unarchiveFailed",
+      "tenants.error.invalidLocale",
       "users.error.emailAlreadyExists",
       "auth.error.invalidCredentials",
       "auth.error.notAuthenticated",
+      "tenantSettings.error.unsupportedMimeType",
+      "tenantSettings.error.empty",
+      "tenantSettings.error.tooLarge",
+      "tenantSettings.error.missingFile",
+      "tenantSettings.error.uploadFailed",
     ]
 
     for (const key of backendErrorKeys) {

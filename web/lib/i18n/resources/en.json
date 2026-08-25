@@ -121,7 +121,8 @@
       "createFailed": "Could not create the tenant. Please try again.",
       "updateFailed": "Could not update the tenant. Please try again.",
       "archiveFailed": "Could not archive the tenant. Please try again.",
-      "unarchiveFailed": "Could not unarchive the tenant. Please try again."
+      "unarchiveFailed": "Could not unarchive the tenant. Please try again.",
+      "invalidLocale": "Choose a valid language."
     }
   },
 
@@ -198,6 +199,38 @@
     "error": {
       "invalidCredentials": "Invalid credentials.",
       "notAuthenticated": "Not authenticated."
+    }
+  },
+
+  "tenantSettings": {
+    "pageTitle": "Settings",
+    "pageDescription": "Manage this tenant's login screen and default language.",
+
+    "localeSectionTitle": "Default language",
+    "localeSectionDescription": "The language the login screen and the app default to right after logging in.",
+    "localeLabel": "Default language",
+    "localeSave": "Save",
+    "localeSaving": "Saving...",
+    "localeSaveSuccess": "Default language saved.",
+
+    "loginImageSectionTitle": "Login image",
+    "loginImageSectionDescription": "This image is shown on this tenant's login screen.",
+    "loginImageUpload": "Upload image",
+    "loginImageUploading": "Uploading...",
+    "loginImagePreviewAlt": "Preview of the login image",
+    "loginImageNone": "No login image has been uploaded yet.",
+    "loginImageUploadSuccess": "Login image saved.",
+
+    "loadError": "Could not load the settings. Please refresh the page.",
+    "accessDenied": "You don't have access to this page. Only tenant administrators can edit these settings.",
+
+    "error": {
+      "unsupportedMimeType": "Only JPEG, PNG or WebP images are allowed.",
+      "empty": "The file is empty.",
+      "tooLarge": "The image is larger than the maximum size of 5MB.",
+      "missingFile": "Choose an image to upload.",
+      "uploadFailed": "Could not upload the login image. Please try again.",
+      "saveFailed": "Could not save the settings. Please try again."
     }
   },
 

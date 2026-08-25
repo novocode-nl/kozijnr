@@ -77,6 +77,35 @@ describe("sendBackendRequest", () => {
 
     expect(response.status).toBe(200)
   })
+
+  /**
+   * KOZ-34: proxy.ts's tenant-locale lookup reads `defaultLocale` from the
+   * response body (a small JSON payload from GET /api/tenant-locale) — this
+   * proves the body is actually buffered and handed back, not just
+   * discarded like it used to be.
+   */
+  it("buffers and returns the response body", async () => {
+    server = createServer((socket) => {
+      socket.on("data", () => {
+        const body = JSON.stringify({ defaultLocale: "en" })
+        socket.end(
+          `HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ${body.length}\r\nConnection: close\r\n\r\n${body}`
+        )
+      })
+    })
+    const port = await listen(server)
+
+    const response = await sendBackendRequest({
+      host: "127.0.0.1",
+      port,
+      path: "/api/tenant-locale",
+      method: "GET",
+      tenantHost: "acme.localhost",
+      timeoutMs: 2000,
+    })
+
+    expect(response.body).toBe(JSON.stringify({ defaultLocale: "en" }))
+  })
 })
 
 function listen(server: Server): Promise<number> {
