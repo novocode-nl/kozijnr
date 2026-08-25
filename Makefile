@@ -5,7 +5,7 @@ COMPOSE := docker compose
 SHELL := /bin/bash
 
 .PHONY: up down build rebuild restart logs ps sh-backend sh-frontend \
-        composer console npm test-backend worktree-env ensure-env \
+        composer console npm test-backend test-db worktree-env ensure-env \
         proxy-up proxy-down proxy-logs seed
 
 PROXY_COMPOSE := docker compose -f docker/proxy/docker-compose.yml
@@ -147,6 +147,13 @@ npm:
 ## override, since a real container env var takes precedence over it.
 test-backend:
 	$(COMPOSE) exec -e APP_ENV=test backend php bin/phpunit $(args)
+
+## Create + migrate the separate test database (app_test) the backend test
+## suite runs against (doctrine.yaml when@test dbname_suffix). Fresh
+## worktree databases don't have it — `make seed` only migrates `app`.
+test-db:
+	$(COMPOSE) exec -e APP_ENV=test backend php bin/console doctrine:database:create --if-not-exists
+	$(COMPOSE) exec -e APP_ENV=test backend php bin/console doctrine:migrations:migrate --no-interaction
 
 ## (Re)generate .env for a KOZ issue number (`make worktree-env n=12`) or the
 ## main checkout (`make worktree-env n=main`). See README.md.
