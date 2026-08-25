@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { TenantUserFormDialog } from "@/components/tenants/tenant-user-form-dialog"
-import { TenantUserCredentialsDialog } from "@/components/tenants/tenant-user-credentials-dialog"
+import { CredentialsDialog } from "@/components/credentials-dialog"
 import { createTenantUser, listTenantUsers, type CreatedTenantUser, type TenantUserSummary } from "@/lib/api"
 import { roleLabel } from "@/lib/i18n/role-labels"
 
@@ -79,7 +79,8 @@ export function TenantUsersTab({ subdomain }: { subdomain: string }) {
         action={(payload) => createTenantUser(subdomain, payload)}
         onCreated={handleCreated}
       />
-      <TenantUserCredentialsDialog
+      <CredentialsDialog
+        i18nPrefix="users.credentials"
         open={credentialsOpen}
         onOpenChange={setCredentialsOpen}
         credentials={credentials}

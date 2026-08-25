@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next"
 
 import { PageHeading } from "@/components/page-heading"
 import { TenantUserFormDialog } from "@/components/tenants/tenant-user-form-dialog"
-import { TenantUserCredentialsDialog } from "@/components/tenants/tenant-user-credentials-dialog"
+import { CredentialsDialog } from "@/components/credentials-dialog"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -94,7 +94,8 @@ export default function OwnUsersPage() {
         action={createOwnTenantUser}
         onCreated={handleCreated}
       />
-      <TenantUserCredentialsDialog
+      <CredentialsDialog
+        i18nPrefix="users.credentials"
         open={credentialsOpen}
         onOpenChange={setCredentialsOpen}
         credentials={credentials}
