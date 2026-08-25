@@ -53,6 +53,8 @@ services:
 
     App\Tenancy\Domain\TenantRepositoryInterface: '@App\Tenancy\Infrastructure\DoctrineTenantRepository'
 
+    App\Tenancy\Domain\TenantSchemaContextInterface: '@App\Tenancy\Infrastructure\DbalTenantSchemaContext'
+
     App\User\Domain\UserRepositoryInterface: '@App\User\Infrastructure\DoctrineUserRepository'
 
     App\User\Domain\RoleRepositoryInterface: '@App\User\Infrastructure\DoctrineRoleRepository'
