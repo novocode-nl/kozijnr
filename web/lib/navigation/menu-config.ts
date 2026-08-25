@@ -69,7 +69,7 @@ const adminNavMain: NavMainItem[] = [
   },
   {
     title: "nav.users",
-    url: "#",
+    url: "/users",
     icon: Users,
   },
 ]

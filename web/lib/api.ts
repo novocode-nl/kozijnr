@@ -84,6 +84,23 @@ export type CreateTenantUserPayload = { email: string; role: string }
  */
 export type CreatedTenantUser = TenantUserSummary & { password: string }
 
+/**
+ * Read-model shape returned by GET /api/admin/users and the create endpoint
+ * (UserSummary::toArray) — the admin user overview (KOZ-30).
+ */
+export type AdminUserSummary = {
+  email: string
+  roles: string[]
+}
+
+/** Generated admin-user credentials, included once in a successful createAdminUser response. */
+export type AdminUserCredentials = {
+  email: string
+  password: string
+}
+
+export type CreatedAdminUser = AdminUserSummary & { password: string }
+
 export async function login(values: LoginFormValues): Promise<LoginResult> {
   return postCredentials("/api/login", values)
 }
@@ -219,6 +236,23 @@ export async function getMe(): Promise<CurrentTenantUser | null> {
 }
 
 /**
+ * Admin user overview (KOZ-30): GET /api/admin/users, guarded backend-side
+ * by the `user:list` permission (see ListAdminUsersController).
+ */
+export async function listAdminUsers(): Promise<AdminUserSummary[]> {
+  const response = await fetch(backendUrl("/api/admin/users"), {
+    method: "GET",
+    credentials: "include",
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to load admin users (status ${response.status}).`)
+  }
+
+  return response.json()
+}
+
+/**
  * Tenant-own self-service users list (KOZ-31 rework): GET /api/users,
  * reachable by any authenticated tenant user on their own tenant
  * subdomain (see App\TenantUser\Infrastructure\Controller\ListOwnTenantUsersController).
@@ -264,6 +298,44 @@ export async function createOwnTenantUser(
   if (!response.ok) {
     const body = await response.json().catch(() => null)
     const message = apiErrorMessage(body, tenantUserCreateFailedMessage())
+    return { success: false, fieldErrors: { email: message } }
+  }
+
+  return { success: true, data: await response.json() }
+}
+
+/** Payload shape CreateAdminUserController expects. */
+export type CreateAdminUserPayload = { email: string }
+
+function adminUserCreateFailedMessage(): string {
+  return translate("users.error.createFailed", getClientLocale()) ?? "Failed to create admin user."
+}
+
+/**
+ * Admin user creation (KOZ-30): POST /api/admin/users, guarded backend-side
+ * by the `user:create` permission (see CreateAdminUserController). Every
+ * user created this way gets ROLE_SUPER_ADMIN and a generated password,
+ * returned once in `data.password` — same one-time-credentials pattern as
+ * `createTenant`'s `tenantAdmin` block. Failures (invalid/duplicate email)
+ * are attached to the `email` field so `<ConfigForm>` shows them in the
+ * right place.
+ */
+export async function createAdminUser(payload: CreateAdminUserPayload): Promise<ActionResult<CreatedAdminUser>> {
+  let response: Response
+  try {
+    response = await fetch(backendUrl("/api/admin/users"), {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+  } catch {
+    return { success: false, message: adminUserCreateFailedMessage() }
+  }
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null)
+    const message = apiErrorMessage(body, adminUserCreateFailedMessage())
     return { success: false, fieldErrors: { email: message } }
   }
 
