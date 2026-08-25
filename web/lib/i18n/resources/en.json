@@ -115,6 +115,8 @@
       "subdomainPattern": "Use only lowercase letters, digits and hyphens (e.g. \"acme\" or \"acme-bv\").",
       "adminEmailInvalid": "Enter a valid email address for the tenant administrator.",
       "adminEmailAlreadyExists": "A user with email address \"{{email}}\" already exists within this tenant.",
+      "userEmailInvalid": "Enter a valid email address.",
+      "userRoleInvalid": "Choose a valid role.",
       "createFailed": "Could not create the tenant. Please try again.",
       "updateFailed": "Could not update the tenant. Please try again.",
       "archiveFailed": "Could not archive the tenant. Please try again.",
@@ -147,6 +149,7 @@
     "loadingRows": "Loading users...",
     "emptyActive": "No users found.",
     "empty": "This tenant has no users yet.",
+    "addUser": "Add user",
 
     "adminCredentialsTitle": "Administrator created",
     "adminCredentialsDescription": "Save this password now — it will not be shown again.",
@@ -158,6 +161,21 @@
       "ROLE_TENANT_ADMIN": "Tenant administrator",
       "ROLE_TENANT_USER": "User"
     },
+
+    "userForm": {
+      "title": "Add user",
+      "description": "Create a new user within this tenant.",
+      "emailLabel": "Email address",
+      "roleLabel": "Role",
+      "createSubmit": "Create user",
+      "creating": "Creating..."
+    },
+
+    "credentialsTitle": "User created",
+    "credentialsDescription": "Save this password now — it will not be shown again.",
+    "credentialsEmailLabel": "Email",
+    "credentialsRoleLabel": "Role",
+    "credentialsPasswordLabel": "Password",
 
     "error": {
       "emailAlreadyExists": "A user with email address \"{{email}}\" already exists.",

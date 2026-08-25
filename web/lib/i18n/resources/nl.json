@@ -115,6 +115,8 @@
       "subdomainPattern": "Gebruik alleen kleine letters, cijfers en koppeltekens (bijv. \"acme\" of \"acme-bv\").",
       "adminEmailInvalid": "Voer een geldig e-mailadres in voor de tenant-beheerder.",
       "adminEmailAlreadyExists": "Er bestaat al een gebruiker met e-mailadres \"{{email}}\" binnen deze tenant.",
+      "userEmailInvalid": "Voer een geldig e-mailadres in.",
+      "userRoleInvalid": "Kies een geldige rol.",
       "createFailed": "Kon de tenant niet aanmaken. Probeer het opnieuw.",
       "updateFailed": "Kon de tenant niet bijwerken. Probeer het opnieuw.",
       "archiveFailed": "Kon de tenant niet archiveren. Probeer het opnieuw.",
@@ -147,6 +149,7 @@
     "loadingRows": "Gebruikers laden...",
     "emptyActive": "Geen gebruikers gevonden.",
     "empty": "Deze tenant heeft nog geen gebruikers.",
+    "addUser": "Gebruiker toevoegen",
 
     "adminCredentialsTitle": "Beheerder aangemaakt",
     "adminCredentialsDescription": "Bewaar dit wachtwoord nu — het wordt hierna niet meer getoond.",
@@ -158,6 +161,21 @@
       "ROLE_TENANT_ADMIN": "Tenant-beheerder",
       "ROLE_TENANT_USER": "Gebruiker"
     },
+
+    "userForm": {
+      "title": "Gebruiker toevoegen",
+      "description": "Maak een nieuwe gebruiker aan binnen deze tenant.",
+      "emailLabel": "E-mailadres",
+      "roleLabel": "Rol",
+      "createSubmit": "Gebruiker aanmaken",
+      "creating": "Bezig met aanmaken..."
+    },
+
+    "credentialsTitle": "Gebruiker aangemaakt",
+    "credentialsDescription": "Bewaar dit wachtwoord nu — het wordt hierna niet meer getoond.",
+    "credentialsEmailLabel": "E-mail",
+    "credentialsRoleLabel": "Rol",
+    "credentialsPasswordLabel": "Wachtwoord",
 
     "error": {
       "emailAlreadyExists": "Er bestaat al een gebruiker met e-mailadres \"{{email}}\".",

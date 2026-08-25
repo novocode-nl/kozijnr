@@ -43,6 +43,8 @@ describe("translate", () => {
       "tenants.error.subdomainRequired",
       "tenants.error.adminEmailInvalid",
       "tenants.error.adminEmailAlreadyExists",
+      "tenants.error.userEmailInvalid",
+      "tenants.error.userRoleInvalid",
       "tenants.error.createFailed",
       "tenants.error.updateFailed",
       "tenants.error.archiveFailed",

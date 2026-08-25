@@ -71,6 +71,20 @@ export type TenantAdminCredentials = {
 export type CreatedTenant = TenantSummary & { tenantAdmin: TenantAdminCredentials }
 
 /**
+ * Payload shape CreateTenantUserController expects: an email address plus
+ * one of the two roles that exist on the backend's TenantUser
+ * (ROLE_TENANT_ADMIN / ROLE_TENANT_USER).
+ */
+export type CreateTenantUserPayload = { email: string; role: string }
+
+/**
+ * Response shape from POST /api/admin/tenants/{subdomain}/users: the
+ * created tenant user plus its generated one-time password (KOZ-31),
+ * mirroring `CreatedTenant`'s `tenantAdmin` shape.
+ */
+export type CreatedTenantUser = TenantUserSummary & { password: string }
+
+/**
  * Read-model shape returned by GET /api/admin/users and the create endpoint
  * (UserSummary::toArray) — the admin user overview (KOZ-30).
  */
@@ -152,8 +166,73 @@ export async function listTenantUsers(subdomain: string): Promise<TenantUserSumm
   return response.json()
 }
 
+// Translated lazily, same reasoning as tenantCreateFailedMessage() etc. below.
+function tenantUserCreateFailedMessage(): string {
+  return translate("tenants.error.createFailed", getClientLocale()) ?? "Failed to create tenant user."
+}
+
+/**
+ * "Gebruiker toevoegen" action on the tenant users tab (KOZ-31): POST
+ * /api/admin/tenants/{subdomain}/users, guarded backend-side by the
+ * `tenant:users:create` permission (see CreateTenantUserController). The
+ * backend reports failures (invalid email, invalid role, duplicate email
+ * within the tenant) as a single `{ message, errorKey }`, not a field-keyed
+ * map — attached to `email` here (the field every one of those failures is
+ * actually about) so `<ConfigForm>` shows it in the right place.
+ */
+export async function createTenantUser(
+  subdomain: string,
+  payload: CreateTenantUserPayload
+): Promise<ActionResult<CreatedTenantUser>> {
+  let response: Response
+  try {
+    response = await fetch(backendUrl(`/api/admin/tenants/${encodeURIComponent(subdomain)}/users`), {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+  } catch {
+    return { success: false, message: tenantUserCreateFailedMessage() }
+  }
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null)
+    const message = apiErrorMessage(body, tenantUserCreateFailedMessage())
+    return { success: false, fieldErrors: { email: message } }
+  }
+
+  return { success: true, data: await response.json() }
+}
+
 export async function adminLogout(): Promise<void> {
   await postBestEffort("/api/admin/logout")
+}
+
+/** Response shape from GET /api/me: the currently authenticated tenant user. */
+export type CurrentTenantUser = { email: string; roles: string[] }
+
+/**
+ * The logged-in tenant user, on their own tenant subdomain: GET /api/me
+ * (see App\TenantUser\Infrastructure\Controller\MeController). Used by the
+ * tenant-own "Gebruikers" page (KOZ-31 rework) to decide whether to show
+ * the "Gebruiker toevoegen" action — ROLE_TENANT_ADMIN only, mirroring the
+ * backend's own ROLE_TENANT_ADMIN gate on POST /api/users. Returns `null`
+ * on any non-OK response rather than throwing, since a stale/expired
+ * session here should just fall back to "not an admin" rather than crash
+ * the page.
+ */
+export async function getMe(): Promise<CurrentTenantUser | null> {
+  const response = await fetch(backendUrl("/api/me"), {
+    method: "GET",
+    credentials: "include",
+  })
+
+  if (!response.ok) {
+    return null
+  }
+
+  return response.json()
 }
 
 /**
@@ -171,6 +250,58 @@ export async function listAdminUsers(): Promise<AdminUserSummary[]> {
   }
 
   return response.json()
+}
+
+/**
+ * Tenant-own self-service users list (KOZ-31 rework): GET /api/users,
+ * reachable by any authenticated tenant user on their own tenant
+ * subdomain (see App\TenantUser\Infrastructure\Controller\ListOwnTenantUsersController).
+ * Unlike `listTenantUsers`, takes no subdomain — the tenant is decided by
+ * whichever subdomain the request itself is on.
+ */
+export async function listOwnTenantUsers(): Promise<TenantUserSummary[]> {
+  const response = await fetch(backendUrl("/api/users"), {
+    method: "GET",
+    credentials: "include",
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to load tenant users (status ${response.status}).`)
+  }
+
+  return response.json()
+}
+
+/**
+ * "Gebruiker toevoegen" action on the tenant-own "Gebruikers" page (KOZ-31
+ * rework): POST /api/users, guarded backend-side by the ROLE_TENANT_ADMIN
+ * role (see CreateOwnTenantUserController). Mirrors `createTenantUser`'s
+ * error-mapping (backend reports a single `{ message, errorKey }`,
+ * attached to `email` here) but never takes a subdomain — the tenant
+ * context comes exclusively from the logged-in session's own subdomain.
+ */
+export async function createOwnTenantUser(
+  payload: CreateTenantUserPayload
+): Promise<ActionResult<CreatedTenantUser>> {
+  let response: Response
+  try {
+    response = await fetch(backendUrl("/api/users"), {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+  } catch {
+    return { success: false, message: tenantUserCreateFailedMessage() }
+  }
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null)
+    const message = apiErrorMessage(body, tenantUserCreateFailedMessage())
+    return { success: false, fieldErrors: { email: message } }
+  }
+
+  return { success: true, data: await response.json() }
 }
 
 /** Payload shape CreateAdminUserController expects. */
