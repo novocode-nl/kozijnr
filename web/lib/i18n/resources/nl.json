@@ -139,10 +139,19 @@
   },
 
   "users": {
+    "pageTitle": "Gebruikers",
+    "newUser": "Nieuwe gebruiker",
     "columnEmail": "E-mail",
     "columnRoles": "Rollen",
     "loadError": "Kon de gebruikers niet laden. Probeer de pagina te verversen.",
+    "loadingRows": "Gebruikers laden...",
+    "emptyActive": "Geen gebruikers gevonden.",
     "empty": "Deze tenant heeft nog geen gebruikers.",
+
+    "adminCredentialsTitle": "Beheerder aangemaakt",
+    "adminCredentialsDescription": "Bewaar dit wachtwoord nu — het wordt hierna niet meer getoond.",
+    "adminCredentialsEmailLabel": "E-mail",
+    "adminCredentialsPasswordLabel": "Wachtwoord",
 
     "role": {
       "ROLE_SUPER_ADMIN": "Super-beheerder",
@@ -151,8 +160,19 @@
     },
 
     "error": {
-      "emailAlreadyExists": "Er bestaat al een gebruiker met e-mailadres \"{{email}}\"."
+      "emailAlreadyExists": "Er bestaat al een gebruiker met e-mailadres \"{{email}}\".",
+      "emailInvalid": "Voer een geldig e-mailadres in.",
+      "createFailed": "Kon de gebruiker niet aanmaken. Probeer het opnieuw."
     }
+  },
+
+  "userForm": {
+    "createTitle": "Nieuwe gebruiker",
+    "createDescription": "Maak een nieuwe admin-gebruiker aan. Deze krijgt de rol Super-beheerder en een automatisch gegenereerd wachtwoord.",
+    "emailLabel": "E-mailadres",
+    "emailHint": "Wordt gebruikt als inlogadres voor de nieuwe admin-gebruiker.",
+    "createSubmit": "Gebruiker aanmaken",
+    "creating": "Bezig met aanmaken..."
   },
 
   "auth": {
