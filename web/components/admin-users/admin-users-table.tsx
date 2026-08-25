@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next"
 
 import { DataTable, dataTableColumnHelper } from "@/components/data-table"
 import { listAdminUsers, type AdminUserSummary } from "@/lib/api"
+import { roleLabel } from "@/lib/i18n/role-labels"
 
 /**
  * Admin user overview table (KOZ-30): a thin, entity-specific wrapper
@@ -58,7 +59,7 @@ export function AdminUsersTable() {
       }),
       columnHelper.accessor("roles", {
         header: t("users.columnRoles"),
-        cell: ({ row }) => row.original.roles.join(", "),
+        cell: ({ row }) => row.original.roles.map((role) => roleLabel(role, t)).join(", "),
       }),
     ]
   }, [t])
