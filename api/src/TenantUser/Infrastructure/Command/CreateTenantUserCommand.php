@@ -3,8 +3,8 @@
 namespace App\TenantUser\Infrastructure\Command;
 
 use App\Tenancy\Domain\TenantRepositoryInterface;
+use App\Tenancy\Domain\TenantSchemaContextInterface;
 use App\TenantUser\Application\CreateTenantUser;
-use Doctrine\DBAL\Connection;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -29,7 +29,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 final class CreateTenantUserCommand extends Command
 {
     public function __construct(
-        private readonly Connection $connection,
+        private readonly TenantSchemaContextInterface $schemaContext,
         private readonly TenantRepositoryInterface $tenantRepository,
         private readonly CreateTenantUser $createTenantUser,
     ) {
@@ -68,7 +68,7 @@ final class CreateTenantUserCommand extends Command
             return Command::INVALID;
         }
 
-        $this->connection->executeStatement('SET search_path TO public');
+        $this->schemaContext->resetToPublic();
         $tenant = $this->tenantRepository->findBySubdomain($subdomain);
 
         if ($tenant === null) {
@@ -77,20 +77,16 @@ final class CreateTenantUserCommand extends Command
             return Command::FAILURE;
         }
 
-        $this->connection->executeStatement(sprintf(
-            'SET search_path TO %s, public',
-            $this->connection->quoteSingleIdentifier($tenant->getSchemaName()),
-        ));
-
         try {
             $roles = is_string($role) && $role !== '' ? [$role] : [];
-            $tenantUser = ($this->createTenantUser)($email, $password, $roles);
+            $tenantUser = $this->schemaContext->runInSchema(
+                $tenant->getSchemaName(),
+                fn () => ($this->createTenantUser)($email, $password, $roles),
+            );
         } catch (\Throwable $exception) {
             $io->error($exception->getMessage());
 
             return Command::FAILURE;
-        } finally {
-            $this->connection->executeStatement('SET search_path TO public');
         }
 
         $io->success(sprintf(
