@@ -5,7 +5,7 @@ COMPOSE := docker compose
 SHELL := /bin/bash
 
 .PHONY: up down build rebuild restart logs ps sh-backend sh-frontend \
-        composer console npm test-backend test-db worktree-env ensure-env \
+        composer console npm test-backend test-db check-contracts worktree-env ensure-env \
         proxy-up proxy-down proxy-logs seed
 
 PROXY_COMPOSE := docker compose -f docker/proxy/docker-compose.yml
@@ -154,6 +154,11 @@ test-backend:
 test-db:
 	$(COMPOSE) exec -e APP_ENV=test backend php bin/console doctrine:database:create --if-not-exists
 	$(COMPOSE) exec -e APP_ENV=test backend php bin/console doctrine:migrations:migrate --no-interaction
+
+## Cross-tree contract checks (shared constants + backend errorKeys vs
+## frontend i18n catalogs). Runs on the host — needs node, not the stack.
+check-contracts:
+	node scripts/check-contracts.mjs
 
 ## (Re)generate .env for a KOZ issue number (`make worktree-env n=12`) or the
 ## main checkout (`make worktree-env n=main`). See README.md.

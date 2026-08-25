@@ -42,6 +42,15 @@ jobs:
       - run: php bin/console doctrine:migrations:migrate --no-interaction
       - run: php bin/phpunit
 
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node scripts/check-contracts.mjs
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
