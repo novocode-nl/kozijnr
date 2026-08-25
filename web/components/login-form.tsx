@@ -7,7 +7,8 @@ import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
 import { login } from "@/lib/api"
 import { buildLoginSchema, type LoginFormValues } from "@/lib/schemas/login"
-import type { Locale } from "@/lib/i18n/locale"
+import { setClientLocale, type Locale } from "@/lib/i18n/locale"
+import { useTenantLoginImageUrl } from "@/hooks/use-tenant-login-image-url"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Field, FieldDescription, FieldSeparator } from "@/components/ui/field"
@@ -33,6 +34,14 @@ import { REDIRECT_PARAM, sanitizeRedirectTarget } from "@/lib/navigation/safe-re
  * bounced the visitor away from (carried as `?redirect=`), falling back to
  * `/` when there is none or it fails validation — see
  * lib/navigation/safe-redirect.ts for the open-redirect guard.
+ *
+ * KOZ-34: `login`'s response carries the tenant's `defaultLocale`
+ * (App\TenantUser\Infrastructure\Controller\LoginController). Every new
+ * login starts the app in that locale — never a previously chosen one, per
+ * the ticket's scope (no per-user preference persists across sessions) —
+ * so both the i18next instance and the persisted locale cookie are updated
+ * here, before navigating away, the same way the language switcher
+ * (components/nav-user.tsx) does it.
  */
 const defaultValues: LoginFormValues = { email: "", password: "" }
 
@@ -45,6 +54,12 @@ export function LoginForm({
   const redirectTarget = sanitizeRedirectTarget(searchParams.get(REDIRECT_PARAM))
   const { t, i18n } = useTranslation()
   const schema = useMemo(() => buildLoginSchema(i18n.language as Locale), [i18n.language])
+
+  // KOZ-34: fetched client-side (see hooks/use-tenant-login-image-url.ts
+  // for why this is a `fetch()` + blob URL, not a plain `<img src>`).
+  // `undefined` while loading / when none exists — LoginSidePanel falls
+  // back to the placeholder in that case, so there's no broken-image flash.
+  const loginImageUrl = useTenantLoginImageUrl()
 
   const fields: FieldConfig<LoginFormValues>[] = [
     {
@@ -92,7 +107,13 @@ export function LoginForm({
               schema={schema}
               defaultValues={defaultValues}
               action={login}
-              onSuccess={() => router.push(redirectTarget)}
+              onSuccess={(result) => {
+                if (result) {
+                  i18n.changeLanguage(result.defaultLocale)
+                  setClientLocale(result.defaultLocale)
+                }
+                router.push(redirectTarget)
+              }}
               submitLabel={t("login.submit")}
               pendingLabel={t("login.pending")}
             />
@@ -100,7 +121,7 @@ export function LoginForm({
               <a href="#">{t("login.forgotPassword")}</a>
             </FieldDescription>
           </div>
-          <LoginSidePanel />
+          <LoginSidePanel imageUrl={loginImageUrl} />
         </CardContent>
       </Card>
     </div>

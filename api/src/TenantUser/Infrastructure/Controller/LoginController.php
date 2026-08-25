@@ -3,6 +3,8 @@
 namespace App\TenantUser\Infrastructure\Controller;
 
 use App\Shared\Infrastructure\Http\ExceptionResponsePayload;
+use App\Tenancy\Domain\Tenant;
+use App\Tenancy\Infrastructure\TenantResolverListener;
 use App\TenantUser\Application\LoginTenantUser;
 use App\TenantUser\Domain\Exception\InvalidCredentialsException;
 use App\TenantUser\Infrastructure\Security\TenantApiTokenCookie;
@@ -57,7 +59,20 @@ final class LoginController
             );
         }
 
-        $response = new JsonResponse(['message' => 'Logged in.'], JsonResponse::HTTP_OK);
+        /**
+         * KOZ-34: tells the frontend which locale to start the app in
+         * right after this login (App\Tenancy\Application\GetTenantLocale
+         * isn't used here — the resolved Tenant is already in hand, and
+         * this is a one-line read, not a use case in its own right).
+         *
+         * @var Tenant $tenant
+         */
+        $tenant = $request->attributes->get(TenantResolverListener::REQUEST_ATTRIBUTE);
+
+        $response = new JsonResponse(
+            ['message' => 'Logged in.', 'defaultLocale' => $tenant->getDefaultLocale()],
+            JsonResponse::HTTP_OK,
+        );
         $response->headers->setCookie(TenantApiTokenCookie::issue($token, $this->baseDomain));
 
         return $response;

@@ -120,7 +120,8 @@
       "createFailed": "Kon de tenant niet aanmaken. Probeer het opnieuw.",
       "updateFailed": "Kon de tenant niet bijwerken. Probeer het opnieuw.",
       "archiveFailed": "Kon de tenant niet archiveren. Probeer het opnieuw.",
-      "unarchiveFailed": "Kon de tenant niet dearchiveren. Probeer het opnieuw."
+      "unarchiveFailed": "Kon de tenant niet dearchiveren. Probeer het opnieuw.",
+      "invalidLocale": "Kies een geldige taal."
     }
   },
 
@@ -197,6 +198,38 @@
     "error": {
       "invalidCredentials": "Ongeldige inloggegevens.",
       "notAuthenticated": "Niet ingelogd."
+    }
+  },
+
+  "tenantSettings": {
+    "pageTitle": "Instellingen",
+    "pageDescription": "Beheer het loginscherm en de standaardtaal van deze tenant.",
+
+    "localeSectionTitle": "Standaardtaal",
+    "localeSectionDescription": "De taal waarin het loginscherm en de app na inloggen standaard worden getoond.",
+    "localeLabel": "Standaardtaal",
+    "localeSave": "Opslaan",
+    "localeSaving": "Bezig met opslaan...",
+    "localeSaveSuccess": "Standaardtaal opgeslagen.",
+
+    "loginImageSectionTitle": "Login-afbeelding",
+    "loginImageSectionDescription": "Deze afbeelding wordt getoond op het loginscherm van deze tenant.",
+    "loginImageUpload": "Afbeelding uploaden",
+    "loginImageUploading": "Bezig met uploaden...",
+    "loginImagePreviewAlt": "Voorbeeld van de login-afbeelding",
+    "loginImageNone": "Nog geen login-afbeelding geüpload.",
+    "loginImageUploadSuccess": "Login-afbeelding opgeslagen.",
+
+    "loadError": "Kon de instellingen niet laden. Probeer de pagina te verversen.",
+    "accessDenied": "Je hebt geen toegang tot deze pagina. Alleen tenant-beheerders kunnen de instellingen bewerken.",
+
+    "error": {
+      "unsupportedMimeType": "Alleen JPEG-, PNG- of WebP-afbeeldingen zijn toegestaan.",
+      "empty": "Het bestand is leeg.",
+      "tooLarge": "De afbeelding is groter dan de maximale grootte van 5 MB.",
+      "missingFile": "Kies een afbeelding om te uploaden.",
+      "uploadFailed": "Kon de login-afbeelding niet uploaden. Probeer het opnieuw.",
+      "saveFailed": "Kon de instellingen niet opslaan. Probeer het opnieuw."
     }
   },
 

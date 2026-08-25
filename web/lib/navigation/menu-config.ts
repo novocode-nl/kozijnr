@@ -82,7 +82,13 @@ const adminNavMain: NavMainItem[] = [
 const tenantNavSecondary: NavSecondaryItem[] = [
   {
     title: "nav.settings",
-    url: "#",
+    // KOZ-34: tenant settings page (login image + default locale). The
+    // page itself gates ROLE_TENANT_ADMIN-only content behind a
+    // "geen toegang" state (see app/(app)/settings/tenant-settings-page.tsx)
+    // rather than hiding this nav item for non-admins, mirroring how
+    // "Gebruiker toevoegen" is hidden on the Gebruikers page instead of
+    // the nav item itself.
+    url: "/settings",
     icon: Settings,
   },
   {

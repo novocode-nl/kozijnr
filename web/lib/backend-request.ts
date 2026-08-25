@@ -24,6 +24,15 @@ export interface BackendRequestOptions {
 export interface BackendResponse {
   status: number
   headers: IncomingHttpHeaders
+  /**
+   * KOZ-34: the response body, buffered in full — used by proxy.ts's
+   * tenant-locale lookup (a small JSON body) to read `defaultLocale`
+   * without a second request. The original admin-session caller ignores
+   * this field; buffering it unconditionally keeps this helper's one
+   * request/response cycle rather than adding a second body-vs-no-body
+   * code path.
+   */
+  body: string
 }
 
 /**
@@ -48,9 +57,14 @@ export function sendBackendRequest(options: BackendRequestOptions): Promise<Back
         },
       },
       (res) => {
-        res.resume()
+        const chunks: Buffer[] = []
+        res.on("data", (chunk: Buffer) => chunks.push(chunk))
         res.on("end", () => {
-          resolve({ status: res.statusCode ?? 500, headers: res.headers })
+          resolve({
+            status: res.statusCode ?? 500,
+            headers: res.headers,
+            body: Buffer.concat(chunks).toString("utf8"),
+          })
         })
       }
     )

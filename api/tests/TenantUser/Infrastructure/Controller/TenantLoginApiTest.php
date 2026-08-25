@@ -67,6 +67,24 @@ final class TenantLoginApiTest extends WebTestCase
         self::assertSame(self::BASE_DOMAIN, $cookie->getDomain());
     }
 
+    /**
+     * KOZ-34: a successful login tells the frontend which locale to switch
+     * to (defaultLocale, defaults to "nl" — Tenant::DEFAULT_LOCALE), so it
+     * can start the app in the tenant's default locale right after login
+     * instead of whatever locale happened to be showing before.
+     */
+    public function testLoggingInWithValidCredentialsReturnsTheTenantsDefaultLocale(): void
+    {
+        $this->provisionTenant('acme');
+        $this->createTenantUser('acme', 'user@acme.test', 'correct-password');
+
+        $this->login('acme', 'user@acme.test', 'correct-password');
+
+        self::assertResponseIsSuccessful();
+        $payload = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertSame('nl', $payload['defaultLocale']);
+    }
+
     public function testLoggingInWithAnUnknownEmailFailsWithAGenericMessage(): void
     {
         $this->provisionTenant('acme');

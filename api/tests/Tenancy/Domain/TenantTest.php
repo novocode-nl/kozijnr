@@ -122,4 +122,69 @@ final class TenantTest extends TestCase
         self::assertFalse($tenant->isArchived());
         self::assertNull($tenant->getArchivedAt());
     }
+
+    public function testDefaultsToTheNlLocaleAndNoLoginImageWhenNotGiven(): void
+    {
+        $tenant = new Tenant('Acme B.V.', 'acme', 'tenant_acme');
+
+        self::assertSame('nl', $tenant->getDefaultLocale());
+        self::assertNull($tenant->getLoginImageStorageKey());
+    }
+
+    public function testExposesAnExplicitlyGivenDefaultLocaleAndLoginImageStorageKey(): void
+    {
+        $tenant = new Tenant(
+            'Acme B.V.',
+            'acme',
+            'tenant_acme',
+            defaultLocale: 'en',
+            loginImageStorageKey: 'tenant-login-images/1/abc.png',
+        );
+
+        self::assertSame('en', $tenant->getDefaultLocale());
+        self::assertSame('tenant-login-images/1/abc.png', $tenant->getLoginImageStorageKey());
+    }
+
+    public function testRejectsAnUnsupportedDefaultLocaleAtConstruction(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        new Tenant('Acme B.V.', 'acme', 'tenant_acme', defaultLocale: 'fr');
+    }
+
+    public function testUpdateDefaultLocaleChangesTheLocale(): void
+    {
+        $tenant = new Tenant('Acme B.V.', 'acme', 'tenant_acme');
+
+        $tenant->updateDefaultLocale('en');
+
+        self::assertSame('en', $tenant->getDefaultLocale());
+    }
+
+    public function testUpdateDefaultLocaleRejectsAnUnsupportedLocale(): void
+    {
+        $tenant = new Tenant('Acme B.V.', 'acme', 'tenant_acme');
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        $tenant->updateDefaultLocale('fr');
+    }
+
+    public function testSetLoginImageStorageKeyStoresTheKey(): void
+    {
+        $tenant = new Tenant('Acme B.V.', 'acme', 'tenant_acme');
+
+        $tenant->setLoginImageStorageKey('tenant-login-images/1/abc.png');
+
+        self::assertSame('tenant-login-images/1/abc.png', $tenant->getLoginImageStorageKey());
+    }
+
+    public function testSetLoginImageStorageKeyCanClearTheKey(): void
+    {
+        $tenant = new Tenant('Acme B.V.', 'acme', 'tenant_acme', loginImageStorageKey: 'tenant-login-images/1/abc.png');
+
+        $tenant->setLoginImageStorageKey(null);
+
+        self::assertNull($tenant->getLoginImageStorageKey());
+    }
 }
