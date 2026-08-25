@@ -4,7 +4,7 @@ namespace App\TenantUser\Application;
 
 use App\Tenancy\Domain\Exception\TenantNotFoundException;
 use App\Tenancy\Domain\TenantRepositoryInterface;
-use Doctrine\DBAL\Connection;
+use App\Tenancy\Domain\TenantSchemaContextInterface;
 
 /**
  * Creates an *additional* tenant-user account inside one already-existing
@@ -27,7 +27,7 @@ use Doctrine\DBAL\Connection;
 final class CreateTenantUserForTenant
 {
     public function __construct(
-        private readonly Connection $connection,
+        private readonly TenantSchemaContextInterface $schemaContext,
         private readonly TenantRepositoryInterface $tenantRepository,
         private readonly CreateTenantUserForCurrentTenant $createTenantUserForCurrentTenant,
     ) {
@@ -35,22 +35,16 @@ final class CreateTenantUserForTenant
 
     public function __invoke(string $subdomain, string $email, string $role): CreatedTenantUserForTenant
     {
-        $this->connection->executeStatement('SET search_path TO public');
+        $this->schemaContext->resetToPublic();
 
         $tenant = $this->tenantRepository->findBySubdomain($subdomain);
         if ($tenant === null) {
             throw TenantNotFoundException::forSubdomain($subdomain);
         }
 
-        $this->connection->executeStatement(sprintf(
-            'SET search_path TO %s, public',
-            $this->connection->quoteSingleIdentifier($tenant->getSchemaName()),
-        ));
-
-        try {
-            return ($this->createTenantUserForCurrentTenant)($email, $role);
-        } finally {
-            $this->connection->executeStatement('SET search_path TO public');
-        }
+        return $this->schemaContext->runInSchema(
+            $tenant->getSchemaName(),
+            fn () => ($this->createTenantUserForCurrentTenant)($email, $role),
+        );
     }
 }
