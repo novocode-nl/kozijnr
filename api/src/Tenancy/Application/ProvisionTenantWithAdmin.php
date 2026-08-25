@@ -2,10 +2,11 @@
 
 namespace App\Tenancy\Application;
 
-use App\Shared\Domain\Exception\ValidationException;
+use App\Shared\Domain\EmailAddress;
+use App\Shared\Domain\Security\GeneratedPassword;
 use App\TenantUser\Application\CreateTenantUser;
+use App\Tenancy\Domain\TenantSchemaContextInterface;
 use App\TenantUser\Domain\TenantUser;
-use Doctrine\DBAL\Connection;
 
 /**
  * Orchestrates the full "create a tenant" flow: provisions the tenant
@@ -36,35 +37,25 @@ final class ProvisionTenantWithAdmin
     public function __construct(
         private readonly ProvisionTenant $provisionTenant,
         private readonly CreateTenantUser $createTenantUser,
-        private readonly Connection $connection,
+        private readonly TenantSchemaContextInterface $schemaContext,
     ) {
     }
 
     public function __invoke(string $name, string $slug, string $adminEmail): ProvisionedTenantWithAdmin
     {
-        $email = trim($adminEmail);
-
-        if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            throw ValidationException::create(
-                'Tenant-admin email must be a valid email address.',
-                'tenants.error.adminEmailInvalid',
-            );
-        }
+        $email = EmailAddress::validated(
+            $adminEmail,
+            'Tenant-admin email must be a valid email address.',
+            'tenants.error.adminEmailInvalid',
+        );
 
         $tenant = ($this->provisionTenant)($name, $slug);
 
-        $password = bin2hex(random_bytes(12));
+        $password = GeneratedPassword::generate();
 
-        $this->connection->executeStatement(sprintf(
-            'SET search_path TO %s, public',
-            $this->connection->quoteSingleIdentifier($tenant->getSchemaName()),
-        ));
-
-        try {
+        $this->schemaContext->runInSchema($tenant->getSchemaName(), function () use ($email, $password): void {
             ($this->createTenantUser)($email, $password, [TenantUser::ROLE_TENANT_ADMIN]);
-        } finally {
-            $this->connection->executeStatement('SET search_path TO public');
-        }
+        });
 
         return new ProvisionedTenantWithAdmin($tenant, $email, $password);
     }

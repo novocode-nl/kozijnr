@@ -6,7 +6,7 @@ use App\Shared\Domain\Exception\ValidationException;
 use App\User\Application\CreateAdminUser;
 use App\User\Application\CreateSuperAdmin;
 use App\User\Domain\Exception\UserAlreadyExistsException;
-use App\User\Domain\PasswordHasherInterface;
+use App\Shared\Domain\Security\PasswordHasherInterface;
 use App\User\Domain\Role;
 use App\User\Domain\RoleRepositoryInterface;
 use App\User\Domain\User;

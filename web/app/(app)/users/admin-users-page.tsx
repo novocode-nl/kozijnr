@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next"
 import { PageHeading } from "@/components/page-heading"
 import { AdminUsersTable } from "@/components/admin-users/admin-users-table"
 import { AdminUserFormDialog } from "@/components/admin-users/admin-user-form-dialog"
-import { AdminUserCredentialsDialog } from "@/components/admin-users/admin-user-credentials-dialog"
+import { CredentialsDialog } from "@/components/credentials-dialog"
 import { Button } from "@/components/ui/button"
 import { contextLabel } from "@/lib/navigation/menu-config"
 import type { AdminUserCredentials, CreatedAdminUser } from "@/lib/api"
@@ -54,7 +54,8 @@ export default function AdminUsersPage() {
       */}
       <AdminUsersTable key={refreshToken} />
       <AdminUserFormDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={handleCreated} />
-      <AdminUserCredentialsDialog
+      <CredentialsDialog
+        i18nPrefix="users.adminCredentials"
         open={createdUser !== null}
         onOpenChange={(open) => {
           if (!open) setCreatedUser(null)

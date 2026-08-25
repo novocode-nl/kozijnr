@@ -4,7 +4,7 @@ namespace App\User\Application;
 
 use App\User\Domain\Exception\RoleNotFoundException;
 use App\User\Domain\Exception\UserAlreadyExistsException;
-use App\User\Domain\PasswordHasherInterface;
+use App\Shared\Domain\Security\PasswordHasherInterface;
 use App\User\Domain\RoleRepositoryInterface;
 use App\User\Domain\User;
 use App\User\Domain\UserRepositoryInterface;

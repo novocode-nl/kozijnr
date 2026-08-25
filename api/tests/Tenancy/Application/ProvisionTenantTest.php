@@ -4,6 +4,7 @@ namespace App\Tests\Tenancy\Application;
 
 use App\Tenancy\Application\ProvisionTenant;
 use App\Tenancy\Domain\TenantRepositoryInterface;
+use App\Tenancy\Domain\TenantSchemaContextInterface;
 use App\Tenancy\Infrastructure\TenantSchemaManager;
 use App\Tenancy\Infrastructure\TenantSchemaMigrator;
 use App\Tests\Tenancy\Fixtures\BrokenTenantMigrations\Version20260819070000;
@@ -93,7 +94,7 @@ final class ProvisionTenantTest extends KernelTestCase
         );
 
         return new ProvisionTenant(
-            $container->get(Connection::class),
+            $container->get(TenantSchemaContextInterface::class),
             $container->get(TenantRepositoryInterface::class),
             $container->get(TenantSchemaManager::class),
             $brokenMigrator,

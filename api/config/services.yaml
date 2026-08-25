@@ -53,17 +53,17 @@ services:
 
     App\Tenancy\Domain\TenantRepositoryInterface: '@App\Tenancy\Infrastructure\DoctrineTenantRepository'
 
+    App\Tenancy\Domain\TenantSchemaContextInterface: '@App\Tenancy\Infrastructure\DbalTenantSchemaContext'
+
     App\User\Domain\UserRepositoryInterface: '@App\User\Infrastructure\DoctrineUserRepository'
 
     App\User\Domain\RoleRepositoryInterface: '@App\User\Infrastructure\DoctrineRoleRepository'
 
-    App\User\Domain\PasswordHasherInterface: '@App\User\Infrastructure\Security\SymfonyPasswordHasher'
+    App\Shared\Domain\Security\PasswordHasherInterface: '@App\Shared\Infrastructure\Security\SymfonyPasswordHasher'
 
     App\TenantUser\Domain\TenantUserRepositoryInterface: '@App\TenantUser\Infrastructure\DoctrineTenantUserRepository'
 
     App\TenantUser\Domain\TenantApiTokenRepositoryInterface: '@App\TenantUser\Infrastructure\DoctrineTenantApiTokenRepository'
-
-    App\TenantUser\Domain\PasswordHasherInterface: '@App\TenantUser\Infrastructure\Security\SymfonyPasswordHasher'
 
     App\Tenancy\Infrastructure\TenantResolverListener:
         arguments:

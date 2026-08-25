@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next"
 import { PageHeading } from "@/components/page-heading"
 import { TenantsTable } from "@/components/tenants/tenants-table"
 import { TenantFormDialog } from "@/components/tenants/tenant-form-dialog"
-import { TenantAdminCredentialsDialog } from "@/components/tenants/tenant-admin-credentials-dialog"
+import { CredentialsDialog } from "@/components/credentials-dialog"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { contextLabel } from "@/lib/navigation/menu-config"
@@ -72,7 +72,8 @@ export default function TenantsPage() {
         </TabsContent>
       </Tabs>
       <TenantFormDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={handleCreated} />
-      <TenantAdminCredentialsDialog
+      <CredentialsDialog
+        i18nPrefix="tenants.adminCredentials"
         open={createdAdmin !== null}
         onOpenChange={(open) => {
           if (!open) setCreatedAdmin(null)

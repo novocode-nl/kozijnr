@@ -7,9 +7,9 @@ use App\Tenancy\Domain\Exception\TenantAlreadyExistsException;
 use App\Tenancy\Domain\Tenant;
 use App\Tenancy\Domain\TenantName;
 use App\Tenancy\Domain\TenantRepositoryInterface;
+use App\Tenancy\Domain\TenantSchemaContextInterface;
 use App\Tenancy\Infrastructure\TenantSchemaManager;
 use App\Tenancy\Infrastructure\TenantSchemaMigrator;
-use Doctrine\DBAL\Connection;
 
 /**
  * Provisions a brand new tenant end to end: validates the name, creates its
@@ -26,7 +26,7 @@ use Doctrine\DBAL\Connection;
 final class ProvisionTenant
 {
     public function __construct(
-        private readonly Connection $connection,
+        private readonly TenantSchemaContextInterface $schemaContext,
         private readonly TenantRepositoryInterface $tenantRepository,
         private readonly TenantSchemaManager $schemaManager,
         private readonly TenantSchemaMigrator $schemaMigrator,
@@ -46,7 +46,7 @@ final class ProvisionTenant
 
         // Defensive reset, same reasoning as TenantResolverListener: never
         // assume the connection is already on `public`.
-        $this->connection->executeStatement('SET search_path TO public');
+        $this->schemaContext->resetToPublic();
 
         $subdomain = $tenantName->asSubdomain();
         $schemaName = $tenantName->asSchemaName();

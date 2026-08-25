@@ -2,7 +2,8 @@
 
 namespace App\User\Application;
 
-use App\Shared\Domain\Exception\ValidationException;
+use App\Shared\Domain\EmailAddress;
+use App\Shared\Domain\Security\GeneratedPassword;
 
 /**
  * Admin-UI counterpart to `bin/console super-admin:create` (KOZ-30): lets a
@@ -27,16 +28,13 @@ final class CreateAdminUser
 
     public function __invoke(string $email): CreatedAdminUser
     {
-        $trimmedEmail = trim($email);
+        $trimmedEmail = EmailAddress::validated(
+            $email,
+            'Admin user email must be a valid email address.',
+            'users.error.emailInvalid',
+        );
 
-        if ($trimmedEmail === '' || filter_var($trimmedEmail, FILTER_VALIDATE_EMAIL) === false) {
-            throw ValidationException::create(
-                'Admin user email must be a valid email address.',
-                'users.error.emailInvalid',
-            );
-        }
-
-        $password = bin2hex(random_bytes(12));
+        $password = GeneratedPassword::generate();
 
         $user = ($this->createSuperAdmin)($trimmedEmail, $password);
 

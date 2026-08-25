@@ -2,7 +2,7 @@
 
 namespace App\Tests\Tenancy\Infrastructure\Controller;
 
-use App\User\Domain\PasswordHasherInterface;
+use App\Shared\Domain\Security\PasswordHasherInterface;
 use App\User\Domain\Permission;
 use App\User\Domain\Role;
 use App\User\Domain\User;

@@ -3,6 +3,7 @@
 namespace App\Tenancy\Application;
 
 use App\Shared\Domain\Storage\FileStorageInterface;
+use App\Shared\Domain\Storage\StoredImagePolicy;
 use App\Tenancy\Domain\Tenant;
 
 /**
@@ -13,13 +14,6 @@ use App\Tenancy\Domain\Tenant;
  */
 final class GetTenantLoginImage
 {
-    /** @var array<string, string> */
-    private const MIME_TYPES_BY_EXTENSION = [
-        'jpg' => 'image/jpeg',
-        'png' => 'image/png',
-        'webp' => 'image/webp',
-    ];
-
     public function __construct(private readonly FileStorageInterface $storage)
     {
     }
@@ -31,8 +25,7 @@ final class GetTenantLoginImage
             return null;
         }
 
-        $extension = strtolower(pathinfo($storageKey, PATHINFO_EXTENSION));
-        $mimeType = self::MIME_TYPES_BY_EXTENSION[$extension] ?? 'application/octet-stream';
+        $mimeType = StoredImagePolicy::mimeTypeForStorageKey($storageKey);
 
         return new TenantLoginImageContent($this->storage->read($storageKey), $mimeType);
     }

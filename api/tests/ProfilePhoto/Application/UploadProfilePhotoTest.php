@@ -49,27 +49,41 @@ final class UploadProfilePhotoTest extends TestCase
         $this->storage->expects(self::never())->method('write');
         $this->repository->expects(self::never())->method('add');
 
-        $this->expectException(ValidationException::class);
-
-        ($this->handler)(42, 'shell.php', 'application/x-php', 'contents');
+        try {
+            ($this->handler)(42, 'shell.php', 'application/x-php', 'contents');
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame('Unsupported profile photo mime type "application/x-php".', $exception->getMessage());
+            self::assertSame('profilePhoto.error.unsupportedMimeType', $exception->getErrorKey());
+            self::assertSame(['mimeType' => 'application/x-php'], $exception->getErrorKeyParams());
+        }
     }
 
     public function testAnEmptyFileIsRejected(): void
     {
         $this->storage->expects(self::never())->method('write');
 
-        $this->expectException(ValidationException::class);
-
-        ($this->handler)(42, 'empty.jpg', 'image/jpeg', '');
+        try {
+            ($this->handler)(42, 'empty.jpg', 'image/jpeg', '');
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame('Profile photo file is empty.', $exception->getMessage());
+            self::assertSame('profilePhoto.error.empty', $exception->getErrorKey());
+        }
     }
 
     public function testAFileLargerThanTheLimitIsRejected(): void
     {
         $this->storage->expects(self::never())->method('write');
 
-        $this->expectException(ValidationException::class);
-
-        ($this->handler)(42, 'huge.jpg', 'image/jpeg', str_repeat('a', 6 * 1024 * 1024));
+        try {
+            ($this->handler)(42, 'huge.jpg', 'image/jpeg', str_repeat('a', 6 * 1024 * 1024));
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame('Profile photo exceeds the maximum size of 5242880 bytes.', $exception->getMessage());
+            self::assertSame('profilePhoto.error.tooLarge', $exception->getErrorKey());
+            self::assertSame(['maxSizeInBytes' => 5242880], $exception->getErrorKeyParams());
+        }
     }
 
     public function testUploadingAgainReplacesTheExistingPhotoAndDeletesTheOldStoredFile(): void

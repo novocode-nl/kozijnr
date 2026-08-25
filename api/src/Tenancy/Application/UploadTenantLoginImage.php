@@ -2,8 +2,9 @@
 
 namespace App\Tenancy\Application;
 
-use App\Shared\Domain\Exception\ValidationException;
 use App\Shared\Domain\Storage\FileStorageInterface;
+use App\Shared\Domain\Storage\StoredImageErrorKeys;
+use App\Shared\Domain\Storage\StoredImagePolicy;
 use App\Tenancy\Domain\Tenant;
 use App\Tenancy\Domain\TenantRepositoryInterface;
 
@@ -20,17 +21,6 @@ use App\Tenancy\Domain\TenantRepositoryInterface;
  */
 final class UploadTenantLoginImage
 {
-    /** @var list<string> */
-    private const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-
-    private const MAX_SIZE_IN_BYTES = 5 * 1024 * 1024; // 5 MiB
-
-    private const EXTENSIONS_BY_MIME_TYPE = [
-        'image/jpeg' => 'jpg',
-        'image/png' => 'png',
-        'image/webp' => 'webp',
-    ];
-
     public function __construct(
         private readonly FileStorageInterface $storage,
         private readonly TenantRepositoryInterface $tenantRepository,
@@ -39,42 +29,18 @@ final class UploadTenantLoginImage
 
     public function __invoke(Tenant $tenant, string $originalFilename, string $mimeType, string $contents): void
     {
-        if (!in_array($mimeType, self::ALLOWED_MIME_TYPES, true)) {
-            throw ValidationException::create(
-                sprintf('Unsupported login image mime type "%s".', $mimeType),
-                'tenantSettings.error.unsupportedMimeType',
-                ['mimeType' => $mimeType],
-            );
-        }
-
-        $sizeInBytes = strlen($contents);
-
-        if ($sizeInBytes === 0) {
-            throw ValidationException::create(
-                'Login image file is empty.',
-                'tenantSettings.error.empty',
-            );
-        }
-
-        if ($sizeInBytes > self::MAX_SIZE_IN_BYTES) {
-            throw ValidationException::create(
-                sprintf('Login image exceeds the maximum size of %d bytes.', self::MAX_SIZE_IN_BYTES),
-                'tenantSettings.error.tooLarge',
-                ['maxSizeInBytes' => self::MAX_SIZE_IN_BYTES],
-            );
-        }
+        StoredImagePolicy::assertValid($mimeType, $contents, 'login image', new StoredImageErrorKeys(
+            'tenantSettings.error.unsupportedMimeType',
+            'tenantSettings.error.empty',
+            'tenantSettings.error.tooLarge',
+        ));
 
         $existingKey = $tenant->getLoginImageStorageKey();
         if ($existingKey !== null) {
             $this->storage->delete($existingKey);
         }
 
-        $storageKey = sprintf(
-            'tenant-login-images/%d/%s.%s',
-            $tenant->getId(),
-            bin2hex(random_bytes(16)),
-            self::EXTENSIONS_BY_MIME_TYPE[$mimeType],
-        );
+        $storageKey = StoredImagePolicy::storageKey('tenant-login-images', $tenant->getId(), $mimeType);
 
         $this->storage->write($storageKey, $contents);
 

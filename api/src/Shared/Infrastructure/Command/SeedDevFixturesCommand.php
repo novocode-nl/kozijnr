@@ -5,12 +5,12 @@ namespace App\Shared\Infrastructure\Command;
 use App\Tenancy\Application\ProvisionTenant;
 use App\Tenancy\Domain\Exception\TenantAlreadyExistsException;
 use App\Tenancy\Domain\TenantRepositoryInterface;
+use App\Tenancy\Domain\TenantSchemaContextInterface;
 use App\TenantUser\Application\CreateTenantUser;
 use App\TenantUser\Domain\Exception\TenantUserAlreadyExistsException;
 use App\TenantUser\Domain\TenantUser;
 use App\User\Application\CreateSuperAdmin;
 use App\User\Domain\Exception\UserAlreadyExistsException;
-use Doctrine\DBAL\Connection;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -65,7 +65,7 @@ final class SeedDevFixturesCommand extends Command
         private readonly ProvisionTenant $provisionTenant,
         private readonly CreateTenantUser $createTenantUser,
         private readonly TenantRepositoryInterface $tenantRepository,
-        private readonly Connection $connection,
+        private readonly TenantSchemaContextInterface $schemaContext,
         private readonly LoggerInterface $logger,
         #[Autowire('%kernel.environment%')] private readonly string $environment,
     ) {
@@ -133,7 +133,7 @@ final class SeedDevFixturesCommand extends Command
 
         // Defensive reset, same reasoning as ProvisionTenant/TenantResolverListener:
         // never assume the connection is already on `public`.
-        $this->connection->executeStatement('SET search_path TO public');
+        $this->schemaContext->resetToPublic();
         $tenant = $this->tenantRepository->findBySubdomain(self::TENANT_NAME);
 
         if ($tenant === null) {
@@ -148,18 +148,13 @@ final class SeedDevFixturesCommand extends Command
             throw new \RuntimeException(sprintf('Tenant "%s" could not be found after provisioning.', self::TENANT_NAME));
         }
 
-        $this->connection->executeStatement(sprintf(
-            'SET search_path TO %s, public',
-            $this->connection->quoteSingleIdentifier($tenant->getSchemaName()),
-        ));
-
         try {
-            ($this->createTenantUser)(self::TENANT_USER_EMAIL, self::FIXED_PASSWORD, [TenantUser::ROLE_TENANT_ADMIN]);
-            $io->success(sprintf('Created tenant user "%s" for tenant "%s".', self::TENANT_USER_EMAIL, $tenant->getSubdomain()));
+            $this->schemaContext->runInSchema($tenant->getSchemaName(), function () use ($io, $tenant): void {
+                ($this->createTenantUser)(self::TENANT_USER_EMAIL, self::FIXED_PASSWORD, [TenantUser::ROLE_TENANT_ADMIN]);
+                $io->success(sprintf('Created tenant user "%s" for tenant "%s".', self::TENANT_USER_EMAIL, $tenant->getSubdomain()));
+            });
         } catch (TenantUserAlreadyExistsException) {
             $io->note(sprintf('Tenant user "%s" already exists — reusing it.', self::TENANT_USER_EMAIL));
-        } finally {
-            $this->connection->executeStatement('SET search_path TO public');
         }
     }
 }

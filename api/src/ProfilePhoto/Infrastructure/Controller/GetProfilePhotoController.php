@@ -2,8 +2,7 @@
 
 namespace App\ProfilePhoto\Infrastructure\Controller;
 
-use App\ProfilePhoto\Application\GetProfilePhoto;
-use App\ProfilePhoto\Infrastructure\Http\ProfilePhotoContentDisposition;
+use App\ProfilePhoto\Infrastructure\Http\ProfilePhotoEndpoint;
 use App\User\Domain\User;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -17,28 +16,14 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  */
 final class GetProfilePhotoController
 {
-    public function __construct(
-        private readonly GetProfilePhoto $getProfilePhoto,
-    ) {
+    public function __construct(private readonly ProfilePhotoEndpoint $endpoint)
+    {
     }
 
     #[Route('/api/admin/me/profile-photo', name: 'admin_me_profile_photo_get', methods: ['GET'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function __invoke(#[CurrentUser] User $user): Response
     {
-        $content = ($this->getProfilePhoto)($user->getId());
-
-        if ($content === null) {
-            return new Response('', Response::HTTP_NOT_FOUND);
-        }
-
-        return new Response($content->contents, Response::HTTP_OK, [
-            'Content-Type' => $content->mimeType,
-            // The original filename is client-supplied and unsanitized —
-            // build the header via Symfony's HeaderUtils instead of manual
-            // string interpolation so a filename containing a double quote
-            // can't inject extra header attributes.
-            'Content-Disposition' => ProfilePhotoContentDisposition::forOriginalFilename($content->originalFilename),
-        ]);
+        return $this->endpoint->handleGet($user->getId());
     }
 }

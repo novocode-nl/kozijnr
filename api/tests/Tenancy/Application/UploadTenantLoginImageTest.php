@@ -54,9 +54,14 @@ final class UploadTenantLoginImageTest extends TestCase
         $this->storage->expects(self::never())->method('write');
         $this->repository->expects(self::never())->method('update');
 
-        $this->expectException(ValidationException::class);
-
-        ($this->handler)($tenant, 'shell.php', 'application/x-php', 'contents');
+        try {
+            ($this->handler)($tenant, 'shell.php', 'application/x-php', 'contents');
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame('Unsupported login image mime type "application/x-php".', $exception->getMessage());
+            self::assertSame('tenantSettings.error.unsupportedMimeType', $exception->getErrorKey());
+            self::assertSame(['mimeType' => 'application/x-php'], $exception->getErrorKeyParams());
+        }
     }
 
     public function testAnEmptyFileIsRejected(): void
@@ -65,9 +70,13 @@ final class UploadTenantLoginImageTest extends TestCase
 
         $this->storage->expects(self::never())->method('write');
 
-        $this->expectException(ValidationException::class);
-
-        ($this->handler)($tenant, 'empty.jpg', 'image/jpeg', '');
+        try {
+            ($this->handler)($tenant, 'empty.jpg', 'image/jpeg', '');
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame('Login image file is empty.', $exception->getMessage());
+            self::assertSame('tenantSettings.error.empty', $exception->getErrorKey());
+        }
     }
 
     public function testAFileLargerThanTheLimitIsRejected(): void
@@ -76,9 +85,14 @@ final class UploadTenantLoginImageTest extends TestCase
 
         $this->storage->expects(self::never())->method('write');
 
-        $this->expectException(ValidationException::class);
-
-        ($this->handler)($tenant, 'huge.jpg', 'image/jpeg', str_repeat('a', 6 * 1024 * 1024));
+        try {
+            ($this->handler)($tenant, 'huge.jpg', 'image/jpeg', str_repeat('a', 6 * 1024 * 1024));
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame('Login image exceeds the maximum size of 5242880 bytes.', $exception->getMessage());
+            self::assertSame('tenantSettings.error.tooLarge', $exception->getErrorKey());
+            self::assertSame(['maxSizeInBytes' => 5242880], $exception->getErrorKeyParams());
+        }
     }
 
     public function testUploadingAgainReplacesTheExistingImageAndDeletesTheOldStoredFile(): void

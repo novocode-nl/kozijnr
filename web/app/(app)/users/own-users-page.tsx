@@ -5,19 +5,16 @@ import { useTranslation } from "react-i18next"
 
 import { PageHeading } from "@/components/page-heading"
 import { TenantUserFormDialog } from "@/components/tenants/tenant-user-form-dialog"
-import { TenantUserCredentialsDialog } from "@/components/tenants/tenant-user-credentials-dialog"
+import { CredentialsDialog } from "@/components/credentials-dialog"
+import { UsersTable } from "@/components/users/users-table"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { contextLabel } from "@/lib/navigation/menu-config"
-import { roleLabel } from "@/lib/i18n/role-labels"
 import { TenantUser } from "@/lib/domain/tenant-user-roles"
 import { createOwnTenantUser, getMe, listOwnTenantUsers, type CreatedTenantUser, type TenantUserSummary } from "@/lib/api"
+import { useLoadState } from "@/lib/hooks/use-load-state"
 
-type LoadState =
-  | { status: "loading" }
-  | { status: "error" }
-  | { status: "loaded"; users: TenantUserSummary[]; isTenantAdmin: boolean }
+type OwnUsersData = { users: TenantUserSummary[]; isTenantAdmin: boolean }
 
 /**
  * Tenant-own "Gebruikers" page (KOZ-31 rework): lets a logged-in
@@ -41,46 +38,29 @@ type LoadState =
  */
 export default function OwnUsersPage() {
   const { t } = useTranslation()
-  const [state, setState] = React.useState<LoadState>({ status: "loading" })
+  const [state, setState] = useLoadState<OwnUsersData>(
+    () =>
+      Promise.all([listOwnTenantUsers(), getMe()]).then(([users, me]) => ({
+        users,
+        isTenantAdmin: me?.roles.includes(TenantUser.ROLE_TENANT_ADMIN) ?? false,
+      })),
+    []
+  )
   const [addOpen, setAddOpen] = React.useState(false)
   const [credentials, setCredentials] = React.useState<CreatedTenantUser | null>(null)
   const [credentialsOpen, setCredentialsOpen] = React.useState(false)
 
-  React.useEffect(() => {
-    let cancelled = false
-
-    Promise.all([listOwnTenantUsers(), getMe()])
-      .then(([users, me]) => {
-        if (!cancelled) {
-          setState({
-            status: "loaded",
-            users,
-            isTenantAdmin: me?.roles.includes(TenantUser.ROLE_TENANT_ADMIN) ?? false,
-          })
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setState({ status: "error" })
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
   function handleCreated(user: CreatedTenantUser) {
     setState((current) =>
       current.status === "loaded"
-        ? { ...current, users: [{ email: user.email, roles: user.roles }, ...current.users] }
-        : { status: "loaded", users: [{ email: user.email, roles: user.roles }], isTenantAdmin: true }
+        ? { ...current, data: { ...current.data, users: [{ email: user.email, roles: user.roles }, ...current.data.users] } }
+        : { status: "loaded", data: { users: [{ email: user.email, roles: user.roles }], isTenantAdmin: true } }
     )
     setCredentials(user)
     setCredentialsOpen(true)
   }
 
-  const isTenantAdmin = state.status === "loaded" && state.isTenantAdmin
+  const isTenantAdmin = state.status === "loaded" && state.data.isTenantAdmin
 
   const addAction = isTenantAdmin ? (
     <Button onClick={() => setAddOpen(true)}>{t("users.addUser")}</Button>
@@ -94,7 +74,8 @@ export default function OwnUsersPage() {
         action={createOwnTenantUser}
         onCreated={handleCreated}
       />
-      <TenantUserCredentialsDialog
+      <CredentialsDialog
+        i18nPrefix="users.credentials"
         open={credentialsOpen}
         onOpenChange={setCredentialsOpen}
         credentials={credentials}
@@ -122,31 +103,12 @@ export default function OwnUsersPage() {
         <p className="text-sm text-destructive">{t("users.loadError")}</p>
       )}
 
-      {state.status === "loaded" && state.users.length === 0 && (
+      {state.status === "loaded" && state.data.users.length === 0 && (
         <p className="text-sm text-muted-foreground">{t("users.empty")}</p>
       )}
 
-      {state.status === "loaded" && state.users.length > 0 && (
-        <div className="overflow-hidden rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("users.columnEmail")}</TableHead>
-                <TableHead>{t("users.columnRoles")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {state.users.map((user) => (
-                <TableRow key={user.email}>
-                  <TableCell className="font-medium">{user.email}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {user.roles.map((role) => roleLabel(role, t)).join(", ")}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+      {state.status === "loaded" && state.data.users.length > 0 && (
+        <UsersTable users={state.data.users} />
       )}
 
       {dialogs}

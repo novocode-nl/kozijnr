@@ -1,0 +1,6 @@
+{
+  "locales": { "supported": ["nl", "en"], "default": "nl" },
+  "tenantUserRoles": { "admin": "ROLE_TENANT_ADMIN", "default": "ROLE_TENANT_USER" },
+  "cookies": { "tenantApiToken": "tenant_api_token" },
+  "reservedSubdomains": { "admin": "admin", "api": "api" }
+}
