@@ -59,7 +59,37 @@ export function NavUser({ context }: { context: AppContext }) {
     // bounces back to /login instead of the "already valid session -> /"
     // redirect in proxy.ts firing again.
     await (context === "admin" ? adminLogout() : logout())
-    router.push("/login")
+
+    // KOZ-34 rework: a full navigation (`window.location`), not
+    // `router.push`. The root layout (app/layout.tsx) reads the locale
+    // cookie and is shared by every route including /login, so a
+    // client-side/soft navigation reuses its already-rendered output
+    // instead of re-running it — the freshly set `kozijnr_locale` cookie
+    // (proxy.ts's withTenantDefaultLocaleCookie, which runs again on this
+    // navigation regardless) would sit in the browser's cookie jar but
+    // never reach the already-mounted I18nProvider, whose i18next instance
+    // is seeded once from `initialLocale` on mount (see
+    // components/providers/i18n-provider.tsx) and is never recreated by a
+    // soft nav. A full navigation forces the root layout — and therefore
+    // I18nProvider — to remount and read the current cookie, so a changed
+    // tenant default locale shows up on /login immediately instead of only
+    // after a hard refresh.
+    //
+    // No automated test covers this fix directly: vitest.config.mts only
+    // runs `environment: "node"` against `*.test.ts` files (no jsdom/RTL
+    // setup exists in this project yet), so there's no harness to mount
+    // this client component, call handleLogout, and assert on
+    // `window.location` vs. the Next.js router. The mechanism itself (root
+    // layout not re-running on a soft nav) is also Next's App Router
+    // internals, not something proxy.ts's already-server-only tenant-locale
+    // lookup can be unit-tested against either. This was instead verified
+    // manually: change the tenant's default locale in Instellingen, log
+    // out, and confirm /login shows the new language without a hard
+    // refresh — same "manually verified against the running app" discipline
+    // as KOZ-32's upload-limit fix where PHPUnit couldn't reach the php.ini
+    // layer either.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- intentional full navigation, see comment above.
+    window.location.href = "/login"
   }
 
   function handleLocaleChange(locale: string) {
