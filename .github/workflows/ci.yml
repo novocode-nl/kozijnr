@@ -35,6 +35,10 @@ jobs:
           php-version: "8.4"
           extensions: intl, pdo_pgsql, fileinfo
           coverage: none
+          # Mirror docker/backend/uploads.ini (KOZ-32): PHP's own defaults
+          # (upload_max_filesize=2M) would reject the >5MiB test upload at
+          # PHP level before the application's 5MiB check ever runs.
+          ini-values: upload_max_filesize=6M, post_max_size=8M
       - run: composer install --no-interaction --no-progress
       # APP_ENV=test suffixes the dbname to app_test (doctrine.yaml when@test);
       # the postgres service only creates "app", so create app_test first.
