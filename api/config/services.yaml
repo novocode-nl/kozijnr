@@ -23,6 +23,20 @@ parameters:
     # App\Tenancy\Infrastructure\TenantSchemaMigrator and the KOZ-7 ticket.
     app.tenancy.migrations_path: '%kernel.project_dir%/migrations-tenant'
 
+    # KOZ-32 file storage config switch — see .env "app/storage" section
+    # for the full option list. Changing app.storage.adapter (env
+    # APP_STORAGE_ADAPTER) between "local" and "s3" is the only change
+    # needed to move from local dev storage to a production S3-compatible
+    # bucket; App\Shared\Infrastructure\Storage\FlysystemAdapterFactory is
+    # the only place that reads these.
+    app.storage.adapter: '%env(APP_STORAGE_ADAPTER)%'
+    app.storage.local_root: '%kernel.project_dir%/%env(APP_STORAGE_LOCAL_ROOT)%'
+    app.storage.s3_bucket: '%env(APP_STORAGE_S3_BUCKET)%'
+    app.storage.s3_region: '%env(APP_STORAGE_S3_REGION)%'
+    app.storage.s3_endpoint: '%env(APP_STORAGE_S3_ENDPOINT)%'
+    app.storage.s3_key: '%env(APP_STORAGE_S3_KEY)%'
+    app.storage.s3_secret: '%env(APP_STORAGE_S3_SECRET)%'
+
 services:
     # default configuration for services in *this* file
     _defaults:
@@ -73,3 +87,28 @@ services:
     App\Tenancy\Infrastructure\TenantSchemaMigrator:
         arguments:
             $migrationsPath: '%app.tenancy.migrations_path%'
+
+    # KOZ-32: the Flysystem operator FlysystemFileStorage delegates to.
+    # Built by FlysystemAdapterFactory purely from the app.storage.*
+    # parameters above — this is the entire "config switch" between the
+    # local dev adapter and an S3-compatible production adapter.
+    League\Flysystem\FilesystemOperator:
+        factory: ['App\Shared\Infrastructure\Storage\FlysystemAdapterFactory', 'create']
+        arguments:
+            $adapter: '%app.storage.adapter%'
+            $localRoot: '%app.storage.local_root%'
+            $s3Bucket: '%app.storage.s3_bucket%'
+            $s3Region: '%app.storage.s3_region%'
+            $s3Endpoint: '%app.storage.s3_endpoint%'
+            $s3Key: '%app.storage.s3_key%'
+            $s3Secret: '%app.storage.s3_secret%'
+
+    App\Shared\Domain\Storage\FileStorageInterface: '@App\Shared\Infrastructure\Storage\FlysystemFileStorage'
+
+    # public: true — otherwise Symfony's single-consumer inlining
+    # optimization would remove this alias entirely (only
+    # UploadProfilePhoto depends on it today), making it unfetchable from
+    # integration tests via self::getContainer()->get(...).
+    App\ProfilePhoto\Domain\ProfilePhotoRepositoryInterface:
+        alias: App\ProfilePhoto\Infrastructure\DoctrineProfilePhotoRepository
+        public: true
