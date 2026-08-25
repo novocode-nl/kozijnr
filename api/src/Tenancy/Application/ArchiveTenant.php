@@ -5,7 +5,7 @@ namespace App\Tenancy\Application;
 use App\Tenancy\Domain\Exception\TenantNotFoundException;
 use App\Tenancy\Domain\Tenant;
 use App\Tenancy\Domain\TenantRepositoryInterface;
-use Doctrine\DBAL\Connection;
+use App\Tenancy\Domain\TenantSchemaContextInterface;
 
 /**
  * Archives (soft-deletes) an existing tenant. The tenant row and its
@@ -17,14 +17,14 @@ use Doctrine\DBAL\Connection;
 final class ArchiveTenant
 {
     public function __construct(
-        private readonly Connection $connection,
+        private readonly TenantSchemaContextInterface $schemaContext,
         private readonly TenantRepositoryInterface $tenantRepository,
     ) {
     }
 
     public function __invoke(string $subdomain): Tenant
     {
-        $this->connection->executeStatement('SET search_path TO public');
+        $this->schemaContext->resetToPublic();
 
         $tenant = $this->tenantRepository->findBySubdomain($subdomain);
         if ($tenant === null) {

@@ -7,7 +7,7 @@ use App\Tenancy\Domain\Exception\TenantNotFoundException;
 use App\Tenancy\Domain\Tenant;
 use App\Tenancy\Domain\TenantName;
 use App\Tenancy\Domain\TenantRepositoryInterface;
-use Doctrine\DBAL\Connection;
+use App\Tenancy\Domain\TenantSchemaContextInterface;
 
 /**
  * Updates an existing tenant's display name and subdomain. Deliberately
@@ -17,7 +17,7 @@ use Doctrine\DBAL\Connection;
 final class UpdateTenant
 {
     public function __construct(
-        private readonly Connection $connection,
+        private readonly TenantSchemaContextInterface $schemaContext,
         private readonly TenantRepositoryInterface $tenantRepository,
     ) {
     }
@@ -28,7 +28,7 @@ final class UpdateTenant
 
         // Defensive reset, same reasoning as ProvisionTenant: never assume
         // the connection is already on `public`.
-        $this->connection->executeStatement('SET search_path TO public');
+        $this->schemaContext->resetToPublic();
 
         $tenant = $this->tenantRepository->findBySubdomain($currentSubdomain);
         if ($tenant === null) {

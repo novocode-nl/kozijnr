@@ -4,6 +4,7 @@ namespace App\Tests\Tenancy\Presentation\Command;
 
 use App\Tenancy\Application\ProvisionTenant;
 use App\Tenancy\Domain\TenantRepositoryInterface;
+use App\Tenancy\Infrastructure\DbalTenantSchemaContext;
 use App\Tenancy\Infrastructure\TenantSchemaManager;
 use App\Tenancy\Infrastructure\TenantSchemaMigrator;
 use App\Tenancy\Presentation\Command\ProvisionTenantCommand;
@@ -73,7 +74,7 @@ final class ProvisionTenantCommandUnexpectedFailureTest extends TestCase
         $schemaManager = new TenantSchemaManager($connection);
         $migrator = new TenantSchemaMigrator($connection, __DIR__, 'App\\Migrations\\Tenant');
 
-        $provisionTenant = new ProvisionTenant($connection, $tenantRepository, $schemaManager, $migrator);
+        $provisionTenant = new ProvisionTenant(new DbalTenantSchemaContext($connection), $tenantRepository, $schemaManager, $migrator);
 
         $command = new ProvisionTenantCommand($provisionTenant, new NullLogger());
         $tester = new CommandTester($command);
