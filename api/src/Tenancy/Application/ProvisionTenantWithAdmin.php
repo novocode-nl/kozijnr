@@ -5,8 +5,8 @@ namespace App\Tenancy\Application;
 use App\Shared\Domain\EmailAddress;
 use App\Shared\Domain\Security\GeneratedPassword;
 use App\TenantUser\Application\CreateTenantUser;
+use App\Tenancy\Domain\TenantSchemaContextInterface;
 use App\TenantUser\Domain\TenantUser;
-use Doctrine\DBAL\Connection;
 
 /**
  * Orchestrates the full "create a tenant" flow: provisions the tenant
@@ -37,7 +37,7 @@ final class ProvisionTenantWithAdmin
     public function __construct(
         private readonly ProvisionTenant $provisionTenant,
         private readonly CreateTenantUser $createTenantUser,
-        private readonly Connection $connection,
+        private readonly TenantSchemaContextInterface $schemaContext,
     ) {
     }
 
@@ -53,16 +53,9 @@ final class ProvisionTenantWithAdmin
 
         $password = GeneratedPassword::generate();
 
-        $this->connection->executeStatement(sprintf(
-            'SET search_path TO %s, public',
-            $this->connection->quoteSingleIdentifier($tenant->getSchemaName()),
-        ));
-
-        try {
+        $this->schemaContext->runInSchema($tenant->getSchemaName(), function () use ($email, $password): void {
             ($this->createTenantUser)($email, $password, [TenantUser::ROLE_TENANT_ADMIN]);
-        } finally {
-            $this->connection->executeStatement('SET search_path TO public');
-        }
+        });
 
         return new ProvisionedTenantWithAdmin($tenant, $email, $password);
     }
