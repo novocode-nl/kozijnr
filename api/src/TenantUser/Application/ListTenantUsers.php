@@ -4,7 +4,7 @@ namespace App\TenantUser\Application;
 
 use App\Tenancy\Domain\Exception\TenantNotFoundException;
 use App\Tenancy\Domain\TenantRepositoryInterface;
-use Doctrine\DBAL\Connection;
+use App\Tenancy\Domain\TenantSchemaContextInterface;
 
 /**
  * Read-only query for the tenant users of one tenant, used by the admin
@@ -21,7 +21,7 @@ use Doctrine\DBAL\Connection;
 final class ListTenantUsers
 {
     public function __construct(
-        private readonly Connection $connection,
+        private readonly TenantSchemaContextInterface $schemaContext,
         private readonly TenantRepositoryInterface $tenantRepository,
         private readonly ListTenantUsersForCurrentTenant $listTenantUsersForCurrentTenant,
     ) {
@@ -30,22 +30,16 @@ final class ListTenantUsers
     /** @return TenantUserSummary[] */
     public function __invoke(string $subdomain): array
     {
-        $this->connection->executeStatement('SET search_path TO public');
+        $this->schemaContext->resetToPublic();
 
         $tenant = $this->tenantRepository->findBySubdomain($subdomain);
         if ($tenant === null) {
             throw TenantNotFoundException::forSubdomain($subdomain);
         }
 
-        $this->connection->executeStatement(sprintf(
-            'SET search_path TO %s, public',
-            $this->connection->quoteSingleIdentifier($tenant->getSchemaName()),
-        ));
-
-        try {
-            return ($this->listTenantUsersForCurrentTenant)();
-        } finally {
-            $this->connection->executeStatement('SET search_path TO public');
-        }
+        return $this->schemaContext->runInSchema(
+            $tenant->getSchemaName(),
+            fn () => ($this->listTenantUsersForCurrentTenant)(),
+        );
     }
 }
