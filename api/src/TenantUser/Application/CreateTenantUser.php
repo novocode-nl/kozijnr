@@ -3,7 +3,7 @@
 namespace App\TenantUser\Application;
 
 use App\TenantUser\Domain\Exception\TenantUserAlreadyExistsException;
-use App\TenantUser\Domain\PasswordHasherInterface;
+use App\Shared\Domain\Security\PasswordHasherInterface;
 use App\TenantUser\Domain\TenantUser;
 use App\TenantUser\Domain\TenantUserRepositoryInterface;
 

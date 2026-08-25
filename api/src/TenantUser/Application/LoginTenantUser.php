@@ -3,7 +3,7 @@
 namespace App\TenantUser\Application;
 
 use App\TenantUser\Domain\Exception\InvalidCredentialsException;
-use App\TenantUser\Domain\PasswordHasherInterface;
+use App\Shared\Domain\Security\PasswordHasherInterface;
 use App\TenantUser\Domain\TenantApiToken;
 use App\TenantUser\Domain\TenantApiTokenRepositoryInterface;
 use App\TenantUser\Domain\TenantUserRepositoryInterface;

@@ -5,7 +5,7 @@ namespace App\Tests\TenantUser\Application;
 use App\Shared\Domain\Exception\ValidationException;
 use App\TenantUser\Application\CreateTenantUser;
 use App\TenantUser\Application\CreateTenantUserForCurrentTenant;
-use App\TenantUser\Domain\PasswordHasherInterface;
+use App\Shared\Domain\Security\PasswordHasherInterface;
 use App\TenantUser\Domain\TenantUser;
 use App\TenantUser\Domain\TenantUserRepositoryInterface;
 use PHPUnit\Framework\TestCase;
