@@ -7,6 +7,7 @@ use App\Tenancy\Domain\Exception\TenantAlreadyExistsException;
 use App\Tenancy\Domain\TenantRepositoryInterface;
 use App\TenantUser\Application\CreateTenantUser;
 use App\TenantUser\Domain\Exception\TenantUserAlreadyExistsException;
+use App\TenantUser\Domain\TenantUser;
 use App\User\Application\CreateSuperAdmin;
 use App\User\Domain\Exception\UserAlreadyExistsException;
 use Doctrine\DBAL\Connection;
@@ -27,7 +28,9 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
  *   `super-admin:create`'s own use case.
  * - tenant "tenant1", via `tenant:provision`'s own use case.
  * - tenant-user "tenant@kozijnr.nl" / "password" inside tenant1's schema,
- *   via `tenant-user:create`'s own use case.
+ *   via `tenant-user:create`'s own use case, always with ROLE_TENANT_ADMIN
+ *   so a fresh dev/test environment has a ready-to-use tenant admin account
+ *   (e.g. for the tenant settings page) without a manual role grant.
  *
  * Idempotent: each step is skipped (not failed) if its account/tenant
  * already exists, so this command is safe to run on every environment
@@ -151,7 +154,7 @@ final class SeedDevFixturesCommand extends Command
         ));
 
         try {
-            ($this->createTenantUser)(self::TENANT_USER_EMAIL, self::FIXED_PASSWORD, []);
+            ($this->createTenantUser)(self::TENANT_USER_EMAIL, self::FIXED_PASSWORD, [TenantUser::ROLE_TENANT_ADMIN]);
             $io->success(sprintf('Created tenant user "%s" for tenant "%s".', self::TENANT_USER_EMAIL, $tenant->getSubdomain()));
         } catch (TenantUserAlreadyExistsException) {
             $io->note(sprintf('Tenant user "%s" already exists — reusing it.', self::TENANT_USER_EMAIL));

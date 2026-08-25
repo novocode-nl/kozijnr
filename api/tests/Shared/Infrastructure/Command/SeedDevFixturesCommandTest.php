@@ -51,10 +51,11 @@ final class SeedDevFixturesCommandTest extends KernelTestCase
         $tenants = $connection->fetchAllAssociative('SELECT subdomain, schema_name FROM public.tenants');
         self::assertSame([['subdomain' => 'tenant1', 'schema_name' => 'tenant_tenant1']], $tenants);
 
-        $tenantUsers = $connection->fetchAllAssociative('SELECT email, password FROM tenant_tenant1.tenant_users');
+        $tenantUsers = $connection->fetchAllAssociative('SELECT email, password, roles FROM tenant_tenant1.tenant_users');
         self::assertCount(1, $tenantUsers);
         self::assertSame('tenant@kozijnr.nl', $tenantUsers[0]['email']);
         self::assertNotSame('password', $tenantUsers[0]['password']);
+        self::assertSame(['ROLE_TENANT_ADMIN'], json_decode($tenantUsers[0]['roles'], true));
     }
 
     public function testLeavesTheConnectionOnThePublicSchemaAfterwards(): void
