@@ -5,6 +5,7 @@ namespace App\Tests\Shared\Infrastructure\Command;
 use App\Shared\Infrastructure\Command\SeedDevFixturesCommand;
 use App\Tenancy\Application\ProvisionTenant;
 use App\Tenancy\Domain\TenantRepositoryInterface;
+use App\Tenancy\Domain\TenantSchemaContextInterface;
 use App\TenantUser\Application\CreateTenantUser;
 use App\User\Application\CreateSuperAdmin;
 use Doctrine\DBAL\Connection;
@@ -73,7 +74,7 @@ final class SeedDevFixturesCommandRefusesProdTest extends KernelTestCase
             $container->get(ProvisionTenant::class),
             $container->get(CreateTenantUser::class),
             $container->get(TenantRepositoryInterface::class),
-            $container->get(Connection::class),
+            $container->get(TenantSchemaContextInterface::class),
             $container->get(LoggerInterface::class),
             $environment,
         );
