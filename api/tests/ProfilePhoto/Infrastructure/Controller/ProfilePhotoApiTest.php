@@ -4,6 +4,7 @@ namespace App\Tests\ProfilePhoto\Infrastructure\Controller;
 
 use App\User\Application\CreateSuperAdmin;
 use Doctrine\DBAL\Connection;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -97,6 +98,50 @@ final class ProfilePhotoApiTest extends WebTestCase
         self::assertSame($contents, $this->client->getResponse()->getContent());
     }
 
+    /**
+     * KOZ-32 rework #3: regression test for the blocking review finding —
+     * GetProfilePhotoController used to call
+     * HeaderUtils::makeDisposition(DISPOSITION_INLINE, $originalFilename)
+     * without an ASCII-only, '%'-free fallback (the third argument), so
+     * Symfony fell back to originalFilename itself as the fallback. Since
+     * originalFilename is the unsanitized, client-supplied name (only path
+     * separators are stripped by UploadedFile::getName()), a non-ASCII
+     * name, a '%'-containing name, or (defensively) a path-like name would
+     * make HeaderUtils::makeDisposition() throw an uncaught
+     * InvalidArgumentException, turning every subsequent GET into a 500 —
+     * the photo would be permanently unfetchable. Covers all three
+     * concrete cases confirmed during review: a non-ASCII filename, a
+     * '%'-containing filename, and a path-like filename.
+     *
+     * @return iterable<string, array{string}>
+     */
+    public static function unsafeFilenamesProvider(): iterable
+    {
+        yield 'non-ASCII filename' => ['café.png'];
+        yield '%-containing filename' => ['photo%20mine.png'];
+        yield 'path-like filename' => ['evil/name.png'];
+    }
+
+    #[DataProvider('unsafeFilenamesProvider')]
+    public function testUploadingAPhotoWithAnUnsafeFilenameThenFetchingItDoesNotThrow(string $originalName): void
+    {
+        $this->login();
+
+        $contents = base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+        );
+        $uploadedFile = $this->makeUploadedFile($contents, $originalName, 'image/png');
+
+        $this->client->request('POST', self::UPLOAD_URL, server: ['HTTP_HOST' => self::ADMIN_HOST], files: ['photo' => $uploadedFile]);
+        self::assertResponseStatusCodeSame(201);
+
+        $this->client->request('GET', self::UPLOAD_URL, server: ['HTTP_HOST' => self::ADMIN_HOST]);
+
+        self::assertResponseIsSuccessful();
+        self::assertSame($contents, $this->client->getResponse()->getContent());
+        self::assertNotNull($this->client->getResponse()->headers->get('Content-Disposition'));
+    }
+
     public function testUploadingAnUnsupportedFileTypeIsRejectedWithAnErrorKey(): void
     {
         $this->login();
@@ -111,12 +156,21 @@ final class ProfilePhotoApiTest extends WebTestCase
     }
 
     /**
-     * KOZ-32 rework: regression test for the blocking review finding — a
+     * KOZ-32 rework: regression test for a previous review finding — a
      * file between the application's 5MB limit and PHP's configured
      * upload_max_filesize/post_max_size (6M/8M, see docker/backend/uploads.ini)
      * must reach UploadProfilePhoto's own size check and come back as
-     * profilePhoto.error.tooLarge, not be silently rejected by PHP itself
-     * (UPLOAD_ERR_INI_SIZE) as the generic profilePhoto.error.missingFile.
+     * profilePhoto.error.tooLarge, not the generic profilePhoto.error.missingFile.
+     *
+     * Note: this only proves the *application's* 5MB limit is enforced
+     * correctly for a file that would fit under php.ini's limits. It does
+     * NOT exercise php.ini itself — WebTestCase/KernelBrowser injects an
+     * UploadedFile directly and bypasses PHP's own upload handling
+     * entirely (no real multipart POST goes through PHP's SAPI), so it
+     * cannot prove that upload_max_filesize/post_max_size in
+     * docker/backend/uploads.ini are actually applied by the running
+     * container. That would require a smoke test against the real running
+     * container (e.g. a curl-based multipart POST over the ini limit).
      */
     public function testUploadingAFileOverTheApplicationLimitButUnderThePhpIniLimitIsRejectedAsTooLarge(): void
     {
