@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { ChevronsUpDown, Languages, LogOut } from "lucide-react"
+import { ChevronsUpDown, Languages, LogOut, UserRound } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
 import {
@@ -43,6 +43,11 @@ import { setClientLocale, type Locale } from "@/lib/i18n/locale"
  * (re-renders every `useTranslation()` consumer in this component tree
  * immediately) and persists the choice in the locale cookie so it survives
  * a reload/new session — see lib/i18n/locale.ts.
+ *
+ * KOZ-33: also hosts the "Mijn profiel" link, tenant-only for now — the
+ * profile page (`/profile`) is a tenant-only route (no admin equivalent
+ * exists yet, see app/(app)/profile/page.tsx), so the item is hidden
+ * entirely in the admin context rather than linking to a page that 404s.
  */
 export function NavUser({ context }: { context: AppContext }) {
   const { isMobile } = useSidebar()
@@ -98,6 +103,15 @@ export function NavUser({ context }: { context: AppContext }) {
                 {contextLabel[context]}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              {context === "tenant" && (
+                <>
+                  <DropdownMenuItem onClick={() => router.push("/profile")}>
+                    <UserRound />
+                    {t("nav.profile")}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
                   <Languages />

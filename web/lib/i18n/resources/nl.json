@@ -47,6 +47,7 @@
     "adminDashboard": "Admin dashboard",
     "tenants": "Tenants",
     "users": "Gebruikers",
+    "profile": "Mijn profiel",
     "settings": "Instellingen",
     "support": "Support"
   },
@@ -230,6 +231,30 @@
       "missingFile": "Kies een afbeelding om te uploaden.",
       "uploadFailed": "Kon de login-afbeelding niet uploaden. Probeer het opnieuw.",
       "saveFailed": "Kon de instellingen niet opslaan. Probeer het opnieuw."
+    }
+  },
+
+  "profile": {
+    "pageTitle": "Mijn profiel",
+    "detailsSectionTitle": "Gegevens",
+    "photoSectionTitle": "Profielfoto",
+    "photoAlt": "Profielfoto",
+    "emailLabel": "E-mailadres",
+    "roleLabel": "Rol",
+    "uploadButton": "Foto uploaden",
+    "changeButton": "Foto wijzigen",
+    "uploading": "Bezig met uploaden...",
+    "photoHint": "JPEG, PNG of WEBP, max. 5 MB.",
+    "loadError": "Kon je profielgegevens niet laden. Probeer de pagina te verversen."
+  },
+
+  "profilePhoto": {
+    "error": {
+      "unsupportedMimeType": "Alleen JPEG-, PNG- of WEBP-afbeeldingen zijn toegestaan.",
+      "empty": "Het bestand is leeg.",
+      "tooLarge": "De afbeelding is te groot (max. 5 MB).",
+      "missingFile": "Kies eerst een bestand om te uploaden.",
+      "uploadFailed": "Kon de profielfoto niet uploaden. Probeer het opnieuw."
     }
   },
 
